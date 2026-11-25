@@ -5,6 +5,5 @@
   "build": 1,
   "nsh": ">=0.7",
   "rust": "nsh",
-  "root": "App",
   "theme": "nsh/theme.json"
 }

@@ -38,14 +38,44 @@ pub fn isolate_home() {
     });
 }
 
-/// The app on a Linux desktop with `launch`. The editor is a desktop app, and its root is a
-/// window, which Headless shows only on a desktop OS.
-pub fn start_with(launch: nsh_app_editor::Launch) -> Headless {
+/// The UI sets the app's runner links: NSH's base components, then the app's (`nsvim/native`).
+pub fn ui_sets() -> Vec<nsh_core::element::Registry> {
+    vec![nsh_base::registry(), nsh_app_editor::registry()]
+}
+
+/// `App.tsx` as bytecode, built once for every test in this binary.
+fn bundle() -> nsh_engine::Bundle {
+    static APP: std::sync::OnceLock<nsh_engine::Bundle> = std::sync::OnceLock::new();
+    APP.get_or_init(|| {
+        let entry = Path::new(env!("CARGO_MANIFEST_DIR")).join("../App.tsx");
+        nsh_testing::compile_tsx(entry, &ui_sets()).expect("App.tsx builds")
+    })
+    .clone()
+}
+
+/// The app (`App.tsx`) on a Linux desktop, opening `pending`. The editor is a desktop app, and
+/// Headless shows a window only on a desktop OS.
+pub fn engine(pending: nsh_app_editor::Pending) -> Headless {
     isolate_home();
-    let mut config =
-        EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ..EngineConfig::new(nsh_app_editor::root_with(launch)) };
+    let app = bundle();
+    // One engine starts at a time, so that each takes its own launch.
+    static STARTING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _one = STARTING.lock().unwrap_or_else(|e| e.into_inner());
+    nsh_app_editor::launch_next(pending);
+    let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ui_sets: ui_sets(), ..EngineConfig::new(app) };
     config.environment.os = Os::Linux;
-    Headless::start(config).unwrap()
+    let mut ui = Headless::start(config).unwrap();
+    let start = std::time::Instant::now();
+    while !nsh_app_editor::launch_taken() {
+        assert!(start.elapsed() < std::time::Duration::from_secs(10), "App.tsx never made its Workspace");
+        ui.wait(std::time::Duration::from_millis(5)).unwrap();
+    }
+    ui
+}
+
+/// The app with `launch`.
+pub fn start_with(launch: nsh_app_editor::Launch) -> Headless {
+    engine(nsh_app_editor::Pending { launch, config_file: None, on_session: None })
 }
 
 /// The app with `files` open, in their folder as the project, with `config` (or the tests'
@@ -105,8 +135,6 @@ pub fn type_text(app: &mut Headless, text: &str) {
 
 // Probes: the flows tests read and change the app's state on the engine thread.
 
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use nsh_app_editor::Session;
@@ -117,56 +145,24 @@ use nsh_core::prelude::*;
 /// Work for the engine thread: a closure that gets the app's session.
 pub type Job = Box<dyn FnOnce(Session) + Send>;
 
-type JobRx = tokio::sync::mpsc::UnboundedReceiver<Job>;
-
-/// A launch waiting for its `Probed` root: its id, what it opens, and its probe jobs.
-type Waiting = (u64, nsh_app_editor::Launch, JobRx);
-
-/// Launches that a `Probed` root takes when it starts, by id.
-static LAUNCHES: Mutex<Vec<Waiting>> = Mutex::new(Vec::new());
-
-/// The props of `Probed`: which launch to take.
-#[derive(Clone, PartialEq, Props)]
-pub struct ProbedProps {
-    pub id: u64,
-}
-
-/// The editor's window, as `nsh_app_editor::App` makes it (`app_for` and `window`), with a task
-/// that runs probe jobs on the engine thread.
-#[component]
-pub fn Probed(props: ProbedProps) -> impl IntoElement {
-    let (launch, mut jobs) = {
-        let mut all = LAUNCHES.lock().unwrap();
-        let at = all.iter().position(|(id, ..)| *id == props.id).expect("a launch for this probe");
-        let (_, l, rx) = all.remove(at);
-        (l, rx)
-    };
-    let s = Session::new(nsh_app_editor::app_for(&launch));
-    spawn(async move {
-        while let Some(job) = jobs.recv().await {
-            job(s);
-        }
-    });
-    nsh_app_editor::window(s)
-}
-
 /// The app under test and a probe into its state.
 pub struct Flow {
     pub ui: Headless,
     jobs: tokio::sync::mpsc::UnboundedSender<Job>,
 }
 
-/// The app with `launch`, probed. The editor's window on a Linux desktop, as `start_with`.
+/// The app with `launch`, probed: a task on the engine thread runs the probe's jobs with the
+/// session.
 pub fn flow_with(launch: nsh_app_editor::Launch) -> Flow {
-    isolate_home();
-    static NEXT: AtomicU64 = AtomicU64::new(1);
-    let id = NEXT.fetch_add(1, Ordering::SeqCst);
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    LAUNCHES.lock().unwrap().push((id, launch, rx));
-    let root = nsh_core::element::Root::new::<Probed>(move || ProbedProps { id }).app_id("dev.editor.app");
-    let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ..EngineConfig::new(root) };
-    config.environment.os = Os::Linux;
-    let ui = Headless::start(config).unwrap();
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Job>();
+    let on_session = Box::new(move |s: Session| {
+        spawn(async move {
+            while let Some(job) = rx.recv().await {
+                job(s);
+            }
+        });
+    });
+    let ui = engine(nsh_app_editor::Pending { launch, config_file: None, on_session: Some(on_session) });
     let mut f = Flow { ui, jobs: tx };
     // Keys go nowhere until the view that takes them has the focus.
     let start = Instant::now();

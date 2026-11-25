@@ -135,6 +135,8 @@ impl Session {
             tx.wake_after(Duration::ZERO);
         }
         self.rev.update(|n| *n += 1);
+        // The TSX screens hear the parts of the app that changed.
+        self.app.with(|a| crate::bridge::deliver(a));
         // NSH takes no activation token from the app. Without one, a Wayland compositor marks
         // the window as wanting attention.
         let raise = self.app.with(|a| a.raise.take());
@@ -241,6 +243,10 @@ impl Session {
     /// Starts the workers. Their events wake a task here that polls the app.
     pub fn start(&self) {
         let (wake_tx, mut wake_rx) = tokio::sync::mpsc::unbounded_channel::<()>();
+        let ui_wake = wake_tx.clone();
+        crate::bridge::set_wake(move || {
+            let _ = ui_wake.send(());
+        });
         let waker: crate::services::Waker = std::sync::Arc::new(move || {
             let _ = wake_tx.send(());
         });
@@ -250,6 +256,8 @@ impl Session {
             while wake_rx.recv().await.is_some() {
                 // Many events can come at once. One poll takes them all.
                 while wake_rx.try_recv().is_ok() {}
+                // What the TSX screens asked for, then what the workers sent.
+                crate::bridge::run_commands(me);
                 me.poll();
             }
         });

@@ -71,7 +71,9 @@ pub fn command(argv: &[String]) -> Command {
 /// The project root and the files to open, with a cursor position when one was given.
 pub fn targets() -> (PathBuf, Vec<(PathBuf, Option<Pos>)>) {
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    // Under `nsh run` the program is NSH's development host, and its arguments are the host's
+    // own (`--dev-server URL --app-id ID`). The editor then opens the folder it runs in.
+    let args: Vec<String> = if std::env::var_os("NSH_DEV_APP_DIR").is_some() { Vec::new() } else { std::env::args().skip(1).collect() };
     targets_in(&cwd, &args)
 }
 

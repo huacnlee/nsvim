@@ -8,16 +8,16 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 #[cfg(target_os = "linux")]
-use nsh_platform_linux as platform;
+use {nsh_linux_app as runner, nsh_platform_linux as platform};
 #[cfg(target_os = "macos")]
-use nsh_platform_macos as platform;
+use {nsh_macos_app as runner, nsh_platform_macos as platform};
 #[cfg(target_os = "windows")]
-use nsh_platform_windows as platform;
+use {nsh_platform_windows as platform, nsh_windows_app as runner};
 
 #[cfg(not(target_arch = "wasm32"))]
 use nsh_app_editor::args::{self, Command};
 #[cfg(not(target_arch = "wasm32"))]
-use nsh_app_editor::{DEFAULT_SIZE, ipc, timing};
+use nsh_app_editor::{ipc, timing};
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 fn main() -> impl std::process::Termination {
@@ -28,16 +28,10 @@ fn main() -> impl std::process::Termination {
         std::process::exit(code);
     }
     timing::mark("arguments and running-editor check");
-    env_logger::init();
-    platform::run_app(
-        platform::AppSource::Rust(nsh_app_editor::root()),
-        platform::AppOptions {
-            title: "nsvim".to_owned(),
-            app_id: "dev.nsvim.app".to_owned(),
-            size: (DEFAULT_SIZE.0 as i32, DEFAULT_SIZE.1 as i32),
-            ..Default::default()
-        },
-    )
+    // The screens are App.tsx, built to `nsh/bundle.nshc` next to this program (`nsh build`, or
+    // `nsh run` in development). The runner reads it and links the app's Rust components.
+    platform::set_ui_sets(vec![nsh_base::registry(), nsh_app_editor::registry()]);
+    runner::main()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -69,8 +63,7 @@ fn without_window() -> Option<i32> {
     ipc::client::open_in_running(&root, &files, wait)
 }
 
-/// On the web, the page mounts `App` from the library (`nsh.json` names it). This program has
-/// nothing to do there.
+/// On the web, the page runs App.tsx with the library. This program has nothing to do there.
 #[cfg(target_arch = "wasm32")]
 fn main() {}
 

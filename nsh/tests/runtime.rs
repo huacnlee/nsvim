@@ -9,8 +9,6 @@ use std::time::Duration;
 use common::{CONFIG, isolate_home, scratch, start, start_with, typ, write};
 use editor::buffer::Pos;
 use nsh_app_editor::{Launch, ipc};
-use nsh_core::platform::Os;
-use nsh_engine::{EngineConfig, Points, Size};
 use nsh_testing::Headless;
 use serde_json::json;
 
@@ -190,12 +188,7 @@ fn start_watching(file: &Path, config: &Path) -> Headless {
         files: vec![file.to_path_buf()],
         first_launch: false,
     };
-    let mut cfg = EngineConfig {
-        viewport: Size::new(Points(1200.0), Points(800.0)),
-        ..EngineConfig::new(nsh_app_editor::root_with_config_file(launch, config.to_path_buf()))
-    };
-    cfg.environment.os = Os::Linux;
-    Headless::start(cfg).unwrap()
+    common::engine(nsh_app_editor::Pending { launch, config_file: Some(config.to_path_buf()), on_session: None })
 }
 
 #[test]
