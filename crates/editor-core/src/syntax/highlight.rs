@@ -8,10 +8,10 @@ use std::ops::Range;
 use std::path::Path;
 
 use streaming_iterator::StreamingIterator;
-use tree_sitter::{Node, Query, QueryCursor};
+use tree_sitter::{Node, Parser, Query, QueryCursor};
 
-use super::langs::{Lang, lang_for};
-use super::with_tree;
+use super::langs::{Lang, lang_for, lang_named};
+use super::{parse_str, with_tree};
 use crate::buffer::Buffer;
 
 /// What a run of text is drawn as.
@@ -47,6 +47,15 @@ pub fn kind(name: &str) -> Kind {
         "property" | "field" => Kind::Property,
         "punctuation" | "operator" | "delimiter" => Kind::Punct,
         "variable" if name == "variable.builtin" => Kind::Keyword,
+        // Markdown: headings, bold, italics, code, links.
+        "text" => match name {
+            "text.title" | "text.strong" => Kind::Keyword,
+            "text.emphasis" => Kind::Type,
+            "text.literal" => Kind::String,
+            "text.reference" => Kind::Function,
+            "text.uri" => Kind::Comment,
+            _ => Kind::Text,
+        },
         _ => Kind::Text,
     }
 }
@@ -71,6 +80,7 @@ fn source(lang: Lang) -> String {
         Lang::Bash => tree_sitter_bash::HIGHLIGHT_QUERY.into(),
         Lang::Json => tree_sitter_json::HIGHLIGHTS_QUERY.into(),
         Lang::Lua => tree_sitter_lua::HIGHLIGHTS_QUERY.into(),
+        Lang::Markdown => tree_sitter_md::HIGHLIGHT_QUERY_BLOCK.into(),
     }
 }
 
@@ -83,6 +93,8 @@ struct Compiled {
 thread_local! {
     /// Compiled queries per language. `None` when a query does not compile.
     static QUERIES: RefCell<HashMap<Lang, Option<std::rc::Rc<Compiled>>>> = RefCell::new(HashMap::new());
+    /// Markdown's inline grammar and its query, for the text of paragraphs and headings.
+    static INLINE: RefCell<Option<Option<(Parser, Compiled)>>> = const { RefCell::new(None) };
 }
 
 fn compiled(lang: Lang) -> Option<std::rc::Rc<Compiled>> {
@@ -128,6 +140,10 @@ pub fn runs(buf: &Buffer, path: Option<&Path>, first: usize, count: usize) -> Ve
                 }
             }
         }
+        if lang == Lang::Markdown {
+            inline_captures(doc.root, rope, a..b, &mut out);
+            code_captures(doc.root, rope, a..b, &mut out);
+        }
         out
     });
     let Some(mut found) = found else { return empty() };
@@ -156,6 +172,91 @@ pub fn runs(buf: &Buffer, path: Option<&Path>, first: usize, count: usize) -> Ve
         out.push(runs_of_paint(&paint));
     }
     out
+}
+
+/// The nodes of `kind` under `root` that touch `range`. It does not look inside them.
+fn nodes_of<'t>(root: Node<'t>, kind: &str, range: &Range<usize>) -> Vec<Node<'t>> {
+    let mut nodes = Vec::new();
+    let mut stack = vec![root];
+    while let Some(n) = stack.pop() {
+        if n.end_byte() <= range.start || n.start_byte() >= range.end {
+            continue;
+        }
+        if n.kind() == kind {
+            nodes.push(n);
+            continue;
+        }
+        let mut c = n.walk();
+        stack.extend(n.children(&mut c));
+    }
+    nodes
+}
+
+/// The colours of the code in Markdown's fenced code blocks, in the language after the fence.
+/// Blocks in other languages, or with none, keep the code block's colour.
+fn code_captures(root: Node, rope: &ropey::Rope, range: Range<usize>, out: &mut Vec<(Range<usize>, usize, Kind)>) {
+    for block in nodes_of(root, "fenced_code_block", &range) {
+        let mut c = block.walk();
+        let kids: Vec<Node> = block.children(&mut c).collect();
+        let info = kids.iter().find(|n| n.kind() == "info_string").and_then(|n| n.child(0));
+        let Some(lang) = info.and_then(|n| lang_named(&rope.byte_slice(n.byte_range()).to_string())) else { continue };
+        let Some(content) = kids.iter().find(|n| n.kind() == "code_fence_content") else { continue };
+        if lang == Lang::Markdown {
+            continue;
+        }
+        let Some(q) = compiled(lang) else { continue };
+        let base = content.start_byte();
+        let text = rope.byte_slice(content.byte_range()).to_string();
+        let Some(tree) = parse_str(lang, &text) else { continue };
+        let mut cursor = QueryCursor::new();
+        let mut matches = cursor.matches(&q.query, tree.root_node(), text.as_bytes());
+        while let Some(m) = matches.next() {
+            for c in m.captures {
+                let r = c.node.byte_range();
+                out.push((base + r.start..base + r.end, m.pattern_index, q.kinds[c.index as usize]));
+            }
+        }
+        // Code the query leaves alone shows as plain text.
+        out.push((content.byte_range(), usize::MAX, Kind::Text));
+    }
+}
+
+/// Markdown's inline captures (bold, italics, code spans, links) in the `inline` nodes of the
+/// block tree that touch `range`. Each node's text is parsed alone with the inline grammar.
+fn inline_captures(root: Node, rope: &ropey::Rope, range: Range<usize>, out: &mut Vec<(Range<usize>, usize, Kind)>) {
+    let nodes = nodes_of(root, "inline", &range);
+    INLINE.with(|inline| {
+        let mut inline = inline.borrow_mut();
+        let Some((parser, q)) = inline
+            .get_or_insert_with(|| {
+                let lang: tree_sitter::Language = tree_sitter_md::INLINE_LANGUAGE.into();
+                let mut parser = Parser::new();
+                parser.set_language(&lang).ok()?;
+                let query = Query::new(&lang, tree_sitter_md::HIGHLIGHT_QUERY_INLINE).ok()?;
+                let kinds = query.capture_names().iter().map(|n| kind(n)).collect();
+                Some((parser, Compiled { query, kinds }))
+            })
+            .as_mut()
+        else {
+            return;
+        };
+        for n in nodes {
+            let base = n.start_byte();
+            let text = rope.byte_slice(n.byte_range()).to_string();
+            let Some(tree) = parser.parse(&text, None) else { continue };
+            let mut cursor = QueryCursor::new();
+            let mut matches = cursor.matches(&q.query, tree.root_node(), text.as_bytes());
+            while let Some(m) = matches.next() {
+                for c in m.captures {
+                    let k = q.kinds[c.index as usize];
+                    if k != Kind::Text {
+                        let r = c.node.byte_range();
+                        out.push((base + r.start..base + r.end, m.pattern_index, k));
+                    }
+                }
+            }
+        }
+    });
 }
 
 /// Joins painted chars into runs.
