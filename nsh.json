@@ -6,5 +6,9 @@
   "nsh": ">=0.7",
   "rust": "nsh",
   "root": "App",
-  "theme": "nsh/theme.json"
+  "theme": "nsh/theme.json",
+  "dependencies": {
+    "nsh-icon": "^0.1.0",
+    "nsh-icon-lucide": "^0.1.0"
+  }
 }
