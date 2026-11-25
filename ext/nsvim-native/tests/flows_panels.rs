@@ -307,7 +307,7 @@ fn the_look_cards_in_a_row_have_one_height() {
     }
 }
 
-/// The terminal step offers `nvim`, `vim` and `vi` aliases, shows the line it adds, and drops it when
+/// The terminal step offers `vim` and `vi` aliases, shows the line it adds, and drops it when
 /// the switch goes off.
 #[test]
 fn the_terminal_step_offers_vim_and_vi_aliases() {
