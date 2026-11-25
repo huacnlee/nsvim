@@ -302,17 +302,19 @@ fn step_mouse(k: Keys, m: &Model) -> View {
 }
 
 fn step_look(k: Keys, m: &Model) -> View {
-    let oma = m.omarchy_name.clone().unwrap_or_else(|| "none found".into());
-    let omarchy_desc = format!("Follows the desktop theme. Found: {oma}.");
-    let descs = ["Paper white, dark ink.", "The default. Low glare at night.", "Light or dark with your OS.", omarchy_desc.as_str()];
-    let titles = ["Light", "Dark", "System", "Omarchy"];
+    // On Omarchy, System follows the desktop theme. Elsewhere it follows the OS.
+    let system_desc = match &m.omarchy_name {
+        Some(name) => format!("Follows the Omarchy theme, now {name}."),
+        None => "Light or dark with your OS.".to_string(),
+    };
+    let descs = ["Paper white, dark ink.", "The default. Low glare at night.", system_desc.as_str()];
+    let titles = ["Light", "Dark", "System"];
     // The cards in a row have the same height, as tall as the tallest.
     let mut cards = view().flex_row().gap(px(12.0)).flex_wrap().items_stretch();
     for (i, id) in LOOKS.iter().enumerate() {
         let on = m.cfg.theme.mode == *id;
         let comment = match *id {
-            "system" => "follows the OS".to_string(),
-            "omarchy" => oma.clone(),
+            "system" => m.omarchy_name.clone().unwrap_or_else(|| "follows the OS".into()),
             other => other.to_string(),
         };
         let lp = m.looks.get(i).copied().unwrap_or_else(|| crate::theme::builtin("dark"));
@@ -547,8 +549,8 @@ fn step_ready(k: Keys, m: &Model) -> View {
         ("mouse", if cfg.mouse.enabled { "on".into() } else { "keyboard only".into() }),
         (
             "theme",
-            if cfg.theme.mode == "omarchy" {
-                format!("Omarchy ({} right now)", m.omarchy_name.clone().unwrap_or_default())
+            if let Some(name) = m.omarchy_name.clone().filter(|_| matches!(cfg.theme.mode.as_str(), "system" | "omarchy")) {
+                format!("Omarchy ({name} right now)")
             } else {
                 cfg.theme.mode.clone()
             },

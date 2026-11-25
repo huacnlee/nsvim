@@ -19,7 +19,8 @@ const DESKTOP: &str = include_str!("../../../assets/editor.desktop");
 const ICON: &str = include_str!("../../../assets/editor.svg");
 pub const FONTS: &[&str] = &["JetBrains Mono", "IBM Plex Mono", "Fira Code"];
 pub const SIZES: &[f32] = &[12.0, 13.0, 14.0, 16.0];
-pub const LOOKS: &[&str] = &["light", "dark", "system", "omarchy"];
+/// The looks setup offers. System follows the Omarchy theme where there is one.
+pub const LOOKS: &[&str] = &["light", "dark", "system"];
 
 pub struct Setup {
     pub step: usize,
@@ -64,7 +65,7 @@ impl Setup {
         let mut cfg = Config::default();
         // On Omarchy, the look follows the desktop theme unless the user picks another.
         if omarchy.is_some() {
-            cfg.theme.mode = "omarchy".into();
+            cfg.theme.mode = "system".into();
         }
         Setup {
             step: 1,
@@ -519,11 +520,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_look_starts_on_omarchy_when_omarchy_is_found() {
+    fn the_look_starts_on_system_when_omarchy_is_found() {
         assert_eq!(Setup::new(None).cfg.theme.mode, Config::default().theme.mode);
         let o = Omarchy { name: "adventure".into(), palette: crate::theme::builtin("dark"), dir: "/themes/adventure".into() };
         let s = Setup::new(Some(&o));
-        assert_eq!(s.cfg.theme.mode, "omarchy");
+        assert_eq!(s.cfg.theme.mode, "system", "System follows Omarchy");
         assert_eq!(s.omarchy_name.as_deref(), Some("adventure"));
     }
 

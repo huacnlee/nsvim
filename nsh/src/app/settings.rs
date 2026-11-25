@@ -88,13 +88,15 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
             out.push(Item::Head("-- theme"));
             out.push(seg(
                 "theme",
-                "System follows your OS. Omarchy follows the desktop theme.",
+                "System follows your OS, or the desktop theme on Omarchy.",
                 &cfg.theme.mode,
                 &[("light", "light"), ("dark", "dark"), ("system", "system"), ("omarchy", "omarchy")],
             ));
             let mode = cfg.theme.mode.as_str();
             let themes = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-            if mode == "dark" || mode == "system" {
+            // On Omarchy, System uses the desktop theme, so its dark and light themes do not apply.
+            let os_themes = mode == "system" && omarchy.is_none();
+            if mode == "dark" || os_themes {
                 let desc = if mode == "system" { "Used when the OS is dark" } else { "Used in dark mode" };
                 out.push(Item::Row {
                     key: "theme.dark",
@@ -102,7 +104,7 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
                     ctl: Ctl::Themes { opts: themes(theme::DARK_THEMES), cur: cfg.theme.dark.clone() },
                 });
             }
-            if mode == "light" || mode == "system" {
+            if mode == "light" || os_themes {
                 let desc = if mode == "system" { "Used when the OS is light" } else { "Used in light mode" };
                 out.push(Item::Row {
                     key: "theme.light",
@@ -111,7 +113,14 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
                 });
             }
             if mode == "system" {
-                out.push(info("system.now", "What the OS asks for right now", if system_dark { "dark".into() } else { "light".into() }));
+                match omarchy {
+                    Some(o) => out.push(info("system.now", "Follows the Omarchy theme", o.name.clone())),
+                    None => out.push(info(
+                        "system.now",
+                        "What the OS asks for right now",
+                        if system_dark { "dark".into() } else { "light".into() },
+                    )),
+                }
             }
             if mode == "omarchy" {
                 match omarchy {
@@ -412,5 +421,22 @@ mod tests {
         assert_eq!(echo(&cfg, "font.size"), "font.size = 24.0");
         pick(&mut cfg, "theme", "omarchy");
         assert_eq!(echo(&cfg, "theme"), "theme.mode = \"omarchy\"");
+    }
+
+    #[test]
+    fn system_on_omarchy_names_the_desktop_theme_and_hides_the_os_themes() {
+        let mut cfg = Config::default();
+        cfg.theme.mode = "system".into();
+        let keys = |o: Option<&Omarchy>| -> Vec<&str> {
+            items(Section::Appearance, &cfg, o, true)
+                .iter()
+                .filter_map(|i| if let Item::Row { key, .. } = i { Some(*key) } else { None })
+                .collect()
+        };
+        let o = Omarchy { name: "adventure".into(), palette: theme::builtin("dark"), dir: "/themes/adventure".into() };
+        let on = keys(Some(&o));
+        assert!(on.contains(&"system.now") && !on.contains(&"theme.dark") && !on.contains(&"theme.light"), "{on:?}");
+        let off = keys(None);
+        assert!(off.contains(&"theme.dark") && off.contains(&"theme.light"), "{off:?}");
     }
 }
