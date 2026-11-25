@@ -29,6 +29,11 @@ fn wait_files(app: &mut Headless, n: usize) -> Result<(), String> {
     app.wait_until("the project index", WAIT, |sc| sc.texts().iter().any(|t| t.ends_with(&format!("/ {n}"))))
 }
 
+/// The file the status line names.
+fn status_file(s: &nsh_testing::Screen) -> Option<String> {
+    s.accessibility(Some("id:file")).ok().flatten().map(|n| n.name)
+}
+
 #[test]
 fn the_finder_filters_by_the_query_and_enter_opens_the_pick() -> Result<(), String> {
     let dir = scratch();
@@ -54,7 +59,7 @@ fn the_finder_filters_by_the_query_and_enter_opens_the_pick() -> Result<(), Stri
     typ(&mut app, &["enter"]);
     app.wait_for_gone("id:picker", WAIT)?;
     app.wait_for("text:/found me/")?;
-    app.wait_until("the file opens", WAIT, |sc| sc.shows("src/needle.txt") && !sc.shows("main.rs"))?;
+    app.wait_until("the file opens", WAIT, |sc| status_file(sc).as_deref() == Some("src/needle.txt"))?;
     Ok(())
 }
 
@@ -134,7 +139,7 @@ fn the_buffer_picker_switches_to_the_picked_buffer() -> Result<(), String> {
     typ(&mut app, &["enter"]);
     app.wait_for_gone("id:picker", WAIT)?;
     app.wait_for("text:/alpha/")?;
-    app.wait_until("a.txt is active", WAIT, |sc| sc.shows("a.txt") && !sc.shows("b.txt"))?;
+    app.wait_until("a.txt is active", WAIT, |sc| status_file(sc).as_deref() == Some("a.txt"))?;
     Ok(())
 }
 
