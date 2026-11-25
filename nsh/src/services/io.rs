@@ -26,6 +26,14 @@ pub fn swap_file(path: &Path) -> PathBuf {
     crate::config::state_dir().join("swap").join(format!("{:016x}.json", key(path)))
 }
 
+/// Writes the swap file of `path` now. The worker calls it, and the app calls it once on the
+/// way out, for edits the user chose to leave unsaved.
+pub fn write_swap(path: PathBuf, text: String) {
+    if let Ok(json) = serde_json::to_vec(&Swap { path: path.clone(), text }) {
+        let _ = write_atomic(&swap_file(&path), &json);
+    }
+}
+
 fn key(path: &Path) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -127,11 +135,7 @@ pub fn start(out: Out) -> Sender<Job> {
                             let _ = write_atomic(&undo_file(&path), &json);
                         }
                     }
-                    Job::Swap { path, text } => {
-                        if let Ok(json) = serde_json::to_vec(&Swap { path: path.clone(), text }) {
-                            let _ = write_atomic(&swap_file(&path), &json);
-                        }
-                    }
+                    Job::Swap { path, text } => write_swap(path, text),
                     Job::Unswap { path } => {
                         let _ = std::fs::remove_file(swap_file(&path));
                     }

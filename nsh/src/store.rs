@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use editor::editor::KeyInput;
 use nsh_core::desktop::WindowAttributes;
-use nsh_core::element::desktop::current_window;
+use nsh_core::element::desktop::{WindowRef, current_window, quit};
 use nsh_core::prelude::*;
 
 use crate::app::App;
@@ -41,6 +41,8 @@ pub struct Session {
     started: Stored<Instant>,
     /// What the press of a drag selects by (`Drag::data`).
     drag_data: Stored<f32>,
+    /// The editor's window, once its content is made (`attach`).
+    win: Stored<Option<WindowRef>>,
     /// What the text area shows.
     pub frame: Memo<Frame>,
     /// The code font, from config.toml.
@@ -66,7 +68,7 @@ impl Session {
             let rows = grid.with(|g| g.rows);
             app.with(|a| model::frame(&a.ed, rows))
         });
-        Session { app, rev, grid, started: stored(Instant::now()), drag_data: stored(0.0), frame, font }
+        Session { app, rev, grid, started: stored(Instant::now()), drag_data: stored(0.0), win: stored(None), frame, font }
     }
 
     /// A memo of the part of the app a view shows. It runs again after each update, and its
@@ -102,9 +104,13 @@ impl Session {
     pub fn update_with<R>(&self, mut tx: Tx, f: impl FnOnce(&mut App, &mut Tx) -> R) -> R {
         let out = self.app.with(|a| f(a, &mut tx));
         self.rev.update(|n| *n += 1);
+        // NSH takes no activation token from the app. Without one, a Wayland compositor marks
+        // the window as wanting attention.
         let raise = self.app.with(|a| a.raise.take());
         if raise.is_some() {
-            current_window().focus();
+            let win = self.window();
+            win.focus();
+            win.request_attention(false);
         }
         for e in tx.effects {
             self.run(e);
@@ -112,17 +118,55 @@ impl Session {
         out
     }
 
+    /// Keeps the editor's window, for the title, raise and quit. Call it in the window's
+    /// content, where `current_window()` is that window. Its size and place go into the
+    /// session as they change.
+    pub fn attach(&self, win: WindowRef) {
+        let me = *self;
+        win.on_bounds_change(move |_| me.window_moved());
+        self.win.with(|w| *w = Some(win));
+        self.window_moved();
+    }
+
+    /// The editor's window, or the app's when the content is not made yet.
+    fn window(&self) -> WindowRef {
+        self.win.with(|w| w.clone()).unwrap_or_else(current_window)
+    }
+
+    /// Keeps the window's size and place for `window.toml`.
+    fn window_moved(&self) {
+        let Some(st) = untracked(|| self.window().state()) else { return };
+        let frame = crate::app::session::WindowFrame {
+            w: st.content_bounds.size.width.0,
+            h: st.content_bounds.size.height.0,
+            x: Some(st.bounds.origin.x.0.round() as i32),
+            y: Some(st.bounds.origin.y.0.round() as i32),
+        };
+        self.app.with(|a| a.window = frame);
+    }
+
+    /// The user pressed the window's close button, or asked to quit. The app decides: it
+    /// quits, or warns about unsaved edits first.
+    pub fn close_requested(&self) {
+        let clock = self.clock();
+        self.update(|a, tx| {
+            a.clock = clock;
+            a.close_requested(tx)
+        });
+    }
+
     fn run(&self, effect: Effect) {
         let me = *self;
         match effect {
             Effect::Quit => {
-                me.update(|a, _| crate::app::session::save(a));
-                current_window().close();
+                // The app wrote the session already (`App::exit`).
+                me.window().close();
+                quit();
             }
             Effect::SetTitle(title) => {
                 let mut attrs = WindowAttributes::default();
                 attrs.title = Some(title);
-                current_window().set(attrs);
+                me.window().set(attrs);
             }
             Effect::Copy(text) => drop(set_clipboard(text)),
             Effect::ReadClipboard(then) => {

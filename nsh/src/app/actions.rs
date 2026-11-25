@@ -427,7 +427,8 @@ impl App {
         let text = self.cfg.to_toml();
         self.disk_cfg = self.cfg.clone();
         if let Some(svc) = &self.svc {
-            svc.write(WriteKind::Config, crate::config::config_path(), text);
+            let path = self.config_file.clone().unwrap_or_else(crate::config::config_path);
+            svc.write(WriteKind::Config, path, text);
         }
     }
 }

@@ -1,18 +1,27 @@
 //! The control socket: a listener thread, a thread per connection, and each request handed to
 //! the UI thread as an [`Event::Ipc`] with a channel for its reply. Also runs `:!` commands.
 
-use std::io::{BufRead, BufReader, Read, Write};
+#[cfg(unix)]
+use std::io::{BufRead, BufReader};
+use std::io::{Read, Write};
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::channel;
 
-use super::{Event, Out};
+#[cfg(unix)]
+use super::Event;
+use super::Out;
+#[cfg(unix)]
 use crate::ipc::{Request, Response};
+#[cfg(unix)]
+use std::sync::mpsc::channel;
 
 /// Binds the project's socket and serves it. `None` when another editor already serves this
 /// project, or the socket cannot be made.
+#[cfg(unix)]
 pub fn start(root: &Path, out: Out) -> Option<PathBuf> {
     let path = crate::ipc::socket_for(root);
     let dir = path.parent()?;
@@ -38,7 +47,14 @@ pub fn start(root: &Path, out: Out) -> Option<PathBuf> {
     Some(path)
 }
 
+/// Serves no socket: the system has no Unix sockets.
+#[cfg(not(unix))]
+pub fn start(_root: &Path, _out: Out) -> Option<PathBuf> {
+    None
+}
+
 /// One connection: a request per line, each answered before the next is read.
+#[cfg(unix)]
 fn serve(stream: UnixStream, out: Out) {
     let Ok(mut writer) = stream.try_clone() else { return };
     let reader = BufReader::new(stream);
@@ -64,7 +80,15 @@ fn serve(stream: UnixStream, out: Out) {
     }
 }
 
-/// Runs `cmd` through `sh -c` in `cwd` with `input` on its stdin, off the UI thread.
+/// The shell that runs `:!` commands and filters: `sh -c`, or `cmd /C` on Windows.
+fn shell(cmd: &str) -> Command {
+    let (sh, flag) = if cfg!(windows) { ("cmd", "/C") } else { ("sh", "-c") };
+    let mut c = Command::new(sh);
+    c.arg(flag).arg(cmd);
+    c
+}
+
+/// Runs `cmd` through the shell in `cwd` with `input` on its stdin, off the UI thread.
 pub fn run_shell(
     cmd: String,
     cwd: PathBuf,
@@ -72,9 +96,7 @@ pub fn run_shell(
     done: impl FnOnce(Result<(i32, String, String), String>) + Send + 'static,
 ) {
     std::thread::spawn(move || {
-        let child = Command::new("sh")
-            .arg("-c")
-            .arg(&cmd)
+        let child = shell(&cmd)
             .current_dir(&cwd)
             .stdin(if input.is_some() { Stdio::piped() } else { Stdio::null() })
             .stdout(Stdio::piped())
@@ -107,6 +129,7 @@ pub fn run_shell(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn a_shell_filter_sees_its_input() {
@@ -120,7 +143,7 @@ mod tests {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod socket_tests {
     use super::*;
     use std::sync::Arc;
