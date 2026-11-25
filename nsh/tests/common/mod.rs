@@ -28,6 +28,9 @@ pub fn isolate_home() {
         unsafe {
             std::env::set_var("XDG_STATE_HOME", base.join("state"));
             std::env::set_var("XDG_CONFIG_HOME", base.join("config"));
+            // Setup's terminal steps write to HOME and read SHELL. Keep them in the scratch folder.
+            std::env::set_var("HOME", base.join("home"));
+            std::env::set_var("SHELL", "/bin/sh");
         }
     });
 }
