@@ -44,6 +44,7 @@ impl App {
                 }
                 Action::Reload => self.reload_active(),
                 Action::FindFile => self.open_picker(PickKind::Files),
+                Action::OpenProject => self.open_picker(PickKind::Projects),
                 Action::GrepProject => self.open_picker(PickKind::Grep),
                 Action::PickBuffer => self.open_picker(PickKind::Buffers),
                 Action::Palette => self.open_picker(PickKind::Commands),

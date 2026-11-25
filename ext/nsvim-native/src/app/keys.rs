@@ -9,6 +9,7 @@ use super::{App, Overlay, Screen};
 /// The leader menu's entries: key, label, and whether it opens a group.
 pub const LEADER: &[(char, &str, bool)] = &[
     ('f', "Find file…", false),
+    ('p', "Open project…", false),
     ('e', "File tree", false),
     ('/', "Grep project…", false),
     ('b', "Buffers…", false),
@@ -49,6 +50,7 @@ pub fn classic_window_key(k: &KeyInput) -> Option<Action> {
         KeyCode::Char('p') if k.shift => Action::Palette,
         KeyCode::Char('e') if k.shift => Action::FocusTree,
         KeyCode::Char('p') => Action::FindFile,
+        KeyCode::Char('o') => Action::OpenProject,
         KeyCode::Char('f') if k.shift => Action::GrepProject,
         KeyCode::Char('b') => Action::ToggleTree,
         KeyCode::Char(',') => Action::Settings,
@@ -177,6 +179,7 @@ impl App {
         let KeyCode::Char(c) = k.code else { return };
         let actions = match (group, c) {
             (None, 'f') => vec![Action::FindFile],
+            (None, 'p') => vec![Action::OpenProject],
             (None, 'e') => {
                 // Show and focus the tree; from the tree, hide it again.
                 if self.tree.show && self.tree.focus {

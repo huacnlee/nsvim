@@ -335,6 +335,7 @@ fn empty_state(s: Session) -> impl IntoElement {
             let l = if a.ed.vim.leader == ' ' { "SPC" } else { "\\" };
             vec![
                 ("find a file", format!("{l} f")),
+                ("open a project", format!("{l} p")),
                 ("search the project", format!("{l} /")),
                 ("every key", l.to_string()),
                 ("settings", ":Settings".into()),
@@ -343,6 +344,7 @@ fn empty_state(s: Session) -> impl IntoElement {
             let m = if cfg!(target_os = "macos") { "⌘" } else { "Ctrl" };
             vec![
                 ("find a file", format!("{m} P")),
+                ("open a project", format!("{m} O")),
                 ("search the project", format!("{m} ⇧ F")),
                 ("commands", format!("{m} ⇧ P")),
                 ("settings", format!("{m} ,")),

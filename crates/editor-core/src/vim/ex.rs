@@ -120,6 +120,7 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
         "Settings" | "settings" => out.push(Action::Settings),
         "Keys" | "keys" | "h" | "help" => out.push(Action::KeyList(args.trim().to_string())),
         "Find" | "find" | "Files" => out.push(Action::FindFile),
+        "Projects" | "Project" | "Open" => out.push(Action::OpenProject),
         "Grep" | "grep" | "rg" => out.push(Action::GrepProject),
         "Explore" | "Ex" | "Tree" => out.push(Action::ToggleTree),
         "Rename" | "rename" => {

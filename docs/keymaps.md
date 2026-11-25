@@ -25,6 +25,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | Keys | Does |
 | --- | --- |
 | `SPC f` | Find a file |
+| `SPC p` | Open a project: a recent one, or a folder from the system's dialog. See [Open a project](#open-a-project) |
 | `SPC /` | Search the project with ripgrep |
 | `SPC b` | Pick an open buffer |
 | `SPC e` | Show and focus the file tree. From the tree, hide it |
@@ -398,6 +399,7 @@ A command takes a range when the table shows one. The next section explains rang
 | `:ls`, `:buffers`, `:files`, `:b`, `:buffer` | Pick an open buffer |
 | `:b N`, `:b name` | Go to buffer `N`, counted from 1, or to the one buffer whose path holds `name` |
 | `:Find`, `:find`, `:Files` | Find a file |
+| `:Projects`, `:Project`, `:Open` | Open a project |
 | `:Grep`, `:grep`, `:rg` | Search the project |
 | `:Explore`, `:Ex`, `:Tree` | Show or hide the file tree |
 | `:Settings`, `:settings` | Open Settings |
@@ -520,6 +522,7 @@ classic keymap.
 | --- | --- |
 | `Ctrl S` | Save |
 | `Ctrl P` | Go to file |
+| `Ctrl O` | Open a project |
 | `Ctrl ⇧ P` | Command palette |
 | `Ctrl F` | Find in the file |
 | `Ctrl Alt F` | Replace in the file |
@@ -652,6 +655,7 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 | --- | --- |
 | `Find file…` | Find a file |
 | `Find in project…` | Search the project |
+| `Open project…` | Open a project |
 | `Save`, `Save all` | Write the buffer, every modified buffer |
 | `Toggle file tree` | Show or hide the file tree |
 | `Open settings…` | Open Settings |
@@ -790,3 +794,15 @@ Turn the mouse on or off in setup, in Settings or with `:set mouse`. When it is 
 
 `mouse.click`, `mouse.drag` and `mouse.double_click` in `config.toml` turn each of these off
 on its own.
+
+## Open a project
+
+You can start nsvim first and pick the project after. `SPC p` (`Ctrl O` in the classic
+keymap, `⌘ O` on macOS, `:Projects`, or `Open project…` in the palette) lists:
+
+- `Open folder…`: the system's folder dialog.
+- The recent projects, newest first. A project is recent once nsvim has closed in it.
+
+Type to filter, `Enter` opens. The project opens as `nvim <folder>` does: in the window
+already running for it, or in a new one. A window with no file open closes and gives its
+place to the new one. A window with files open stays.

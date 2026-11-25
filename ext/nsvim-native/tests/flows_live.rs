@@ -172,13 +172,18 @@ fn every_leader_menu_key_does_what_it_says() {
     f.settle("SPC a p shows the proposal", |a| active_ends_with(a, "main.c") && a.proposal_here().is_some());
     f.keys("n");
 
+    // SPC p lists the projects to open.
+    f.keys(" p");
+    f.settle("SPC p opens the project list", |a| picking(a, PickKind::Projects));
+    f.keys("\x1b");
+
     // SPC q closes the buffer.
     assert!(f.check(|a| a.ed.docs.len() == 2), "two buffers open");
     f.keys(" q");
     f.settle("SPC q closes the buffer", |a| a.ed.docs.len() == 1);
 
     // A key added to the menu must be added here too.
-    let tested = ["f", "b", "/", "e", ",", "?", "d", "gn", "gp", "gs", "ld", "lr", "lh", "ln", "la", "w", "al", "ac", "ap", "an", "q"];
+    let tested = ["f", "p", "b", "/", "e", ",", "?", "d", "gn", "gp", "gs", "ld", "lr", "lh", "ln", "la", "w", "al", "ac", "ap", "an", "q"];
     use nsvim_native::app::keys::{LEADER, LEADER_AGENT, LEADER_GIT, LEADER_LSP};
     let shown = LEADER.iter().filter(|(_, _, group)| !group).map(|(c, _, _)| c.to_string());
     let groups = [('g', LEADER_GIT), ('l', LEADER_LSP), ('a', LEADER_AGENT)];
@@ -218,6 +223,7 @@ fn every_palette_command_does_what_it_says() {
     let t = &mut tested;
     run_check(&mut f, t, "find", "find opens the finder", |a| picking(a, PickKind::Files));
     run_check(&mut f, t, "grep", "grep opens project search", |a| picking(a, PickKind::Grep));
+    run_check(&mut f, t, "project", "project lists the projects", |a| picking(a, PickKind::Projects));
     f.keys("x");
     run_check(&mut f, t, "save", "save writes the file", |a| !a.ed.buf().is_dirty());
     f.keys("x");
