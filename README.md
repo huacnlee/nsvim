@@ -125,4 +125,15 @@ Read [AGENTS.md](AGENTS.md) and [nsh/README.md](nsh/README.md) before you change
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright the editor authors and Jason Lee.
+nsvim is released under the MIT license. See [LICENSE](LICENSE).
+
+nsvim is based on [editor](https://github.com/bjarneo/editor), the original work of
+[Bjarne Oeverli](https://github.com/bjarneo) and its contributors, also under the MIT license.
+Their copyright notice stays in [LICENSE](LICENSE), as the license asks. The editing core, the
+keymaps, the tree-sitter support, the agent socket and much of the design come from their work.
+Thank you to them.
+
+- Copyright (c) 2026 The editor authors: the original work.
+- Copyright (c) 2026 Jason Lee and the nsvim contributors: the changes in nsvim.
+
+If you copy or change nsvim, keep both copyright lines and the license text.
