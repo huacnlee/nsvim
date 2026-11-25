@@ -15,7 +15,6 @@ pub mod setup_view;
 pub mod style;
 pub mod tabs;
 pub mod text_area;
-pub mod tree_view;
 
 use nsh_core::prelude::*;
 
@@ -43,7 +42,6 @@ pub fn shell(s: Session, keys: ElementRef) -> impl IntoElement {
 /// line and the command line, with the overlays over them.
 fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
     let on_settings = s.view(|a| a.on_settings);
-    let tree_shows = s.view(|a| a.tree.show && !a.on_settings);
     view()
         .flex_1()
         .bg(move || color("background"))
@@ -53,7 +51,6 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
                 .flex_row()
                 .flex_1()
                 .min_h(px(0.0))
-                .child(when(tree_shows, move || tree_view::tree(s, keys)))
                 .child(when(on_settings, move || settings_view::settings(s, keys)).otherwise(move || text_area::text_area(s, keys))),
         )
         .child(chrome::status_line(s))
