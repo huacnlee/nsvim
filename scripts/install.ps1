@@ -2,7 +2,9 @@
 [CmdletBinding()]
 param(
     [string]$Version = $(if ($env:NSVIM_VERSION) { $env:NSVIM_VERSION } else { 'latest' }),
-    [string]$InstallDir = $(if ($env:NSVIM_INSTALL_DIR) { $env:NSVIM_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\nsvim' })
+    [string]$InstallDir = $(if ($env:NSVIM_INSTALL_DIR) { $env:NSVIM_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\nsvim' }),
+    # Leave the user PATH as it is. Then terminals and agents run nsvim.exe by its full path.
+    [switch]$NoModifyPath = $($env:NSVIM_NO_MODIFY_PATH -eq '1')
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -75,7 +77,18 @@ try {
     $shortcut.IconLocation = if (Test-Path -LiteralPath $icon -PathType Leaf) { "$icon,0" } else { "$InstallDir\nsvim.exe,0" }
     $shortcut.Save()
     Write-Host "Installed $InstallDir. Open nsvim from the Start menu."
-    Write-Host "The program is $(Join-Path $InstallDir 'nsvim.exe')."
+    # Put the folder on the user PATH, so terminals, TUIs and AI agents can run nsvim.
+    if ($NoModifyPath) {
+        Write-Host "The program is $(Join-Path $InstallDir 'nsvim.exe')."
+    } else {
+        $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+        $entries = @($userPath -split ';' | Where-Object { $_ })
+        if ($entries -notcontains $InstallDir) {
+            [Environment]::SetEnvironmentVariable('Path', (@($entries) + $InstallDir) -join ';', 'User')
+        }
+        if (($env:Path -split ';') -notcontains $InstallDir) { $env:Path = "$env:Path;$InstallDir" }
+        Write-Host 'Run nsvim from a terminal. Open a new terminal first.'
+    }
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $staged -Recurse -Force -ErrorAction SilentlyContinue
