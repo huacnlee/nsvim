@@ -1,0 +1,1194 @@
+@import "@fontsource-variable/archivo/standard.css";
+@import "@fontsource-variable/jetbrains-mono/index.css";
+
+/* nsvim's own palette: the default dark theme, and the four mode colours as functional coding. */
+:root {
+  --ink: #0e1016;
+  --ink-2: #0a0c11;
+  --ink-3: #151925;
+  --rule: #232838;
+  --rule-2: #2e3448;
+  --text: #d6dae4;
+  --text-2: #a3abbd;
+  --text-3: #8b93a6;
+  --normal: #6c9eff;
+  --insert: #a7d46f;
+  --visual: #c39bff;
+  --command: #ffa266;
+  --error: #f2777a;
+  --mode: var(--normal);
+
+  --sans: "Archivo Variable", "Archivo", system-ui, sans-serif;
+  --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+
+  --gutter: clamp(16px, 4vw, 48px);
+  --col-gap: clamp(16px, 2.2vw, 32px);
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 40px;
+  --space-5: 64px;
+  --space-6: 112px;
+  --fade: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+  scrollbar-color: var(--rule-2) var(--ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 100%;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  scroll-padding-top: 72px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  caret-color: var(--normal);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: #2a3150;
+  color: var(--text);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--rule-2);
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+}
+
+a {
+  color: var(--normal);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+a:hover {
+  color: #8db4ff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--normal);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+code,
+kbd,
+pre,
+.mono {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+}
+
+code {
+  font-size: 0.9em;
+  color: var(--text);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.9em;
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--rule-2);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--ink-3);
+  color: var(--text);
+  font-size: 0.82em;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* The mode rule: a 2px line on top of the page in the current mode's colour. */
+.mode-rule {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 30;
+  height: 2px;
+  background: var(--mode);
+  transition: background-color var(--fade);
+}
+
+/* Header strip: the datasheet's identification band. */
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgb(14 16 22 / 0.94);
+  border-bottom: 1px solid var(--rule);
+  backdrop-filter: saturate(140%) blur(10px);
+}
+.strip .wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+}
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  font-stretch: 75%;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+.mark:hover {
+  color: var(--text);
+}
+.mark svg {
+  width: 26px;
+  height: 26px;
+}
+.meta {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+.meta div {
+  display: flex;
+  gap: 6px;
+}
+.meta dt {
+  color: var(--text-3);
+}
+.meta dd {
+  margin: 0;
+  color: var(--text);
+}
+.nav {
+  display: flex;
+  gap: var(--space-3);
+  margin-left: auto;
+  font-size: 0.9375rem;
+}
+.nav a {
+  color: var(--text-2);
+  text-decoration: none;
+  padding: 6px 0;
+}
+.nav a:hover {
+  color: var(--text);
+}
+.nav .gh {
+  color: var(--text);
+}
+
+/* First viewport. */
+.lead {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  row-gap: var(--space-4);
+  padding-top: clamp(32px, 6vh, 72px);
+  padding-bottom: var(--space-5);
+}
+.lead-copy {
+  grid-column: 1 / span 5;
+  align-self: center;
+  padding-bottom: var(--space-4);
+}
+.lead h1 {
+  margin: 0;
+  font-size: clamp(4rem, 9vw, 6rem);
+  line-height: 0.92;
+  font-weight: 800;
+  font-stretch: 62%;
+  letter-spacing: -0.02em;
+}
+.tagline {
+  margin: var(--space-2) 0 0;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.15;
+  font-weight: 600;
+  font-stretch: 85%;
+  letter-spacing: -0.01em;
+}
+.lede {
+  max-width: none;
+  text-wrap: balance;
+  margin: var(--space-3) 0 0;
+  color: var(--text-2);
+  font-size: 1.125rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-4);
+}
+.download {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 22px 13px;
+  border-radius: 6px;
+  background: var(--normal);
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: background-color var(--fade);
+}
+.download:hover {
+  background: #8db4ff;
+  color: var(--ink-2);
+}
+.download-label {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+}
+.download-file {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  opacity: 0.78;
+}
+.actions .all {
+  font-size: 0.9375rem;
+}
+
+/* Plate 1 and the mode strip. */
+.plate-1 {
+  grid-column: 6 / span 7;
+  margin: 0;
+}
+.frame {
+  position: relative;
+  border: 1px solid var(--rule-2);
+  border-radius: 8px;
+  padding: 14px 14px 0;
+  background: var(--ink-2);
+  box-shadow: 0 30px 80px -40px rgb(0 0 0 / 0.9), 0 2px 6px rgb(0 0 0 / 0.4);
+}
+.frame-title {
+  position: absolute;
+  top: -0.7em;
+  left: 14px;
+  padding: 0 8px;
+  background: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.frame-title b {
+  font-weight: 600;
+  color: var(--mode);
+  transition: color var(--fade);
+}
+.screen {
+  display: grid;
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: var(--ink);
+}
+.modes {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0 -14px;
+  border-top: 1px solid var(--rule);
+}
+.modes button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 0;
+  border-right: 1px solid var(--rule);
+  background: transparent;
+  color: var(--text-3);
+  font: 600 0.78rem var(--mono);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color var(--fade), color var(--fade);
+}
+.modes button:last-child {
+  border-right: 0;
+}
+.modes button:hover {
+  color: var(--text);
+  background: var(--ink-3);
+}
+.modes button kbd {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.modes button[aria-pressed="true"] {
+  background: var(--c);
+  color: var(--ink-2);
+}
+.modes button[aria-pressed="true"] kbd {
+  background: rgb(10 12 17 / 0.16);
+  border-color: rgb(10 12 17 / 0.3);
+  color: var(--ink-2);
+}
+.plate-note {
+  margin: var(--space-2) 0 0;
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
+
+/* Key characteristics: one datasheet row across the page. */
+.keychars {
+  grid-column: 1 / -1;
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--rule-2);
+  border-bottom: 1px solid var(--rule-2);
+}
+.keychars caption {
+  padding: 0 0 var(--space-1);
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-stretch: 75%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.keychars tr {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.keychars td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-right: 1px solid var(--rule);
+  vertical-align: top;
+}
+.keychars td + td {
+  padding-left: var(--space-2);
+}
+.keychars td:last-child {
+  border-right: 0;
+}
+.keychars .v {
+  display: block;
+  font-family: var(--mono);
+  font-size: clamp(1.25rem, 2vw, 1.625rem);
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.keychars .v small {
+  font-size: 0.6em;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-left: 0.25em;
+}
+.keychars .p {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-3);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* Sections: titled-border panels, as in the app. */
+.sheet {
+  position: relative;
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+}
+/* The hairline and its title start at the content edge, inside the gutter. */
+.sheet::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--gutter);
+  right: var(--gutter);
+  border-top: 1px solid var(--rule-2);
+}
+.sheet > h2 {
+  position: absolute;
+  top: -0.78em;
+  left: var(--gutter);
+  margin: 0;
+  padding-right: 14px;
+  background: var(--ink);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  font-weight: 700;
+  font-stretch: 75%;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.intro {
+  max-width: 62ch;
+  margin: 0 0 var(--space-4);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.intro + .intro {
+  margin-top: calc(-1 * var(--space-3));
+}
+.muted {
+  color: var(--text-2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4) var(--col-gap);
+}
+
+/* Figures: a plate with its number and caption, as a datasheet sets them. */
+.fig {
+  margin: 0;
+}
+.fig .shot {
+  border: 1px solid var(--rule-2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--ink-2);
+}
+.fig figcaption {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin-top: 12px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.fig figcaption .n {
+  grid-row: span 2;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.9;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.fig figcaption strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.f-wide {
+  grid-column: 1 / -1;
+}
+.f-8 {
+  grid-column: span 8;
+}
+.f-6 {
+  grid-column: span 6;
+}
+.f-4 {
+  grid-column: span 4;
+}
+.side {
+  grid-column: span 4;
+  align-self: end;
+}
+.side-mid {
+  align-self: center;
+}
+.side p {
+  margin: 0 0 var(--space-2);
+  max-width: 40ch;
+}
+
+/* Datasheet tables. */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}
+table.data th,
+table.data td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+table.data thead th {
+  background: var(--ink-3);
+  border-bottom-color: var(--rule-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-stretch: 75%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+table.data tbody tr:last-child > * {
+  border-bottom: 0;
+}
+table.data tbody th {
+  font-weight: 600;
+  color: var(--text);
+}
+table.data td {
+  color: var(--text-2);
+}
+table.data .num {
+  font-family: var(--mono);
+  text-align: right;
+  color: var(--text);
+  white-space: nowrap;
+}
+table.data .unit {
+  font-family: var(--mono);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+table.data .mono {
+  white-space: nowrap;
+}
+table.data tbody tr:hover > * {
+  background: rgb(21 25 37 / 0.6);
+}
+.note {
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
+  color: var(--text-3);
+}
+
+/* Functional block diagram. */
+.blocks {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) auto minmax(0, 5fr);
+  gap: var(--space-2);
+  align-items: stretch;
+  margin-top: var(--space-4);
+}
+.block {
+  position: relative;
+  padding: 26px 16px 16px;
+  border: 1px solid var(--rule-2);
+  border-radius: 6px;
+}
+.block > .t {
+  position: absolute;
+  top: -0.7em;
+  left: 12px;
+  padding: 0 6px;
+  background: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chain li,
+.units li {
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+.chain .to {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+}
+.units {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bus {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-3);
+  text-align: center;
+}
+.bus span {
+  white-space: nowrap;
+}
+.block p {
+  margin: 14px 0 0;
+  font-size: 0.875rem;
+  color: var(--text-3);
+}
+
+/* Keys: action, Neovim, classic. */
+.keys td:nth-child(2),
+.keys td:nth-child(3) {
+  white-space: nowrap;
+}
+.keys kbd + kbd {
+  margin-left: 4px;
+}
+.lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--col-gap);
+  margin-top: var(--space-4);
+}
+.lists h3 {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-stretch: 85%;
+}
+.lists p {
+  margin: 0;
+  color: var(--text-2);
+  max-width: 58ch;
+}
+
+/* Agent commands. */
+.term {
+  margin: 0 0 var(--space-3);
+  padding: 16px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--ink-2);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: var(--text);
+  overflow-x: auto;
+}
+.term .c {
+  color: var(--text-3);
+}
+.term .p {
+  color: var(--text-3);
+  user-select: none;
+}
+.does {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.does li {
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+  color: var(--text-2);
+}
+.does li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.does strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Themes. */
+.themes-shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--col-gap);
+}
+.swatches {
+  display: inline-flex;
+  gap: 3px;
+  vertical-align: middle;
+}
+.swatches i {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+.themes-table td:first-child {
+  white-space: nowrap;
+}
+
+/* Ordering information. */
+.order .file {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+.order td a {
+  white-space: nowrap;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--col-gap);
+  margin-top: var(--space-4);
+}
+.steps h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-stretch: 85%;
+}
+.steps p {
+  margin: 0 0 10px;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+}
+.steps pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--ink-2);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+/* Revision history and the running footer. */
+.foot {
+  margin-top: var(--space-6);
+  padding-bottom: var(--space-4);
+}
+.colophon {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.colophon a {
+  color: var(--text-2);
+}
+
+/* Narrower screens. */
+@media (max-width: 1100px) {
+  .meta {
+    display: none;
+  }
+  .lead-copy {
+    grid-column: 1 / -1;
+    padding-bottom: 0;
+  }
+  .plate-1 {
+    grid-column: 1 / -1;
+  }
+  .keychars tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .keychars td:nth-child(3) {
+    border-right: 0;
+  }
+  .keychars td:nth-child(n + 4) {
+    border-top: 1px solid var(--rule);
+  }
+  .keychars td:nth-child(4) {
+    padding-left: 0;
+  }
+  .f-8,
+  .side {
+    grid-column: 1 / -1;
+  }
+  .side p {
+    max-width: 62ch;
+  }
+  .steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: 64px;
+  }
+  .nav a:not(.gh):not(.order-link) {
+    display: none;
+  }
+  .lead {
+    padding-top: var(--space-4);
+  }
+  .keychars tr {
+    grid-template-columns: 1fr;
+  }
+  .keychars td,
+  .keychars td + td,
+  .keychars td:nth-child(4) {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    align-items: baseline;
+    gap: 12px;
+    padding: 12px 0;
+    border-right: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .keychars td:first-child {
+    border-top: 0;
+  }
+  .keychars .p {
+    margin-top: 0;
+  }
+  .f-6,
+  .f-4 {
+    grid-column: 1 / -1;
+  }
+  .modes button {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.6875rem;
+  }
+  .blocks {
+    grid-template-columns: 1fr;
+  }
+  .bus {
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+  }
+  .lists,
+  .themes-shots {
+    grid-template-columns: 1fr;
+  }
+  .sheet {
+    margin-top: var(--space-5);
+  }
+  .intro {
+    font-size: 1.125rem;
+  }
+  table.data th,
+  table.data td {
+    padding: 10px 12px;
+  }
+  .term,
+  .steps pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* Datasheet tables stack one row per block on a phone. */
+  table.stack thead {
+    display: none;
+  }
+  table.stack tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.stack tbody tr:last-child {
+    border-bottom: 0;
+  }
+  table.stack tbody tr > * {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  table.stack tbody th {
+    grid-column: 1 / -1;
+  }
+  .chars td:nth-child(2) {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+  }
+  .chars .num::before {
+    content: attr(data-l) " ";
+    font-family: var(--sans);
+    color: var(--text-3);
+  }
+  .chars .num::after {
+    content: " " attr(data-u);
+    color: var(--text-3);
+  }
+  .chars .unit {
+    display: none;
+  }
+  table.stack.chars .num {
+    text-align: left;
+  }
+  table.stack.order tbody th,
+  table.stack.themes-table tbody th {
+    grid-column: auto;
+  }
+  .order .arc {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+  .order .sum {
+    order: 4;
+  }
+  .themes-table .kind {
+    display: none;
+  }
+  .themes-table td:nth-child(3) {
+    text-align: right;
+  }
+  .themes-table .set {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The model of the window on Plate 1. */
+.mock {
+  --m-bg: var(--ink);
+  --m-panel: var(--ink-2);
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  height: 100%;
+  min-height: 0;
+  background: var(--m-bg);
+  font: 400 clamp(8.5px, 0.95vw, 12.5px) / 1.6 var(--mono);
+  color: var(--text);
+  overflow: hidden;
+}
+.m-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--m-panel);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.m-project {
+  flex: 0 0 22%;
+  padding: 0.5em 1em;
+  border-right: 1px solid var(--rule);
+}
+.m-tab {
+  padding: 0.5em 1.2em;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+}
+.m-tab.on {
+  background: var(--m-bg);
+  color: var(--text);
+  border-bottom-color: var(--mode);
+  transition: border-color var(--fade);
+}
+.m-body {
+  display: grid;
+  grid-template-columns: 22% 1fr;
+  min-height: 0;
+}
+.m-tree,
+.m-code {
+  margin: 0;
+  padding: 0.6em 0;
+  list-style: none;
+  overflow: hidden;
+}
+.m-tree {
+  background: var(--m-panel);
+  border-right: 1px solid var(--rule);
+  color: var(--text-2);
+}
+.m-tree li {
+  padding: 0 1em 0 calc(1em + var(--d) * 1.2em);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m-tree li.on {
+  background: var(--ink-3);
+  color: var(--text);
+}
+.m-tree li.git-m {
+  color: var(--command);
+}
+.m-tree li.git-a {
+  color: var(--insert);
+}
+.m-code {
+  counter-reset: row;
+  white-space: pre;
+}
+.m-code li {
+  counter-increment: row;
+  padding-right: 1em;
+}
+.m-code li::before {
+  content: counter(row);
+  display: inline-block;
+  width: 3.2em;
+  padding-right: 1.2em;
+  text-align: right;
+  color: var(--rule-2);
+}
+.m-code li.here::before {
+  color: var(--text-2);
+}
+.m-code .k {
+  color: var(--visual);
+}
+.m-code .t {
+  color: var(--command);
+}
+.m-code .f {
+  color: var(--normal);
+}
+.m-code .c {
+  color: var(--text-3);
+  font-style: italic;
+}
+.mock .cur {
+  background: var(--mode);
+  color: var(--m-bg);
+}
+.mock[data-mode="insert"] .m-code .cur {
+  background: none;
+  color: inherit;
+  box-shadow: inset 2px 0 0 var(--mode);
+}
+.mock[data-mode="visual"] .m-code li.sel {
+  background: rgb(195 155 255 / 0.18);
+}
+.m-status {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  padding: 0.3em 1em 0.3em 0;
+  background: var(--m-panel);
+  border-top: 1px solid var(--rule);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.m-pill {
+  padding: 0.1em 0.9em;
+  background: var(--mode);
+  color: var(--m-bg);
+  font-weight: 700;
+  transition: background-color var(--fade);
+}
+.m-pos {
+  margin-left: auto;
+}
+.m-cmd {
+  display: none;
+  padding: 0.3em 1em;
+  color: var(--text);
+}
+.mock[data-mode="command"] .m-cmd {
+  display: block;
+}
+.mock[data-mode="command"] .m-code .cur {
+  background: none;
+  color: inherit;
+}
+
+/* Feature cards: the main things nsvim does. */
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--col-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.features li {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--rule);
+}
+.features h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+}
+.features p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+}
+@media (max-width: 1100px) {
+  .features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+  .m-tree {
+    display: none;
+  }
+  .m-body {
+    grid-template-columns: 1fr;
+  }
+  .m-project {
+    display: none;
+  }
+}

@@ -6,7 +6,7 @@
 
 **A modal code editor with Vim keys, drawn with the native views of each platform.**
 
-[Install](#install) · [Keys](docs/keymaps.md) · [Configuration](docs/configuration.md) ·
+[Website](https://huacnlee.github.io/nsvim/) · [Install](#install) · [Keys](docs/keymaps.md) · [Configuration](docs/configuration.md) ·
 [AI agents](docs/agents.md) · [How it works](docs/architecture.md)
 
 </div>
