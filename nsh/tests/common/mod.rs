@@ -133,8 +133,11 @@ pub struct ProbedProps {
 }
 
 /// The editor's window, as `nsh_app_editor::App` makes it, with a task that runs probe jobs on
-/// the engine thread. Keep its body the same as `App`'s. When `lib.rs` gives the window body as
-/// a function of the `Session`, call that function here.
+/// the engine thread. Keep its body the same as `App`'s. After the merge with the runtime part,
+/// build the state with `nsh_app_editor::app_for(&launch)` and the window with
+/// `nsh_app_editor::window(s)`. Keep the `focused` flag: `flow_with` waits for it before the
+/// first key. Wrap `window(s)` in a view that hears `on_focus` and `on_blur`, or ask runtime
+/// for a hook.
 #[component]
 pub fn Probed(props: ProbedProps) -> impl IntoElement {
     let (launch, mut jobs, focused) = {
