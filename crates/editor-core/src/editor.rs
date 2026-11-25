@@ -148,6 +148,20 @@ pub enum Action {
     FindFile,
     /// Pick a project to open: a recent one, or a folder from the system's dialog.
     OpenProject,
+    /// Open this folder as the project (`:Open path`, `:cd path`). Relative to the project.
+    OpenFolder(String),
+    /// Make an empty file and open it (`:NewFile path`). Relative to the project.
+    NewFile(String),
+    /// Make a folder and its parents (`:Mkdir path`). Relative to the project.
+    NewFolder(String),
+    /// Move or rename the tree's row when the tree has the focus, else the active file
+    /// (`:Move path`). Relative to the project.
+    MovePath(String),
+    /// Delete the tree's row when the tree has the focus, else the active file (`:Delete`).
+    /// `force` deletes a file with unsaved changes too.
+    DeletePath {
+        force: bool,
+    },
     ToggleTree,
     FocusTree,
     GrepProject,

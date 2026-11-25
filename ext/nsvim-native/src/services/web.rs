@@ -244,6 +244,10 @@ mod page {
             self.out.send(Event::Wrote { what, result: Ok(()) });
         }
 
+        pub fn fs(&self, op: crate::services::io::FsOp) {
+            self.out.send(Event::FsDone { op, result: Err("the web can't change files".into()) });
+        }
+
         pub fn files_changed(&self, _paths: Vec<PathBuf>) {
             self.send_files();
         }

@@ -2,6 +2,7 @@
 
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
 use super::fx::{Tx, WheelEvent};
 use editor::editor::{Action, KeyCode, KeyInput};
@@ -46,8 +47,25 @@ impl TreeIndex {
     /// The tree of `files`. A large project takes tens of milliseconds, so the index worker
     /// builds it and the UI thread only swaps it in.
     pub fn build(files: &[String]) -> TreeIndex {
+        Self::build_with(files, &[])
+    }
+
+    /// The tree of `files` and of `folders`, so a folder with no files in it has a row too.
+    pub fn build_with(files: &[String], folders: &[String]) -> TreeIndex {
         let mut children: HashMap<String, Vec<(String, bool)>> = HashMap::new();
         let mut dirs: HashSet<&str> = HashSet::new();
+        for d in folders {
+            let mut parent = "";
+            let mut start = 0;
+            for (i, _) in d.match_indices('/').chain(std::iter::once((d.len(), ""))) {
+                let dir = &d[..i];
+                if dirs.insert(dir) {
+                    push_child(&mut children, parent, &d[start..i], true);
+                }
+                parent = dir;
+                start = i + 1;
+            }
+        }
         for f in files {
             let mut parent = "";
             let mut start = 0;
@@ -160,6 +178,24 @@ impl App {
         true
     }
 
+    /// Opens the folders above `path` in the tree.
+    pub fn reveal_in_tree(&mut self, path: &Path) {
+        let Ok(rel) = path.strip_prefix(&self.ed.root) else { return };
+        self.settle_tree_top();
+        self.tree.follow = Follow::Center;
+        let mut acc = String::new();
+        if let Some(parent) = rel.parent() {
+            for c in parent.components() {
+                if !acc.is_empty() {
+                    acc.push('/');
+                }
+                acc.push_str(&c.as_os_str().to_string_lossy());
+                self.tree.open.insert(acc.clone());
+            }
+        }
+        self.tree.sel = Some(rel.to_string_lossy().replace('\\', "/"));
+    }
+
     /// Shows the tree and gives it the keyboard, with the keyboard row on screen.
     pub fn focus_tree(&mut self) {
         self.tree.show = true;
@@ -214,6 +250,9 @@ impl App {
             self.tree.window_key = true;
             return true;
         }
+        if self.tree_file_key(k, tx) {
+            return true;
+        }
         // The classic key that focuses the tree gives the focus back from it.
         if !vim && super::keys::classic_window_key(&k) == Some(Action::FocusTree) {
             self.tree.focus = false;
@@ -256,10 +295,7 @@ impl App {
             KeyCode::Char(':') => return false,
             // Other plain keys stay here, so they never edit the file. Ctrl and Cmd shortcuts
             // pass on: `Ctrl P` finds a file while the tree has focus.
-            _ => {
-                let _ = tx;
-                return !(k.cmd || k.ctrl);
-            }
+            _ => return !(k.cmd || k.ctrl),
         }
         true
     }
@@ -281,5 +317,15 @@ mod tests {
         assert_eq!(rows[1].name, "ui");
         assert_eq!(rows[2].name, "main.rs");
         assert_eq!(rows[2].depth, 1);
+    }
+
+    #[test]
+    fn empty_folders_have_rows() {
+        let files: Vec<String> = ["src/main.rs".to_string()].to_vec();
+        let dirs: Vec<String> = ["docs", "docs/notes", "src"].iter().map(|s| s.to_string()).collect();
+        let idx = TreeIndex::build_with(&files, &dirs);
+        let open: HashSet<String> = ["docs".to_string(), "src".to_string()].into();
+        let rows: Vec<(String, bool)> = idx.rows(&open).into_iter().map(|r| (r.path, r.dir)).collect();
+        assert_eq!(rows, vec![("docs".into(), true), ("docs/notes".into(), true), ("src".into(), true), ("src/main.rs".into(), false)]);
     }
 }

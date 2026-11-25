@@ -31,6 +31,14 @@ pub fn run_ex(ed: &mut Editor, line: &str) -> Vec<Action> {
     out
 }
 
+/// The argument of a command that needs one, trimmed.
+fn required(args: &str) -> Result<String, String> {
+    match args.trim() {
+        "" => Err("E471: Argument required".into()),
+        a => Ok(a.to_string()),
+    }
+}
+
 fn need_doc(ed: &Editor) -> Res {
     if ed.has_doc() { Ok(()) } else { Err("E32: No file name".into()) }
 }
@@ -122,7 +130,20 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
         "Update" => out.push(Action::Update),
         "Keys" | "keys" | "h" | "help" => out.push(Action::KeyList(args.trim().to_string())),
         "Find" | "find" | "Files" => out.push(Action::FindFile),
-        "Projects" | "Project" | "Open" => out.push(Action::OpenProject),
+        "Projects" | "Project" | "Open" | "cd" | "chdir" => match args.trim() {
+            "" if name == "cd" || name == "chdir" => return Err("E471: Argument required".into()),
+            "" => out.push(Action::OpenProject),
+            dir => out.push(Action::OpenFolder(dir.to_string())),
+        },
+        "NewFile" | "Touch" => out.push(Action::NewFile(required(args)?)),
+        "Mkdir" | "NewFolder" => out.push(Action::NewFolder(required(args)?)),
+        "Move" => out.push(Action::MovePath(required(args)?)),
+        "Delete" | "Remove" => {
+            if !args.trim().is_empty() {
+                return Err("E488: Trailing characters".into());
+            }
+            out.push(Action::DeletePath { force: bang });
+        }
         "Grep" | "grep" | "rg" => out.push(Action::GrepProject),
         "Explore" | "Ex" | "Tree" => out.push(Action::ToggleTree),
         "Rename" | "rename" => {

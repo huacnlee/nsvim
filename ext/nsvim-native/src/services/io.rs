@@ -94,6 +94,80 @@ pub enum Job {
         path: PathBuf,
         edits: Vec<crate::services::lsp::TextEdit>,
     },
+    /// Make, move or delete a file or folder for the tree.
+    Fs(FsOp),
+}
+
+/// A change to the project's files that the tree asks for.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FsOp {
+    NewFile(PathBuf),
+    NewFolder(PathBuf),
+    Move { from: PathBuf, to: PathBuf },
+    Delete(PathBuf),
+}
+
+impl FsOp {
+    /// Carries out the change. It never writes over a file or folder that is there.
+    pub fn apply(&self) -> Result<(), String> {
+        let shown = |p: &Path| format!("\"{}\"", p.display());
+        let exists = |p: &Path| p.symlink_metadata().is_ok();
+        let parent = |p: &Path| match p.parent() {
+            Some(d) if !d.as_os_str().is_empty() => std::fs::create_dir_all(d).map_err(|e| format!("{} {e}", shown(d))),
+            _ => Ok(()),
+        };
+        match self {
+            FsOp::NewFile(p) => {
+                if exists(p) {
+                    return Err(format!("{} already exists", shown(p)));
+                }
+                parent(p)?;
+                std::fs::OpenOptions::new().write(true).create_new(true).open(p).map(|_| ()).map_err(|e| format!("{} {e}", shown(p)))
+            }
+            FsOp::NewFolder(p) => {
+                if exists(p) {
+                    return Err(format!("{} already exists", shown(p)));
+                }
+                std::fs::create_dir_all(p).map_err(|e| format!("{} {e}", shown(p)))
+            }
+            FsOp::Move { from, to } => {
+                if !exists(from) {
+                    return Err(format!("{} is not there", shown(from)));
+                }
+                if to.starts_with(from) {
+                    return Err(format!("can't move {} into itself", shown(from)));
+                }
+                // A rename that only changes the case finds the same file on macOS and Windows.
+                if exists(to) && !same_file(from, to) {
+                    return Err(format!("{} already exists", shown(to)));
+                }
+                parent(to)?;
+                std::fs::rename(from, to).map_err(|e| format!("{} {e}", shown(from)))
+            }
+            FsOp::Delete(p) => {
+                let meta = p.symlink_metadata().map_err(|e| format!("{} {e}", shown(p)))?;
+                let done = if meta.is_dir() { std::fs::remove_dir_all(p) } else { std::fs::remove_file(p) };
+                done.map_err(|e| format!("{} {e}", shown(p)))
+            }
+        }
+    }
+}
+
+/// Whether two paths name one file, as a rename that only changes the case does on a disk
+/// that ignores case.
+fn same_file(a: &Path, b: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        match (a.symlink_metadata(), b.symlink_metadata()) {
+            (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
+            _ => false,
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        a.to_string_lossy().to_lowercase() == b.to_string_lossy().to_lowercase()
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -170,6 +244,10 @@ pub fn start(out: Out) -> Sender<Job> {
                     Job::Write { what, path, text } => {
                         let result = write_atomic(&path, text.as_bytes()).map_err(|e| format!("\"{}\" {e}", path.display()));
                         out.send(Event::Wrote { what, result });
+                    }
+                    Job::Fs(op) => {
+                        let result = op.apply();
+                        out.send(Event::FsDone { op, result });
                     }
                     Job::Preview { path } => {
                         use std::io::Read;

@@ -400,6 +400,11 @@ A command takes a range when the table shows one. The next section explains rang
 | `:b N`, `:b name` | Go to buffer `N`, counted from 1, or to the one buffer whose path holds `name` |
 | `:Find`, `:find`, `:Files` | Find a file |
 | `:Projects`, `:Project`, `:Open` | Open a project |
+| `:Open path`, `:cd path` | Open the folder `path` as the project. A terminal has no folder dialog, so type the folder here |
+| `:NewFile path`, `:Touch path` | Make an empty file and open it. A `/` at the end makes a folder. The folders above it are made too |
+| `:Mkdir path`, `:NewFolder path` | Make a folder and the folders above it |
+| `:Move path` | Move or rename the tree's row when the tree has the focus, else the open file. Onto a folder, it goes inside. Open buffers follow |
+| `:Delete`, `:Remove` | Delete the tree's row when the tree has the focus, else the open file, and close its buffers. `!` deletes unsaved changes too |
 | `:Grep`, `:grep`, `:rg` | Search the project |
 | `:Explore`, `:Ex`, `:Tree` | Show or hide the file tree |
 | `:Settings`, `:settings` | Open Settings |
@@ -602,8 +607,8 @@ These keys work in both keymaps, unless a row says otherwise.
 
 `SPC e`, `SPC g s` and `Ctrl w h` in the Neovim keymap, and `Ctrl ⇧ E` in the classic keymap,
 show the tree and give it the focus. `Ctrl w w` and `Ctrl ⇧ E` move the focus between the tree
-and the text. `:Tree` and the classic `Ctrl B` show or hide it. A click on the
-text gives the focus back. The mouse wheel over the tree scrolls it, with or without the
+and the text. `:Tree` and the classic `Ctrl B` show or hide it. A click on a folder gives
+the tree the focus. A click on a file or on the text gives the focus back. The mouse wheel over the tree scrolls it, with or without the
 focus. These keys work while the tree has the focus.
 
 | Keys | Does |
@@ -615,6 +620,12 @@ focus. These keys work while the tree has the focus.
 | `l` `→` | Open a closed folder, or open a file |
 | `Enter` `o` | Open or close a folder, or open a file |
 | `h` `←` | Close an open folder, or go to the parent folder |
+| `a` | Make a file. Opens `:NewFile` with the row's folder. End the name with `/` to make a folder |
+| `A` | Make a folder. Opens `:Mkdir` with the row's folder |
+| `r` `m` `F2` | Rename or move the row. Opens `:Move` with its path. Edit the path and press `Enter` |
+| `d` `Delete` | Delete the row, a folder with all in it. Press `y` to delete, any other key to keep it |
+| `x`, `p` | Cut the row, then move it into the folder of the row under `p` |
+| `C` | Open the folder row as the project |
 | `Esc` `q` | Give the focus back to the text |
 | `Ctrl w l`, `Ctrl w w`, `Ctrl w Ctrl w` | Give the focus back to the text. `Ctrl w p` does the same. `Ctrl w h` keeps the focus in the tree. Neovim keymap |
 | `Ctrl ⇧ E` | Give the focus back to the text. Classic keymap |

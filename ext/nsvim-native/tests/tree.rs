@@ -40,19 +40,22 @@ fn a_press_after_a_scroll_opens_the_file_under_it() {
     f.settle("insert mode", |a| a.ed.mode == editor::editor::Mode::Insert);
 }
 
-/// A press on a folder opens it and leaves the keyboard off the tree.
+/// A press on a folder opens it and gives the keyboard to the tree, so file keys work next.
 #[test]
-fn a_press_on_a_folder_takes_the_keyboard_off_the_tree() {
+fn a_press_on_a_folder_gives_the_keyboard_to_the_tree() {
     let dir = common::scratch();
     let a = common::write(dir.path(), "a.txt", "alpha\n");
     common::write(dir.path(), "src/lib.rs", "pub fn x() {}\n");
     let mut f = common::flow(&a, None);
     f.ui.wait_for("role:treeitem[src]").unwrap();
-    f.keys(" e");
-    f.settle("the tree has the keyboard", |a| a.tree.focus);
     f.ui.press("role:treeitem[src]").unwrap();
     f.ui.wait_for("role:treeitem[lib.rs]").unwrap();
-    assert!(!f.read(|a| a.tree.focus), "the press takes the keyboard off the tree");
+    assert!(f.read(|a| a.tree.focus), "the press gives the keyboard to the tree");
+    f.keys("j");
+    f.settle("j moves the tree's row", |a| a.tree.sel.as_deref() == Some("src/lib.rs"));
+    f.keys("l");
+    f.settle("l opens the file", |a| a.ed.buf().text() == "pub fn x() {}\n");
+    assert!(!f.read(|a| a.tree.focus), "an open file takes the keyboard");
     assert_eq!(f.ui.screen().accessibility_level("role:treeitem[lib.rs]").unwrap(), Some(2), "a row inside a folder is one level down");
 }
 

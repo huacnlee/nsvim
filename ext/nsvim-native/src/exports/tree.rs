@@ -115,11 +115,12 @@ impl FileTree {
         crate::bridge::subscribe(rows_of, listener)
     }
 
-    /// Opens or closes the folder at `path`, or opens the file at `path`. The keyboard leaves
-    /// the tree.
+    /// Opens or closes the folder at `path`, and gives the keyboard to the tree, so file keys
+    /// such as `a` and `r` work on it next. Or opens the file at `path`, and gives the keyboard
+    /// to the text.
     pub fn press(path: String, dir: bool) {
         crate::bridge::update(move |a, _| {
-            a.tree.focus = false;
+            a.tree.focus = dir;
             a.tree_press(&path, dir);
         });
     }
