@@ -186,8 +186,7 @@ mod run {
     /// Asks GitHub with `curl`, which macOS, Linux and Windows 10 and later all have.
     fn fetch() -> Result<String, String> {
         let mut cmd = Command::new("curl");
-        cmd.args(["-fsSL", "--max-time", "20", "-H", "Accept: application/vnd.github+json", LATEST])
-            .stdin(Stdio::null());
+        cmd.args(["-fsSL", "--max-time", "20", "-H", "Accept: application/vnd.github+json", LATEST]).stdin(Stdio::null());
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
@@ -257,7 +256,8 @@ mod tests {
 
     #[test]
     fn reads_the_latest_release() {
-        let json = r#"{"tag_name":"v0.2.0","html_url":"https://github.com/huacnlee/nsvim/releases/tag/v0.2.0","draft":false,"prerelease":false}"#;
+        let json =
+            r#"{"tag_name":"v0.2.0","html_url":"https://github.com/huacnlee/nsvim/releases/tag/v0.2.0","draft":false,"prerelease":false}"#;
         assert_eq!(
             release(json, "0.1.0").unwrap(),
             Some(Release { version: "0.2.0".into(), url: "https://github.com/huacnlee/nsvim/releases/tag/v0.2.0".into() })
