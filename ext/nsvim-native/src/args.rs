@@ -117,8 +117,7 @@ pub fn wants_tui() -> bool {
     let argv: Vec<String> = std::env::args().collect();
     let window = matches!(command(&argv), Command::Open { window: true, .. });
     let terminal = std::io::stdin().is_terminal() && std::io::stdout().is_terminal();
-    let no_display =
-        cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none();
+    let no_display = cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none();
     in_terminal(window, terminal, no_display, std::env::var_os("NSH_DEV_APP_DIR").is_some())
 }
 
