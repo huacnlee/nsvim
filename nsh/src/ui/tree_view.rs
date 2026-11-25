@@ -8,8 +8,9 @@ use crate::app::App;
 use crate::app::fx::{Mods, WheelEvent as AppWheel};
 use crate::app::tree::{DIR_MARK, ROW_H};
 use crate::store::Session;
-use crate::ui::chrome::{UiFont, clear, ui_font, ui_text};
+use crate::ui::font::{UiFont, ui_font, ui_text};
 use crate::ui::icons::{Lucide, icon, src, src_with_stroke_width};
+use crate::ui::style::clear;
 use crate::ui::style::color;
 
 /// Lines one notch of a mouse wheel scrolls.

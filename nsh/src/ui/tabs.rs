@@ -6,8 +6,9 @@ use nsh_core::prelude::*;
 
 use crate::app::App;
 use crate::store::Session;
-use crate::ui::chrome::{UiFont, clear, ui_font, ui_text};
+use crate::ui::font::{UiFont, ui_font, ui_text};
 use crate::ui::icons::{Lucide, labeled_icon, src, src_with_stroke_width};
+use crate::ui::style::clear;
 use crate::ui::style::color;
 
 /// The height of the buffer line, in points.

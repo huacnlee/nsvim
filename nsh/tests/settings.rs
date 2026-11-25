@@ -220,7 +220,7 @@ fn enter_on_the_last_step_opens_the_editor() -> Result<(), String> {
     // The focus starts on the first `change`. The last choice opens the editor.
     typ(&mut app, &["j", "j", "j", "j", "j", "enter"]);
     app.wait_for("id:text-area")?;
-    app.wait_for("NORMAL")?;
+    app.wait_for("Normal")?;
     Ok(())
 }
 

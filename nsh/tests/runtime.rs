@@ -200,7 +200,7 @@ fn a_change_to_config_toml_applies_while_the_editor_runs() -> Result<(), String>
     let config = write(conf.path(), "config.toml", CONFIG);
     let mut app = start_watching(&file, &config);
     app.wait_for("text:/alpha/")?;
-    app.wait_for("NORMAL")?;
+    app.wait_for("Normal")?;
     // The watcher starts with the workers. Write until it sees a change.
     for n in 0..20 {
         std::fs::write(&config, format!("{CONFIG}[keys]\nmap = \"classic\"\n# {n}\n")).unwrap();
@@ -209,7 +209,7 @@ fn a_change_to_config_toml_applies_while_the_editor_runs() -> Result<(), String>
         }
     }
     app.wait_for("text:/config.toml changed on disk/")?;
-    app.wait_until("the classic keymap", Duration::from_secs(5), |s| !s.shows("NORMAL"))?;
+    app.wait_until("the classic keymap", Duration::from_secs(5), |s| !s.shows("Normal"))?;
     Ok(())
 }
 
@@ -229,7 +229,7 @@ fn a_config_that_does_not_parse_shows_why_and_keeps_the_old_one() -> Result<(), 
         }
     }
     app.wait_for("text:/config.toml: /")?;
-    assert!(app.shows("NORMAL"), "the old keymap stays: {:?}", app.screen().texts());
+    assert!(app.shows("Normal"), "the old keymap stays: {:?}", app.screen().texts());
     Ok(())
 }
 

@@ -6,7 +6,9 @@
 //! - Modules (`Shell`, ...): listeners of parts of the app, and the changes TSX asks for.
 
 mod areas;
+mod command;
 mod icon;
+mod status;
 mod workspace;
 
 use std::cell::RefCell;
@@ -16,7 +18,9 @@ use nsh_core::prelude::*;
 use crate::store::Session;
 
 pub use areas::*;
+pub use command::*;
 pub use icon::*;
+pub use status::*;
 pub use workspace::*;
 
 /// Registers every export in `registry`.
@@ -28,11 +32,11 @@ pub fn register(registry: &mut Registry) {
         .register::<BufferLine>()
         .register::<Tree>()
         .register::<Settings>()
-        .register::<StatusLine>()
-        .register::<CommandLine>()
         .register::<Overlays>()
         .register::<Setup>()
-        .module::<Shell>();
+        .module::<Shell>()
+        .module::<Status>()
+        .module::<Cmdline>();
 }
 
 thread_local! {

@@ -2,7 +2,7 @@
 //! shows (`Session::view`) and binds to them. `shell` picks the screen: setup on first launch,
 //! else the editor.
 
-pub mod chrome;
+pub mod font;
 pub mod icons;
 pub mod overlays;
 pub mod popups;
@@ -39,8 +39,8 @@ pub fn shell(s: Session, keys: ElementRef) -> impl IntoElement {
     when(in_setup, move || setup_view::setup(s, keys)).otherwise(move || editor(s, keys))
 }
 
-/// The editor screen: the buffer line, the tree beside the text area (or Settings), the status
-/// line and the command line, with the overlays over them.
+/// The editor screen: the buffer line, the tree beside the text area (or Settings), with the
+/// overlays over them. The status line and the command line are in TSX (`ui/` at the root).
 fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
     let on_settings = s.view(|a| a.on_settings);
     let tree_shows = s.view(|a| a.tree.show && !a.on_settings);
@@ -56,7 +56,5 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
                 .child(when(tree_shows, move || tree_view::tree(s, keys)))
                 .child(when(on_settings, move || settings_view::settings(s, keys)).otherwise(move || text_area::text_area(s, keys))),
         )
-        .child(chrome::status_line(s))
-        .child(chrome::command_line(s))
         .child(overlays::overlays(s, keys))
 }
