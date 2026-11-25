@@ -3,9 +3,9 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ['website/**', 'install.sh', 'install.ps1', 'nsh/**', 'crates/**', 'Cargo.lock', 'nsh.json', '.github/workflows/website.yml']
+    paths: ['website/**', 'install.sh', 'install.ps1', 'ext/**', 'src/**', 'App.tsx', 'theme.json', 'Cargo.lock', 'nsh.json', 'nsh.lock', '.github/workflows/website.yml']
   pull_request:
-    paths: ['website/**', 'install.sh', 'install.ps1', 'nsh/**', 'crates/**', 'Cargo.lock', 'nsh.json', '.github/workflows/website.yml']
+    paths: ['website/**', 'install.sh', 'install.ps1', 'ext/**', 'src/**', 'App.tsx', 'theme.json', 'Cargo.lock', 'nsh.json', 'nsh.lock', '.github/workflows/website.yml']
   workflow_dispatch:
 
 permissions:
@@ -47,7 +47,7 @@ jobs:
         working-directory: .
         run: |
           nsh --version
-          nsh/web/build.sh
+          ext/nsvim-native/web/build.sh
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.4.0'

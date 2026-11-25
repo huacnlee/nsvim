@@ -71,9 +71,9 @@ jobs:
           import json, os, tomllib
           from pathlib import Path
           version = json.loads(Path('nsh.json').read_text())['version']
-          crate = tomllib.loads(Path('nsh/Cargo.toml').read_text())['package']['version']
+          crate = tomllib.loads(Path('ext/nsvim-native/Cargo.toml').read_text())['package']['version']
           if crate != version:
-              raise SystemExit(f'nsh/Cargo.toml has {crate}, nsh.json has {version}')
+              raise SystemExit(f'ext/nsvim-native/Cargo.toml has {crate}, nsh.json has {version}')
           if os.environ['RELEASE_REF'].startswith('refs/tags/') and os.environ['RELEASE_TAG'] != f'v{version}':
               raise SystemExit(f'The release tag must be v{version}, as in nsh.json')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
@@ -129,7 +129,7 @@ jobs:
           TARGETS: ${{ matrix.targets }}
         run: |
           for target in $TARGETS; do
-            cargo build --release --locked -p nsh-app-editor --bin nsvim --target "$target"
+            cargo build --release --locked -p nsvim-native --bin nsvim --target "$target"
             binary="target/$target/release/nsvim"
             if [ "$RUNNER_OS" = Windows ]; then binary="$binary.exe"; fi
             python scripts/package-release.py --target "$target" --version "$RELEASE_VERSION" \

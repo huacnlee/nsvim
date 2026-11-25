@@ -50,7 +50,7 @@ and file watcher events of the open. It is not work, and a real window does not 
 Run the benchmarks. Each prints its timings and checks a time budget:
 
 ```sh
-TMPDIR=~/.cache/nsvim-test-tmp cargo test --profile quick -p nsh-app-editor \
+TMPDIR=~/.cache/nsvim-test-tmp cargo test --profile quick -p nsvim-native \
   --test flows_bench -- --ignored --nocapture --test-threads=1
 ```
 

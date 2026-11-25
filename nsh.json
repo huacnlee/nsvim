@@ -4,6 +4,8 @@
   "version": "0.3.2",
   "build": 1,
   "nsh": ">=0.7",
-  "rust": "nsh",
-  "theme": "nsh/theme.json"
+  "theme": "theme.json",
+  "dependencies": {
+    "nsvim-native": { "path": "ext/nsvim-native" }
+  }
 }

@@ -1,24 +1,24 @@
 # How nsvim works
 
-nsvim is two crates in one workspace, and a set of TSX screens. The **core**
-(`crates/editor-core`, library `editor`) is the text and the rules for changing it. It knows
-nothing about windows. The **app** (`nsh/`, binary `nsvim`) owns all app state, routes input to
-the core, and runs every slow job on a worker thread. The **screens** (`App.tsx` and `ui/` at the
-root) show that state with [NSH](https://nsh.dev). NSH draws with the native views of each
+nsvim is a TSX app with its own Rust, in NSH's recommended layout. The **core**
+(`ext/editor-core`, library `editor`) is the text and the rules for changing it. It knows
+nothing about windows. The **app** (`ext/nsvim-native`, an nshm crate and the binary `nsvim`)
+owns all app state, routes input to the core, and runs every slow job on a worker thread. The
+**screens** (`App.tsx` and `src/`) show that state with [NSH](https://nsh.dev). NSH draws with the native views of each
 platform: GTK 4 on Linux, AppKit on macOS and WinUI on Windows.
 
 ```mermaid
 flowchart LR
     subgraph UI["Engine thread"]
-        K[Keys and mouse] --> R[Key routing<br/>nsh/src/app/keys.rs]
+        K[Keys and mouse] --> R[Key routing<br/>ext/nsvim-native/src/app/keys.rs]
         R --> KM[Keymap<br/>vim or classic]
         KM --> E[(Editor<br/>buffers, cursor, mode)]
-        KM -->|Action| A[App<br/>nsh/src/app]
+        KM -->|Action| A[App<br/>ext/nsvim-native/src/app]
         A --> E
-        A --> S[Session<br/>nsh/src/store.rs]
-        S -->|memos| V[Rust views<br/>nsh/src/ui]
-        S -->|parts| B[Bridge<br/>nsh/src/bridge.rs]
-        B --> T[TSX screens<br/>App.tsx, ui/]
+        A --> S[Session<br/>ext/nsvim-native/src/store.rs]
+        S -->|memos| V[Rust views<br/>ext/nsvim-native/src/ui]
+        S -->|parts| B[Bridge<br/>ext/nsvim-native/src/bridge.rs]
+        B --> T[TSX screens<br/>App.tsx, src/]
         T -->|commands| B
         P[poll] --> A
     end
@@ -35,7 +35,7 @@ flowchart LR
     IO & IX & G & RG & FW & L & C -->|Event, then wake| P
 ```
 
-## The core: `crates/editor-core`
+## The core: `ext/editor-core`
 
 | Module | Holds |
 | --- | --- |
@@ -68,38 +68,39 @@ buf.commit(cursor); // one undo step, with the cursor before and after
 An Insert session, a `:s` command, a paste at every cursor or a rename across a file is one
 undo step.
 
-## The app: `nsh/`
+## The app: `ext/nsvim-native`
 
 | Path | Holds |
 | --- | --- |
 | `src/app` | `App`: the core `Editor`, the tree, overlays, Settings, setup, git and LSP state. Key routing, mouse handling, pickers and actions. Handlers record effects on a `Tx` (copy, read the clipboard, a menu, the title, quit, wake later). |
 | `src/store.rs` | `Session`: `App` in a `stored` cell, a revision signal, and the effects runner. |
 | `src/bridge.rs` | The join between `App` and the TSX screens: listeners and commands. |
-| `src/exports` | What `App.tsx` imports from `nsvim/native`: components and modules. |
+| `src/exports` | What `App.tsx` imports from `nsvim-native`: components and modules. |
 | `src/model.rs` | `frame`: what the text area shows, from the `Editor`. Plain Rust, with no NSH code. |
 | `src/ui` | The views that Rust draws: the text area, the popups by the cursor, the diff review and the native context menu. Theme tokens (`src/ui/style.rs`). |
 | `src/services` | The worker threads, each with a job channel in and an `Event` channel out. |
 | `src/ipc` | The control socket protocol, and the `ctl` and `mcp` commands. |
 | `config.rs`, `theme.rs` | `config.toml`, the 16 built-in palettes, and the Omarchy theme reader. |
 
-## The screens: `App.tsx` and `ui/`
+## The screens: `App.tsx` and `src/`
 
-The app runs in NSH's mixed mode. `nsh.json` names the crate (`"rust": "nsh"`) and has no root
-component, so `App.tsx` is the entry. Rust owns all app state. TSX only shows parts of it and
+`App.tsx` is the entry. `nsh.json` lists the app's Rust as a path dependency
+(`"nsvim-native": { "path": "ext/nsvim-native" }`), and TSX imports it from `"nsvim-native"`.
+`nsh.lock` records it. Rust owns all app state. TSX only shows parts of it and
 asks Rust for changes.
 
 | File | Shows |
 | --- | --- |
 | `App.tsx` | The window: setup, or the editor with Settings over it. |
-| `ui/buffer-line.tsx` | The tabs of the open files, and the project folder over the tree. |
-| `ui/tree.tsx` | The file tree. |
-| `ui/status-line.tsx`, `ui/command-line.tsx` | The status line and the command line. |
-| `ui/overlays/` | The leader menu, the finder with its pickers, and the in-app context menu. |
-| `ui/settings/` | Settings, over the whole window. |
-| `ui/setup/` | First-launch setup. |
-| `ui/controls.tsx`, `ui/font.tsx` | Shared controls, and the interface font. |
+| `src/buffer-line.tsx` | The tabs of the open files, and the project folder over the tree. |
+| `src/tree.tsx` | The file tree. |
+| `src/status-line.tsx`, `src/command-line.tsx` | The status line and the command line. |
+| `src/overlays/` | The leader menu, the finder with its pickers, and the in-app context menu. |
+| `src/settings/` | Settings, over the whole window. |
+| `src/setup/` | First-launch setup. |
+| `src/controls.tsx`, `src/font.tsx` | Shared controls, and the interface font. |
 
-`nsvim/native` exports these:
+`nsvim-native` exports these:
 
 | Export | Kind | Does |
 | --- | --- | --- |
@@ -111,7 +112,7 @@ asks Rust for changes.
 
 ### The bridge
 
-`nsh/src/bridge.rs` joins the two sides:
+`ext/nsvim-native/src/bridge.rs` joins the two sides:
 
 - `subscribe(part, listener)` gives a TSX listener a part of `App` (a `JsObject` struct) now,
   and again after each `Session::update` that changes it. TSX keeps the part in a signal.
@@ -186,7 +187,7 @@ bytes. The file worker writes them to a temporary file and renames it over the o
 ## Release layout and the dev loop
 
 A release is the `nsvim` binary and its interface, `nsh/bundle.nshc`, in a folder next to it.
-`nsh build --release` compiles `App.tsx` and `ui/` to that bytecode. On macOS the interface is
+`nsh build --release` compiles `App.tsx` and `src/` to that bytecode. On macOS the interface is
 in the app bundle, in `nsvim.app/Contents/Resources/nsh/`. See [install.md](install.md).
 
 In development:
@@ -194,7 +195,7 @@ In development:
 | Command | Does |
 | --- | --- |
 | `nsh run` | Runs the app in a window. TSX edits apply at once. Rust edits rebuild and restart it. |
-| `nsh check` | Checks the crate, writes the TS types of `nsvim/native` to `.nsh/types`, and type-checks the TSX. |
+| `nsh check` | Checks the crate, writes the TS types of `nsvim-native` to `.nsh/types`, and type-checks the TSX. |
 | `nsh build` | Builds the crate and bundles the TSX. Read its warnings: unknown classes, exports without docs. |
 | `nsh test` | Runs `cargo test`, then any `*.test.tsx`. |
 

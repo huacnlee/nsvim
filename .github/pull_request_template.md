@@ -45,5 +45,5 @@ Describe the tests that you ran to verify your changes. Give the steps so that o
 - [ ] I have read the [CONTRIBUTING](../CONTRIBUTING.md) document and followed the guidelines.
 - [ ] Reviewed the changes in this PR and confirmed AI generated code (if any) is accurate.
 - [ ] Passed `cargo test`, `cargo fmt` and `cargo clippy --all-targets -- -D warnings`.
-- [ ] Passed `nsh check` and `nsh build` (if the change touches `App.tsx` or `ui/`).
+- [ ] Passed `nsh check` and `nsh build` (if the change touches `App.tsx` or `src/`).
 - [ ] Ran the app on the affected platforms with a scratch `HOME` (if the change is visible or platform-specific).

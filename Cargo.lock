@@ -2953,34 +2953,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nsh-app-editor"
-version = "0.3.2"
-dependencies = [
- "dirs",
- "editor-core",
- "globset",
- "ignore",
- "notify",
- "nsh-base",
- "nsh-core",
- "nsh-engine",
- "nsh-linux-app",
- "nsh-macos-app",
- "nsh-platform-linux",
- "nsh-platform-macos",
- "nsh-platform-windows",
- "nsh-testing",
- "nsh-windows-app",
- "serde",
- "serde_json",
- "similar",
- "tempfile",
- "tokio",
- "toml 0.8.23",
- "unicode-width",
-]
-
-[[package]]
 name = "nsh-base"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3356,6 +3328,34 @@ dependencies = [
  "nsh-engine",
  "nsh-platform-windows",
  "serde_json",
+]
+
+[[package]]
+name = "nsvim-native"
+version = "0.3.2"
+dependencies = [
+ "dirs",
+ "editor-core",
+ "globset",
+ "ignore",
+ "notify",
+ "nsh-base",
+ "nsh-core",
+ "nsh-engine",
+ "nsh-linux-app",
+ "nsh-macos-app",
+ "nsh-platform-linux",
+ "nsh-platform-macos",
+ "nsh-platform-windows",
+ "nsh-testing",
+ "nsh-windows-app",
+ "serde",
+ "serde_json",
+ "similar",
+ "tempfile",
+ "tokio",
+ "toml 0.8.23",
+ "unicode-width",
 ]
 
 [[package]]

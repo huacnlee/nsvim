@@ -290,7 +290,7 @@ The hero plate is a frame that holds four real screens, one per mode, with the m
 This file is the site's design system. The app has its own rules, and the site's plates show
 the app as it is:
 
-- Corners are square. The app's radius is 2px (`rounded-(--radius)`, `nsh/theme.json`).
+- Corners are square. The app's radius is 2px (`rounded-(--radius)`, `theme.json`).
 - Choices are checkboxes, not switches.
 - Interface copy is in sentence case, per the NSH Design Guides. Vim's own text (`NORMAL`,
   `E37: ...`) stays as Vim writes it.

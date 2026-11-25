@@ -1,7 +1,7 @@
-# nsvim: the app (nsh/) and its editing core (crates/editor-core).
+# nsvim's Rust: the app's nshm (ext/nsvim-native) and its editing core (ext/editor-core).
 [workspace]
-members = ["nsh", "crates/editor-core"]
-default-members = ["nsh", "crates/editor-core"]
+members = ["ext/nsvim-native", "ext/editor-core"]
+default-members = ["ext/nsvim-native", "ext/editor-core"]
 resolver = "3"
 
 [profile.dev]

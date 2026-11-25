@@ -2,6 +2,8 @@
 *.swp
 .impeccable/
 /.nsh
-# The web build of nsvim. nsh/web/build.sh makes it, and CI builds it for each deploy.
+/ext/*/target
+/ext/*/.nsh
+# The web build of nsvim. ext/nsvim-native/web/build.sh makes it, and CI builds it for each deploy.
 /website/public/demo
 __pycache__/

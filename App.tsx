@@ -1,17 +1,17 @@
-// nsvim's entry. Rust owns the editor's state (`nsh/src`): `Workspace` makes the session and
-// takes every key, and the modules of `nsvim/native` give the screens the parts of the state
-// they show. The screens are here and under `ui/`.
+// nsvim's entry. Rust owns the editor's state (`ext/nsvim-native`): `Workspace` makes the
+// session and takes every key, and the modules of `nsvim-native` give the screens the parts of
+// the state they show. The screens are here and under `src/`.
 
 import { mount, signal, View } from "nsh";
 import { currentWindow } from "nsh/desktop";
-import { Shell, TextArea, Workspace, type ScreenState } from "nsvim/native";
-import { Tree } from "./ui/tree";
-import { BufferLine } from "./ui/buffer-line";
-import { CommandLine } from "./ui/command-line";
-import { StatusLine } from "./ui/status-line";
-import { Settings } from "./ui/settings/Settings";
-import { Setup } from "./ui/setup/Setup";
-import { Overlays } from "./ui/overlays/Overlays";
+import { Shell, TextArea, Workspace, type ScreenState } from "nsvim-native";
+import { Tree } from "./src/tree";
+import { BufferLine } from "./src/buffer-line";
+import { CommandLine } from "./src/command-line";
+import { StatusLine } from "./src/status-line";
+import { Settings } from "./src/settings/Settings";
+import { Setup } from "./src/setup/Setup";
+import { Overlays } from "./src/overlays/Overlays";
 
 /** The editor: the buffer line, the tree beside the text, the status line and the command
  * line, with the overlays over them. Settings covers all of it, the overlays too. */
