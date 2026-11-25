@@ -54,5 +54,5 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
         )
         .child(chrome::status_line(s))
         .child(chrome::command_line(s))
-        .child(overlays::overlays(s))
+        .child(overlays::overlays(s, keys))
 }
