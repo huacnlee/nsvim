@@ -203,34 +203,8 @@ ctl` command of the same name. Setup for Codex and opencode, and what each tool 
 
 | Linux | macOS | Holds |
 | --- | --- | --- |
-| `~/.config/editor/config.toml` | `~/Library/Application Support/editor/config.toml` | Settings. See [configuration.md](configuration.md). |
-| `~/.local/state/editor/sessions/` | `~/Library/Application Support/editor/sessions/` | Open files and cursor positions, per project. |
-| `~/.local/state/editor/undo/` | `~/Library/Application Support/editor/undo/` | Undo histories of saved files. |
-| `~/.local/state/editor/swap/` | `~/Library/Application Support/editor/swap/` | Unsaved text, for crash recovery. |
-| `~/.local/state/editor/window.toml` | `~/Library/Application Support/editor/window.toml` | The window's last size and place. |
-
-## Render without a window
-
-editor renders headless, for screenshots, videos and tests. These flags come from Rune.
-[development.md](development.md) has more.
-
-```sh
-editor --list-scenes                                           # the named scenes
-editor --scene finder --snap out.png --size 1440x900 --at 0.5  # one frame as PNG
-editor --scene editor --script keys.json --video out.mp4 --keys bottom-right --pointer
-editor --scene editor --tree tree.json                         # the element tree as JSON
-```
-
-| Flag | Does |
-| --- | --- |
-| `--scene NAME` | Starts from a named scene instead of your files. |
-| `--snap FILE.png` | Renders one frame at `--at` seconds. |
-| `--video FILE.mp4` | Renders a video through ffmpeg, to the script's `end` mark. |
-| `--script FILE.json` | Replays timed keys, typing, clicks, drags and wheel turns. |
-| `--size WxH`, `--scale N` | The window size in points, and the pixel scale. The default scale is 2. |
-| `--at SECONDS`, `--fps N` | The frame time, and the video frame rate. |
-| `--keys [CORNER]`, `--pointer` | Draw the script's keys and clicks on the video. |
-| `--tree FILE.json` | Writes the element tree, with each element's place and size. |
-
-`EDITOR_SCENE_THEME=gruvbox` renders a scene in that built-in theme.
-`EDITOR_SCENE_AGENT=requests.json` makes the `agent` scene play agent requests at set times.
+| `~/.config/nsvim/config.toml` | `~/Library/Application Support/nsvim/config.toml` | Settings. See [configuration.md](configuration.md). |
+| `~/.local/state/nsvim/sessions/` | `~/Library/Application Support/nsvim/sessions/` | Open files and cursor positions, per project. |
+| `~/.local/state/nsvim/undo/` | `~/Library/Application Support/nsvim/undo/` | Undo histories of saved files. |
+| `~/.local/state/nsvim/swap/` | `~/Library/Application Support/nsvim/swap/` | Unsaved text, for crash recovery. |
+| `~/.local/state/nsvim/window.toml` | `~/Library/Application Support/nsvim/window.toml` | The window's last size and place. |
