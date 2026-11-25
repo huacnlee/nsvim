@@ -1,10 +1,11 @@
 # Command line
 
 You type `nvim`. It is a shell alias that the first-run setup makes, with `vim` and `vi`. Each
-one runs the nsvim program by its full path. `\nvim` still runs Neovim. The installer puts
-nothing on `PATH`.
+one runs the nsvim program by its full path. `\nvim` still runs Neovim. The installer also
+puts the command `nsvim` on `PATH` (`~/.local/bin` on macOS and Linux, the install folder on
+Windows).
 
-Scripts and AI agents do not see aliases, so they run the program by its full path. This page
+Scripts and AI agents do not see aliases. They run `nsvim`, or the program by its full path. This page
 calls it PROGRAM. `nvim --help` prints it. The installer puts it at `~/.local/share/nsvim/nsvim`
 on Linux, and at `~/Applications/nsvim.app/Contents/MacOS/nsvim` on macOS.
 

@@ -114,8 +114,8 @@ nvim .                  # this folder as the project
 nvim src/main.rs:42     # a file, at line 42
 ```
 
-The installer puts no command on `PATH`. Open nsvim the first time from the app launcher, or
-with the path the installer prints. The first launch runs a five-step setup: keys, mouse, look,
+The installer puts the command `nsvim` on `PATH`. Open nsvim the first time from the app launcher, or
+with `nsvim .` in a terminal. The first launch runs a five-step setup: keys, mouse, look,
 terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open nsvim
 (on by default). `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor to
 nsvim's full path. On Linux, it can make nsvim the default app for text files. It shows every

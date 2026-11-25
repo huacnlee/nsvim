@@ -26,6 +26,12 @@ curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh -s -- --version 0.4.
 | --- | --- | --- |
 | `--version VERSION` | `NSVIM_VERSION` | the latest release |
 | `--dir DIRECTORY` | `NSVIM_INSTALL_DIR` | `~/Applications` on macOS, `~/.local` on Linux |
+| `--bin-dir DIRECTORY` | `NSVIM_BIN_DIR` | `~/.local/bin` |
+
+The installer writes the command `nsvim` in the bin folder: a two-line script that runs the
+program by its full path. Terminals, TUIs, scripts and AI agents run `nsvim` like any other
+command. If the folder is not on `PATH`, the installer says so. A `nsvim` there that the installer
+did not write stays as it is.
 
 To upgrade, run the installer again. Close nsvim first.
 
@@ -54,11 +60,10 @@ The program reads its interface from `nsh/bundle.nshc` next to it. Keep the fold
 
 ### The first launch
 
-The installer puts no command on `PATH`. Open nsvim the first time from the app launcher (Finder
-on macOS), or run the program by the path that the installer prints:
+Open nsvim from the app launcher (Finder on macOS), or from a terminal:
 
 ```sh
-~/.local/share/nsvim/nsvim .
+nsvim .
 ```
 
 The first launch runs a short setup. Its terminal step adds shell aliases, so `nvim`, `vim` and
@@ -71,7 +76,7 @@ nvim .                  # this folder as the project
 nvim src/main.rs:42     # a file, at line 42
 ```
 
-Scripts and AI agents do not see shell aliases. They run the program by its full path.
+Scripts and AI agents do not see shell aliases. They run `nsvim`, or the program by its full path.
 `nvim --help` prints it.
 
 ## Windows
@@ -89,7 +94,9 @@ Invoke-WebRequest https://huacnlee.github.io/nsvim/install.ps1 -OutFile "$env:TE
 
 `NSVIM_VERSION` and `NSVIM_INSTALL_DIR` set the same defaults. The default folder is
 `%LOCALAPPDATA%\Programs\nsvim`. The installer replaces the folder as one unit and adds a Start
-menu shortcut. It does not change `PATH`. The program is `nsvim.exe` in that folder.
+menu shortcut. It adds the folder to the user `PATH`, so a new terminal runs `nsvim`. Give
+`-NoModifyPath`, or set `NSVIM_NO_MODIFY_PATH=1`, to leave `PATH` alone. The program is
+`nsvim.exe` in that folder.
 
 To upgrade, close nsvim and run the installer again. If the PowerShell policy stops scripts,
 download the Windows ZIP from the release page and extract it.
@@ -135,8 +142,8 @@ To install by hand, download the archive for your system, check its SHA-256 agai
 
 ## A link from an earlier setup
 
-An earlier setup made the command `nsvim` as a link in `~/.local/bin`. The installer does not
-touch it. To remove it, run `rm ~/.local/bin/nsvim`.
+An earlier setup made the command `nsvim` as a link in `~/.local/bin`. The installer replaces
+that link with its script.
 
 ## Uninstall
 

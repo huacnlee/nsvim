@@ -124,8 +124,10 @@ check "$name" '[ "$status" -eq 0 ]' &&
   check "$name" '[ "$status" -eq 0 ]' &&
   check "$name" '[ -x "$dest/share/nsvim/nsvim" ] && [ -f "$dest/share/nsvim/nsh/bundle.nshc" ]' &&
   check "$name" '[ -f "$dest/share/nsvim/nsh/app.json" ] && [ -f "$dest/share/nsvim/LICENSE" ]' &&
-  check "$name" '[ ! -e "$dest/bin" ] && [ ! -e "$root/home/.local/bin" ]' &&
+  check "$name" '[ ! -e "$dest/bin" ] && [ -x "$root/home/.local/bin/nsvim" ]' &&
   check "$name" '[ "$("$dest/share/nsvim/nsvim")" = "nsvim $version" ]' &&
+  check "$name" '[ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' &&
+  check "$name" 'grep -q "Add $root/home/.local/bin to PATH" "$root/out"' &&
   check "$name" 'grep -q "run: $dest/share/nsvim/nsvim \." "$root/out" && grep -q "make nvim, vim and vi open nsvim" "$root/out"' &&
   check "$name" 'grep -qxF "Exec=\"$dest/share/nsvim/nsvim\" %F" "$dest/share/applications/nsvim.desktop"' &&
   check "$name" '[ -f "$dest/share/icons/hicolor/scalable/apps/nsvim.svg" ]' &&
@@ -152,7 +154,7 @@ name='default prefix is ~/.local'
 fresh
 release x86_64-unknown-linux-gnu
 run_install
-check "$name" '[ "$status" -eq 0 ] && [ -x "$root/home/.local/share/nsvim/nsvim" ] && [ ! -e "$root/home/.local/bin" ]' &&
+check "$name" '[ "$status" -eq 0 ] && [ -x "$root/home/.local/share/nsvim/nsvim" ]' &&
   check "$name" '[ -f "$root/home/.local/share/applications/nsvim.desktop" ]' && ok "$name"
 
 name='bad checksum installs nothing'
@@ -202,8 +204,35 @@ check "$name" '[ "$status" -eq 0 ]' &&
   run_install --dir "$dest" &&
   check "$name" '[ "$status" -eq 0 ] && [ -f "$dest/nsvim.app/Contents/Resources/nsh/bundle.nshc" ]' &&
   check "$name" '[ "$(ls -A "$dest")" = nsvim.app ]' &&
-  check "$name" '[ ! -e "$root/home/.local/bin" ]' &&
+  check "$name" '[ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' &&
   check "$name" 'grep -q "run: $dest/nsvim.app/Contents/MacOS/nsvim \." "$root/out"' && ok "$name"
+
+name='the command on PATH, in --bin-dir'
+fresh
+release x86_64-unknown-linux-gnu
+status=0
+env PATH="$root/bin:$root/mock:$PATH" HOME="$root/home" FIXTURES="$root/fixtures" MOCK_LATEST="$version" \
+  TMPDIR="$root/tmp" "$shell" "$script" --dir "$dest" --bin-dir "$root/bin" > "$root/out" 2>&1 || status=$?
+check "$name" '[ "$status" -eq 0 ] && [ "$("$root/bin/nsvim")" = "nsvim $version" ]' &&
+  check "$name" '[ ! -e "$root/home/.local/bin" ] && grep -qx "Run: nsvim ." "$root/out"' && ok "$name"
+rm -rf "$root/bin"
+
+name='a foreign nsvim command stays'
+fresh
+release x86_64-unknown-linux-gnu
+mkdir -p "$root/home/.local/bin"
+printf '#!/bin/sh\necho mine\n' > "$root/home/.local/bin/nsvim"
+run_install --dir "$dest"
+check "$name" '[ "$status" -eq 0 ] && [ "$(cat "$root/home/.local/bin/nsvim")" = "$(printf "#!/bin/sh\necho mine")" ]' &&
+  check "$name" 'grep -q "is not from the nsvim installer" "$root/out"' && ok "$name"
+
+name='an old link from setup is replaced'
+fresh
+release x86_64-unknown-linux-gnu
+mkdir -p "$root/home/.local/bin"
+ln -s "$root/old/nsvim" "$root/home/.local/bin/nsvim"
+run_install --dir "$dest"
+check "$name" '[ "$status" -eq 0 ] && [ ! -L "$root/home/.local/bin/nsvim" ] && [ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' && ok "$name"
 
 name='invalid version downloads nothing'
 fresh

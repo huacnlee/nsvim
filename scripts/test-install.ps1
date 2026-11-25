@@ -6,6 +6,10 @@ $installer = Join-Path $PSScriptRoot 'install.ps1'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('nsvim-installer-test-' + [Guid]::NewGuid().ToString('N'))
 $oldArchitecture = $env:PROCESSOR_ARCHITECTURE
 $oldWowArchitecture = $env:PROCESSOR_ARCHITEW6432
+# The installer adds its folder to the user PATH. The test puts the old value back.
+$oldUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+$oldProcessPath = $env:Path
+function Get-UserPathEntries { @([Environment]::GetEnvironmentVariable('Path', 'User') -split ';' | Where-Object { $_ }) }
 # The mocks run in the child scope of the installer. They change one shared object, because a
 # new $script: variable in that scope is not visible here.
 $installerTestState = [PSCustomObject]@{
@@ -96,6 +100,7 @@ try {
     Assert-True ($installerTestState.ShortcutSaved.TargetPath -eq $exe) 'shortcut targets the installed executable'
     Assert-True ($installerTestState.ShortcutSaved.WorkingDirectory -eq $destination) 'shortcut working directory'
     Assert-True (@(Get-ChildItem -LiteralPath (Split-Path $destination -Parent) -Force).Count -eq 1) 'no staging folders stay'
+    Assert-True (@(Get-UserPathEntries | Where-Object { $_ -eq $destination }).Count -eq 1) 'install folder on the user PATH'
     Write-Host 'PASS latest release installation and shortcut'
 
     Set-Content -LiteralPath $exe -Value 'old executable'
@@ -104,11 +109,15 @@ try {
     Assert-True ($installerTestState.LatestCalls -eq 1) 'explicit version avoids latest lookup'
     Assert-True ((Get-Content $exe) -eq 'fixture executable v1') 'upgrade replaces executable'
     Assert-True (-not (Test-Path -LiteralPath (Join-Path $destination 'nsh\old.nshc'))) 'upgrade removes stale files'
+    Assert-True (@(Get-UserPathEntries | Where-Object { $_ -eq $destination }).Count -eq 1) 'upgrade adds the folder to PATH once'
     Write-Host 'PASS explicit version upgrade'
 
     $env:NSVIM_VERSION = '0.4.0'
     $env:NSVIM_INSTALL_DIR = Join-Path $testRoot 'from environment'
+    $env:NSVIM_NO_MODIFY_PATH = '1'
     & $installer
+    Assert-True ((Get-UserPathEntries) -notcontains $env:NSVIM_INSTALL_DIR) 'NSVIM_NO_MODIFY_PATH leaves PATH alone'
+    Remove-Item Env:\NSVIM_NO_MODIFY_PATH
     Assert-True (Test-Path -LiteralPath (Join-Path $env:NSVIM_INSTALL_DIR 'nsvim.exe')) 'NSVIM_INSTALL_DIR selects the folder'
     Assert-True ($installerTestState.LatestCalls -eq 1) 'NSVIM_VERSION avoids latest lookup'
     Remove-Item Env:\NSVIM_VERSION, Env:\NSVIM_INSTALL_DIR
@@ -144,5 +153,7 @@ try {
 } finally {
     $env:PROCESSOR_ARCHITECTURE = $oldArchitecture
     $env:PROCESSOR_ARCHITEW6432 = $oldWowArchitecture
+    [Environment]::SetEnvironmentVariable('Path', $oldUserPath, 'User')
+    $env:Path = $oldProcessPath
     Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

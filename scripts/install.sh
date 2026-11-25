@@ -4,15 +4,20 @@ set -eu
 
 version="${NSVIM_VERSION:-latest}"
 destination="${NSVIM_INSTALL_DIR:-}"
+bin_dir="${NSVIM_BIN_DIR:-}"
 usage() {
-  printf '%s\n' 'Usage: install.sh [--version VERSION] [--dir DIRECTORY]' \
-    'Defaults: the latest release, ~/Applications on macOS, ~/.local on Linux.'
+  printf '%s\n' 'Usage: install.sh [--version VERSION] [--dir DIRECTORY] [--bin-dir DIRECTORY]' \
+    'Defaults: the latest release, ~/Applications on macOS, ~/.local on Linux, ~/.local/bin.'
 }
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --version|--dir)
+    --version|--dir|--bin-dir)
       [ "$#" -ge 2 ] || { usage >&2; exit 2; }
-      if [ "$1" = --version ]; then version="$2"; else destination="$2"; fi
+      case "$1" in
+        --version) version="$2" ;;
+        --dir) destination="$2" ;;
+        *) bin_dir="$2" ;;
+      esac
       shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
@@ -21,6 +26,7 @@ done
 die() { printf 'nsvim: %s\n' "$*" >&2; exit 1; }
 for tool in curl tar awk; do command -v "$tool" >/dev/null || die "Required command missing: $tool"; done
 [ -n "${HOME:-}" ] || die 'HOME is not set.'
+bin_dir="${bin_dir:-$HOME/.local/bin}"
 case "$(uname -s)" in
   Darwin) platform=macos; suffix=apple-darwin; destination="${destination:-$HOME/Applications}" ;;
   Linux) platform=linux; suffix=unknown-linux-gnu; destination="${destination:-$HOME/.local}" ;;
@@ -110,12 +116,39 @@ else
   install -m644 "$source_dir/packaging/nsvim.svg" "$destination/share/icons/hicolor/scalable/apps/nsvim.svg"
   if command -v update-desktop-database >/dev/null; then update-desktop-database "$destination/share/applications" >/dev/null 2>&1 || true; fi
 fi
-# Nothing goes on PATH. The first launch runs a short setup. It can make nvim, vim and vi open
-# nsvim through shell aliases to the full program path.
+# The command nsvim: a small script that runs the program by its full path, so terminals, TUIs,
+# scripts and AI agents can start nsvim. A script, not a link, because the macOS program finds
+# its interface relative to its own path. A file that the installer did not write stays.
+marker='# Written by the nsvim installer.'
+command_path="$bin_dir/nsvim"
+command_state=skipped
+owned=false
+if [ -L "$command_path" ]; then
+  case "$(readlink "$command_path")" in *nsvim*) owned=true ;; esac
+elif [ ! -e "$command_path" ] || grep -qxF "$marker" "$command_path" 2>/dev/null; then
+  owned=true
+fi
+if [ "$owned" = true ]; then
+  mkdir -p "$bin_dir"
+  quoted="$(printf '%s' "$program" | sed "s/'/'\\\\''/g")"
+  printf '#!/bin/sh\n%s\nexec '"'"'%s'"'"' "$@"\n' "$marker" "$quoted" > "$work/command"
+  rm -f "$command_path"
+  install -m755 "$work/command" "$command_path"
+  command_state=installed
+fi
 if [ "$platform" = macos ]; then
-  printf 'Installed %s/nsvim.app\nOpen it from Finder, or run: %s .\n' "$destination" "$program"
+  printf 'Installed %s/nsvim.app\n' "$destination"
 else
-  printf 'Installed %s/share/nsvim\nOpen nsvim from the app launcher, or run: %s .\n' "$destination" "$program"
+  printf 'Installed %s/share/nsvim\n' "$destination"
+fi
+if [ "$command_state" = installed ]; then
+  printf 'Installed the command %s\n' "$command_path"
+  case ":${PATH:-}:" in
+    *":$bin_dir:"*) printf '%s\n' 'Run: nsvim .' ;;
+    *) printf 'Add %s to PATH to run nsvim from a terminal, or run: %s .\n' "$bin_dir" "$program" ;;
+  esac
+else
+  printf '%s is not from the nsvim installer, so it stays. Run: %s .\n' "$command_path" "$program"
 fi
 printf '%s\n' 'The first launch runs a short setup. It can make nvim, vim and vi open nsvim.'
 if [ "$platform" = linux ]; then
