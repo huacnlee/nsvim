@@ -35,7 +35,9 @@ export function Card(props: {
       selected={props.on}
       accessibilityLabel={props.title}
       onPress={act(() => SetupFlow.choose(props.choice))}
-      class={`flex-1 min-w-65 gap-3 pt-4.5 pb-3.5 px-4.5 rounded-(--radius) bg-background hover:bg-surface-raised ${props.class ?? ""}`}
+      class={`flex-1 min-w-65 gap-3 pt-4.5 pb-3.5 px-4.5 rounded-(--radius) bg-background ${props.class ?? ""}`}
+      // The picked card keeps its look under the pointer: only the others take hover.
+      classList={{ "hover:bg-surface-raised": !props.on }}
     >
       {/* The border is a child under the tag, so the tag hides the line under it. */}
       <View

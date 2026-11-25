@@ -549,3 +549,19 @@ fn the_ready_step_lists_the_tips_of_the_keymap() -> Result<(), String> {
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
     Ok(())
 }
+
+#[test]
+fn hover_changes_the_other_sections_and_not_the_active_one() -> Result<(), String> {
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    let bg = |app: &Headless, sel: &str| app.screen().view_style(sel).ok().flatten().and_then(|s| s.background_color);
+    let active = bg(&app, "id:section:appearance");
+    let other = bg(&app, "id:section:font");
+    app.hover("id:section:appearance")?;
+    app.wait(Duration::from_millis(100))?;
+    assert_eq!(bg(&app, "id:section:appearance"), active, "the active section keeps its look under the pointer");
+    app.hover("id:section:font")?;
+    app.wait_until("the other section takes hover", Duration::from_secs(2), |s| {
+        s.view_style("id:section:font").ok().flatten().and_then(|s| s.background_color) != other
+    })?;
+    Ok(())
+}

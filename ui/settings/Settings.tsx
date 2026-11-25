@@ -87,8 +87,9 @@ function Nav(props: { state: () => SettingsState }) {
                 accessibilityLabel={name()}
                 testID={`section:${name().toLowerCase()}`}
                 onPress={act(() => SettingsPage.showSection(name()))}
-                class="flex-row h-6.5 items-center hover:bg-surface-raised"
-                classList={{ "bg-selection": on(), "bg-muted": !on() }}
+                class="flex-row h-6.5 items-center"
+                // The active section keeps its look under the pointer: only the others take hover.
+                classList={{ "bg-selection": on(), "bg-muted": !on(), "hover:bg-surface-raised": !on() }}
               >
                 <View class="w-0.75 h-4 mr-3" classList={{ "bg-primary": on(), "bg-muted": !on() }} />
                 <Text class="text-sm text-foreground">{name()}</Text>
@@ -222,8 +223,8 @@ function Themes(props: { item: () => SettingsItem }) {
               accessibilityLabel={o().label}
               testID={`${key}=${o().value}`}
               onPress={act(() => SettingsPage.pick(key, o().value))}
-              class="flex-row w-49 h-8.5 px-2 gap-2.5 items-center rounded-(--radius) hover:opacity-85"
-              classList={{ "border-2": on(), "border-primary": on(), border: !on(), "border-border": !on() }}
+              class="flex-row w-49 h-8.5 px-2 gap-2.5 items-center rounded-(--radius)"
+              classList={{ "border-2": on(), "border-primary": on(), border: !on(), "border-border": !on(), "hover:opacity-85": !on() }}
             >
               <Chips colors={o().swatches} width={7} height={18} />
               <Text class="text-sm" classList={{ "text-foreground": on(), "text-muted-foreground": !on() }}>
