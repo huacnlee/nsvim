@@ -11,6 +11,13 @@
 
 </div>
 
+## The name
+
+nsvim has two meanings:
+
+- **N**ext **S**imple **Vim**: a small, fast editor with the Vim keys you know.
+- **N**ative **S**hell **Vim**: it draws its UI with [NSH (Native Shell)](https://nsh.dev).
+
 ## Where it comes from
 
 nsvim is a fork of [editor](https://github.com/bjarneo/editor) by
