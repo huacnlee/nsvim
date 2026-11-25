@@ -68,10 +68,11 @@ pub fn lang_for(path: Option<&Path>) -> Lang {
     let Some(path) = path else { return Lang::PLAIN };
     let name = path.file_name().map(|n| n.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
     let by_name = match name.as_str() {
-        "makefile" | "gnumakefile" => Some("makefile"),
+        "makefile" | "gnumakefile" | "bsdmakefile" => Some("makefile"),
         "dockerfile" | "containerfile" => Some("dockerfile"),
+        n if n.starts_with("dockerfile.") || n.starts_with("containerfile.") => Some("dockerfile"),
         "cmakelists.txt" => Some("cmake"),
-        "cargo.lock" | "uv.lock" | "poetry.lock" => Some("toml"),
+        "cargo.lock" | "uv.lock" | "poetry.lock" | "pdm.lock" | "pipfile" => Some("toml"),
         ".bashrc" | ".zshrc" | ".profile" | ".bash_profile" | "pkgbuild" => Some("bash"),
         _ => None,
     };
@@ -90,7 +91,11 @@ pub fn lang_for(path: Option<&Path>) -> Lang {
         "sh" => "bash",
         "yml" => "yaml",
         "md" | "markdown" => "markdown",
-        "htm" => "html",
+        "htm" | "xhtml" => "html",
+        "svg" | "xsd" | "xsl" | "xslt" | "plist" | "csproj" | "fsproj" | "vcxproj" | "props" | "xaml" => "xml",
+        "mk" | "mak" => "makefile",
+        "containerfile" => "dockerfile",
+        "zon" => "zig",
         "cs" => "csharp",
         "hs" => "haskell",
         "ml" | "mli" => "ocaml",
@@ -122,5 +127,16 @@ mod tests {
         assert_eq!(lang_label(lang_for(Some(Path::new("Cargo.toml")))), "toml");
         assert_eq!(lang_label(lang_for(Some(Path::new("README.md")))), "markdown");
         assert_eq!(lang_label(lang_for(Some(Path::new(".gitignore")))), "text");
+        for (file, lang) in [
+            ("Cargo.lock", "toml"),
+            ("Pipfile", "toml"),
+            ("ci.yml", "yaml"),
+            ("icon.svg", "xml"),
+            ("rules.mk", "makefile"),
+            ("Dockerfile.dev", "dockerfile"),
+            ("build.zig.zon", "zig"),
+        ] {
+            assert_eq!(lang_label(lang_for(Some(Path::new(file)))), lang, "{file}");
+        }
     }
 }

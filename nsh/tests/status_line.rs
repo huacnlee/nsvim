@@ -140,3 +140,16 @@ fn the_status_line_names_languages_and_line_endings_as_people_write_them() -> Re
     wait_text(&mut app, "id:encoding", "UTF-8 · CRLF")?;
     Ok(())
 }
+
+#[test]
+fn the_status_line_names_toml_and_lock_files() -> Result<(), String> {
+    assert_eq!(language_name("toml"), "TOML");
+    assert_eq!(language_name("yaml"), "YAML");
+    assert_eq!(language_name("makefile"), "Makefile");
+    assert_eq!(language_name("dockerfile"), "Dockerfile");
+    let dir = scratch();
+    let lock = write(dir.path(), "Cargo.lock", "[[package]]\nname = \"a\"\n");
+    let mut app = start_files(&[&lock], None);
+    wait_text(&mut app, "id:language", "TOML")?;
+    Ok(())
+}

@@ -26,7 +26,7 @@ export const copy = {
     details: 'Small, fast and native.',
     facts: [
       ['Real Vim, or classic keys', 'Counts, operators, text objects, dot repeat, registers, macros, marks and Visual block. Or no modes at all, with multiple cursors. Pick one at first launch and switch any time.'],
-      ['Code-aware', 'Tree-sitter text objects and motions in 13 languages, and highlighting for Markdown too. LSP with diagnostics, go to definition, references, hover, completion, rename and code actions.'],
+      ['Code-aware', 'Tree-sitter text objects and motions in 15 languages, and highlighting in 23, from Rust to TOML, YAML and Markdown. LSP with diagnostics, go to definition, references, hover, completion, rename and code actions.'],
       ['Works with your agent', 'No AI inside. Claude Code, Codex or any CLI agent drives nsvim over its mcp or ctl command. It reads your selection, points you at code, and proposes changes that you accept with y.'],
       ['Safe with your files', 'Crash recovery, undo that survives a restart, changed lines marked when a git checkout or an agent changes a file, and atomic saves.'],
       ['Native on each platform', 'The UI is the platform’s own views, through Native Shell: GTK 4 on Linux, AppKit on macOS, WinUI on Windows. No file I/O or language server runs on the UI thread.'],

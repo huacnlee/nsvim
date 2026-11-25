@@ -21,6 +21,15 @@ pub enum Lang {
     Json,
     Lua,
     Markdown,
+    Toml,
+    Yaml,
+    Html,
+    Css,
+    Xml,
+    Make,
+    Dockerfile,
+    Zig,
+    Php,
 }
 
 /// The language of a file, by its name, then its extension.
@@ -30,6 +39,14 @@ pub fn lang_for(path: Option<&Path>) -> Option<Lang> {
     let by_name = match name.as_str() {
         ".bashrc" | ".bash_profile" | ".profile" | ".zshrc" | ".zprofile" | "pkgbuild" => Some(Lang::Bash),
         "gemfile" | "rakefile" | "guardfile" | "vagrantfile" => Some(Lang::Ruby),
+        "cargo.lock" | "uv.lock" | "poetry.lock" | "pdm.lock" | "pipfile" => Some(Lang::Toml),
+        "makefile" | "gnumakefile" | "bsdmakefile" => Some(Lang::Make),
+        // `Dockerfile.dev`, `Containerfile.prod`. The web has no Dockerfile grammar.
+        n if cfg!(not(target_arch = "wasm32"))
+            && (n == "dockerfile" || n == "containerfile" || n.starts_with("dockerfile.") || n.starts_with("containerfile.")) =>
+        {
+            Some(Lang::Dockerfile)
+        }
         _ => None,
     };
     if by_name.is_some() {
@@ -51,6 +68,16 @@ pub fn lang_for(path: Option<&Path>) -> Option<Lang> {
         "json" | "jsonc" => Lang::Json,
         "lua" if cfg!(not(target_arch = "wasm32")) => Lang::Lua,
         "md" | "markdown" | "mkd" | "mdx" => Lang::Markdown,
+        "toml" => Lang::Toml,
+        "yaml" | "yml" => Lang::Yaml,
+        "html" | "htm" | "xhtml" => Lang::Html,
+        "css" => Lang::Css,
+        "xml" | "svg" | "xsd" | "xsl" | "xslt" | "plist" | "csproj" | "fsproj" | "vcxproj" | "props" | "xaml" => Lang::Xml,
+        "mk" | "mak" => Lang::Make,
+        "dockerfile" | "containerfile" if cfg!(not(target_arch = "wasm32")) => Lang::Dockerfile,
+        "zig" | "zon" => Lang::Zig,
+        // The web has no PHP grammar.
+        "php" | "phtml" if cfg!(not(target_arch = "wasm32")) => Lang::Php,
         _ => return None,
     })
 }
@@ -68,6 +95,8 @@ pub fn lang_named(name: &str) -> Option<Lang> {
         "shell" | "console" | "shellsession" => "sh",
         "c++" => "cpp",
         "markdown" => "md",
+        "make" | "makefile" => "mk",
+        "docker" => "dockerfile",
         other => other,
     };
     lang_for(Some(Path::new(&format!("x.{ext}"))))
@@ -91,6 +120,15 @@ impl Lang {
             Lang::Json => "json",
             Lang::Lua => "lua",
             Lang::Markdown => "markdown",
+            Lang::Toml => "toml",
+            Lang::Yaml => "yaml",
+            Lang::Html => "html",
+            Lang::Css => "css",
+            Lang::Xml => "xml",
+            Lang::Make => "makefile",
+            Lang::Dockerfile => "dockerfile",
+            Lang::Zig => "zig",
+            Lang::Php => "php",
         }
     }
 
@@ -119,6 +157,23 @@ impl Lang {
             Lang::Lua => tree_sitter_json::LANGUAGE.into(),
             // The block grammar. Highlighting parses inline text with `INLINE_LANGUAGE`.
             Lang::Markdown => tree_sitter_md::LANGUAGE.into(),
+            Lang::Toml => tree_sitter_toml_ng::LANGUAGE.into(),
+            Lang::Yaml => tree_sitter_yaml::LANGUAGE.into(),
+            Lang::Html => tree_sitter_html::LANGUAGE.into(),
+            Lang::Css => tree_sitter_css::LANGUAGE.into(),
+            Lang::Xml => tree_sitter_xml::LANGUAGE_XML.into(),
+            Lang::Make => tree_sitter_make::LANGUAGE.into(),
+            #[cfg(not(target_arch = "wasm32"))]
+            Lang::Dockerfile => tree_sitter_containerfile::LANGUAGE.into(),
+            // `lang_for` gives no Dockerfile on the web.
+            #[cfg(target_arch = "wasm32")]
+            Lang::Dockerfile => tree_sitter_json::LANGUAGE.into(),
+            Lang::Zig => tree_sitter_zig::LANGUAGE.into(),
+            #[cfg(not(target_arch = "wasm32"))]
+            Lang::Php => tree_sitter_php::LANGUAGE_PHP.into(),
+            // `lang_for` gives no PHP on the web.
+            #[cfg(target_arch = "wasm32")]
+            Lang::Php => tree_sitter_json::LANGUAGE.into(),
         }
     }
 
@@ -147,7 +202,9 @@ impl Lang {
             Lang::Bash => &["function_definition"],
             Lang::Json => &[],
             Lang::Lua => &["function_declaration", "function_definition"],
-            Lang::Markdown => &[],
+            Lang::Zig => &["function_declaration"],
+            Lang::Php => &["function_definition", "method_declaration", "anonymous_function", "arrow_function"],
+            _ => &[],
         }
     }
 
@@ -172,7 +229,9 @@ impl Lang {
                 &["class_declaration", "interface_declaration", "enum_declaration", "record_declaration", "annotation_type_declaration"]
             }
             Lang::Ruby => &["class", "module", "singleton_class"],
-            Lang::Bash | Lang::Json | Lang::Lua | Lang::Markdown => &[],
+            Lang::Zig => &["struct_declaration", "enum_declaration", "union_declaration"],
+            Lang::Php => &["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"],
+            _ => &[],
         }
     }
 
@@ -199,8 +258,9 @@ impl Lang {
             Lang::Cpp => &["parameter_list", "argument_list", "template_parameter_list", "template_argument_list"],
             Lang::Java => &["formal_parameters", "argument_list", "type_parameters", "type_arguments", "inferred_parameters"],
             Lang::Ruby => &["method_parameters", "lambda_parameters", "block_parameters", "argument_list"],
-            Lang::Bash | Lang::Json | Lang::Markdown => &[],
-            Lang::Lua => &["parameters", "arguments"],
+            Lang::Lua | Lang::Zig => &["parameters", "arguments"],
+            Lang::Php => &["formal_parameters", "arguments"],
+            _ => &[],
         }
     }
 
@@ -208,6 +268,8 @@ impl Lang {
     pub fn comments(self) -> &'static [&'static str] {
         match self {
             Lang::Rust | Lang::Java => &["line_comment", "block_comment"],
+            Lang::Css => &["comment", "js_comment"],
+            Lang::Xml => &["Comment"],
             _ => &["comment"],
         }
     }
@@ -218,6 +280,7 @@ impl Lang {
             Lang::Rust => &["attribute_item"],
             Lang::JavaScript | Lang::TypeScript | Lang::Tsx => &["decorator"],
             Lang::Java => &["marker_annotation", "annotation"],
+            Lang::Php => &["attribute_list"],
             Lang::Cpp => &["attribute_declaration"],
             _ => &[],
         }
@@ -239,8 +302,11 @@ impl Lang {
     pub fn line_marker(self, text: &str) -> Option<&'static str> {
         let t = text.trim_start();
         let markers: &[&'static str] = match self {
-            Lang::Python | Lang::Ruby | Lang::Bash => &["#"],
+            Lang::Python | Lang::Ruby | Lang::Bash | Lang::Toml | Lang::Yaml | Lang::Make | Lang::Dockerfile => &["#"],
+            // HTML, XML and CSS have only block comments.
+            Lang::Html | Lang::Xml | Lang::Css => &[],
             Lang::Lua => &["---", "--"],
+            Lang::Php => &["///", "//", "#"],
             _ => &["///", "//!", "//"],
         };
         if matches!(self, Lang::Lua) && t.starts_with("--[") {
@@ -261,8 +327,37 @@ mod tests {
         assert_eq!(lang_for(Some(Path::new("/home/x/.bashrc"))), Some(Lang::Bash));
         assert_eq!(lang_for(Some(Path::new("Gemfile"))), Some(Lang::Ruby));
         assert_eq!(lang_for(Some(Path::new("README.md"))), Some(Lang::Markdown));
-        assert_eq!((lang_named("rust"), lang_named("sh"), lang_named("toml")), (Some(Lang::Rust), Some(Lang::Bash), None));
+        assert_eq!((lang_named("rust"), lang_named("sh"), lang_named("toml")), (Some(Lang::Rust), Some(Lang::Bash), Some(Lang::Toml)));
+        assert_eq!(
+            (lang_named("yml"), lang_named("make"), lang_named("docker")),
+            (Some(Lang::Yaml), Some(Lang::Make), Some(Lang::Dockerfile))
+        );
+        for (file, lang) in [
+            ("Cargo.toml", Lang::Toml),
+            ("Cargo.lock", Lang::Toml),
+            ("uv.lock", Lang::Toml),
+            ("poetry.lock", Lang::Toml),
+            ("Pipfile", Lang::Toml),
+            (".github/ci.yml", Lang::Yaml),
+            ("compose.YAML", Lang::Yaml),
+            ("index.html", Lang::Html),
+            ("site.css", Lang::Css),
+            ("icon.svg", Lang::Xml),
+            ("pom.xml", Lang::Xml),
+            ("Makefile", Lang::Make),
+            ("GNUmakefile", Lang::Make),
+            ("rules.mk", Lang::Make),
+            ("Dockerfile", Lang::Dockerfile),
+            ("Dockerfile.dev", Lang::Dockerfile),
+            ("Containerfile", Lang::Dockerfile),
+            ("build.zig", Lang::Zig),
+            ("build.zig.zon", Lang::Zig),
+            ("index.php", Lang::Php),
+        ] {
+            assert_eq!(lang_for(Some(Path::new(file))), Some(lang), "{file}");
+        }
         assert_eq!(lang_for(Some(Path::new("notes.txt"))), None);
+        assert_eq!(lang_for(Some(Path::new("Cargo.lock.bak"))), None);
         assert_eq!(lang_for(None), None);
     }
 
@@ -283,6 +378,15 @@ mod tests {
             Lang::Json,
             Lang::Lua,
             Lang::Markdown,
+            Lang::Toml,
+            Lang::Yaml,
+            Lang::Html,
+            Lang::Css,
+            Lang::Xml,
+            Lang::Make,
+            Lang::Dockerfile,
+            Lang::Zig,
+            Lang::Php,
         ] {
             let mut p = tree_sitter::Parser::new();
             p.set_language(&l.language()).unwrap_or_else(|e| panic!("{l:?}: {e}"));
