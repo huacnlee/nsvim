@@ -81,6 +81,8 @@ fn closing_over_unsaved_edits_asks_once_then_quits() {
     doc.buf.replace(at, at, "y");
     doc.buf.commit(Default::default());
     a.ed.docs.push(doc);
+    // A unit test writes no session file into the user's state folder.
+    a.exited = true;
     let mut tx = Tx::new();
     a.clock = 10.0;
     a.close_requested(&mut tx);

@@ -125,12 +125,27 @@ fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
 
 /// The app state the props ask for.
 fn make_app(props: &AppProps) -> app::App {
-    let Some(project) = props.project.get_untracked() else { return app::App::init() };
-    let cfg = props.config.get_untracked().map(|t| toml::from_str(t.as_str()).expect("config parses")).unwrap_or_default();
-    let mut a = app::App::new(cfg, PathBuf::from(project.as_str()), props.first_launch.get_untracked(), None);
-    let files = props.files.get_untracked().unwrap_or_default();
-    a.to_open = files.lines().filter(|l| !l.is_empty()).map(|l| (PathBuf::from(l), None)).collect();
-    a.config_file = props.config_file.get_untracked().map(|f| PathBuf::from(f.as_str()));
+    let l = Launch {
+        project: props.project.get_untracked().map(|p| PathBuf::from(p.as_str())),
+        config: props.config.get_untracked().map(|t| t.as_str().to_string()),
+        files: props.files.get_untracked().unwrap_or_default().lines().filter(|l| !l.is_empty()).map(PathBuf::from).collect(),
+        first_launch: props.first_launch.get_untracked(),
+    };
+    let mut a = app_for(&l);
+    if l.project.is_some() {
+        a.config_file = props.config_file.get_untracked().map(|f| PathBuf::from(f.as_str()));
+    }
+    a
+}
+
+/// The app state a launch asks for: with a project, that project, config and files, and the
+/// last session when no file is given. Without one, the editor as the command line and
+/// config.toml ask (reads files).
+pub fn app_for(l: &Launch) -> app::App {
+    let Some(project) = &l.project else { return app::App::init() };
+    let cfg = l.config.as_deref().map(|t| toml::from_str(t).expect("config parses")).unwrap_or_default();
+    let mut a = app::App::new(cfg, project.clone(), l.first_launch, None);
+    a.to_open = l.files.iter().map(|f| (f.clone(), None)).collect();
     // The tests' projects are new folders, so only a test that saved a session restores one.
     a.restore_session();
     a
@@ -140,7 +155,13 @@ fn make_app(props: &AppProps) -> app::App {
 /// its own text and cursor.
 #[component]
 pub fn App(props: AppProps) -> impl IntoElement {
-    let s = Session::new(make_app(&props));
+    window(Session::new(make_app(&props)))
+}
+
+/// The editor window for session `s`: the theme tokens, the workers, the quit hooks, the view
+/// that takes every key, and the screens. `App` calls it. A test root can call it with a
+/// session it keeps, to read the app state.
+pub fn window(s: Session) -> impl IntoElement {
     // The colours follow config.toml's theme, the setup's pick and the system appearance.
     let light = s.view(|a| ui::palette(a, false));
     let dark_palette = s.view(|a| ui::palette(a, true));

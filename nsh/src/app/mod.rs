@@ -420,6 +420,7 @@ impl App {
                 {
                     p.refilter(&self.files);
                 }
+                self.ask_preview();
             }
             Event::Git(info) => self.git = info,
             Event::Signs { path, version, signs } => {
@@ -440,6 +441,7 @@ impl App {
                     {
                         p.sel = p.sel.min(self.grep.hits.len().saturating_sub(1));
                     }
+                    self.ask_preview();
                 }
             }
             Event::FsChanged(paths) => self.fs_changed(paths),
