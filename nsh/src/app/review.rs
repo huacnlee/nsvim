@@ -249,6 +249,16 @@ impl App {
         }
     }
 
+    /// A request that an embedding host sends (the host event `editor.request`): the same
+    /// `{"cmd": .., "args": {..}}` as the control socket takes, such as `propose`. The answer
+    /// goes nowhere.
+    pub fn host_request(&mut self, v: &serde_json::Value, tx: &mut super::fx::Tx) {
+        let Some(cmd) = v["cmd"].as_str() else { return };
+        let req = crate::ipc::Request { id: 0, cmd: cmd.to_string(), args: v["args"].clone() };
+        let (reply, _answer) = std::sync::mpsc::channel();
+        self.ipc(req, reply, tx);
+    }
+
     /// Keys while a proposal shows. True when the key was used.
     pub fn proposal_key(&mut self, k: KeyInput) -> bool {
         let Some(i) = self.proposal_here() else { return false };
