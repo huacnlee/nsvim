@@ -206,7 +206,7 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     app.wait_for("Ready")?;
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
     // The last step says how to start nsvim: the aliases are on by default.
-    app.wait_for("text:/nvim . opens a folder/")?;
+    app.wait_for("text:/nsvim . opens a folder/")?;
     app.press("label:Open nsvim")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
