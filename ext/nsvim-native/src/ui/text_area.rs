@@ -302,19 +302,30 @@ fn caret(s: Session, gutter: Memo<usize>) -> impl IntoElement {
             Shape::Block => "foreground",
         })
     };
-    // A block draws the char under it in the background's colour.
+    // A block draws the char under it in the background's colour, centred in the cell like
+    // the row's text: a column would pin it to the top where the font's line box is shorter
+    // than the cell (Windows).
     let ink = move || color(if at.get().visual { "primary-foreground" } else { "background" });
     let under = move || {
         let c = at.get();
         if c.shape == Shape::Block { c.ch.to_string() } else { String::new() }
     };
     let font = s.font;
-    view().absolute().left(x).top(y).w(w).h(h).items_center().pointer_events(PointerEvents::None).bg(fill).test_id("caret").child(dynamic(
-        move || {
+    view()
+        .absolute()
+        .left(x)
+        .top(y)
+        .w(w)
+        .h(h)
+        .flex_row()
+        .items_center()
+        .pointer_events(PointerEvents::None)
+        .bg(fill)
+        .test_id("caret")
+        .child(dynamic(move || {
             let f = font.get();
             code_text(&f, move || SharedString::from(under())).text_color(ink).into_element()
-        },
-    ))
+        }))
 }
 
 /// What the area shows with no file open: the keys to open one.

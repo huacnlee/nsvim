@@ -21,7 +21,7 @@ function then(f: () => void) {
 /** The frame of a tab. The tab that shows has a raised background. The other tabs have the
  * background of the line, and a softer step of the raised background under the pointer. */
 function frame(on: boolean) {
-  return `flex-row shrink-0 self-stretch items-center cursor-pointer pl-3 ${on ? "bg-surface-raised" : "hover:bg-surface-raised/50"}`;
+  return `flex-row shrink-0 self-stretch items-center cursor-pointer pl-3 pr-1.5 ${on ? "bg-surface-raised" : "hover:bg-surface-raised/50"}`;
 }
 
 /** One line of interface text. With `cutStart`, text that does not fit loses its start, not
@@ -82,8 +82,10 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
       }}
     >
       <Label font={props.font} on={props.tab().on} text={props.tab().name} />
+      {/* Only the mark's square takes the click, not the tab's full height. */}
       <View
-        class="self-stretch justify-center px-2.5 cursor-pointer hover:bg-border"
+        class="ml-1.5 items-center justify-center rounded cursor-pointer hover:bg-border"
+        style={{ width: props.font().size + 7, height: props.font().size + 7 }}
         role="button"
         accessibilityLabel="Close"
         testID={`tab-close-${i}`}
