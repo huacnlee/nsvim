@@ -197,10 +197,11 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     app.press("label:open editor →")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
-    app.wait_for("INSERT")?;
     let cfg =
         written(&mut app, "config.toml with the classic keymap", |t| get(t, "keys", "map").and_then(|v| v.as_str()) == Some("classic"))?;
     assert_eq!(get(&cfg, "keys", "map").and_then(|v| v.as_str()), Some("classic"));
+    // The classic keymap shows no vim mode.
+    assert!(!app.screen().matches("id:mode-badge")?, "{:?}", app.screen().texts());
     // The terminal step ran what it showed, in the tests' own home: $EDITOR in the rc file.
     let rc = std::path::PathBuf::from(std::env::var_os("HOME").ok_or("no HOME")?).join(".bashrc");
     app.wait_until("the rc file", Duration::from_secs(5), |_| std::fs::read_to_string(&rc).is_ok_and(|t| t.contains("export EDITOR=")))?;
