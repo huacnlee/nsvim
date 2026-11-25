@@ -129,7 +129,7 @@ pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option
     if let (Some(l), Some(first)) = (line, paths.first_mut()) {
         first.1 = Some(Pos::new(l, 0));
     }
-    let Some((first, _)) = paths.first().cloned() else { return (cwd.clone(), Vec::new()) };
+    let Some((first, _)) = paths.first().cloned() else { return (launch_dir(&cwd, dirs::home_dir()), Vec::new()) };
     if first.is_dir() {
         let rest = paths.into_iter().skip(1).filter(|(p, _)| !p.is_dir()).collect();
         return (first, rest);
@@ -137,6 +137,24 @@ pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option
     let dir = first.parent().map(Path::to_path_buf).unwrap_or(cwd);
     let root = git_top(&dir).or_else(|| project_root(&dir)).unwrap_or(dir);
     (root, paths.into_iter().filter(|(p, _)| !p.is_dir()).collect())
+}
+
+/// The folder to open when no path was given. A launcher (Finder, the Start menu, a desktop
+/// entry) starts the app in `/`, a drive root or the app's own folder; open the home folder then.
+fn launch_dir(cwd: &Path, home: Option<PathBuf>) -> PathBuf {
+    let exe_dir = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf));
+    let system = std::env::var_os("SystemRoot").map(PathBuf::from);
+    launch_dir_with(cwd, home, &[exe_dir, system].into_iter().flatten().collect::<Vec<_>>())
+}
+
+/// `launch_dir` with the app's and the system's folders given; `cwd` inside one of them, or at a
+/// filesystem root, means a launcher started the app.
+fn launch_dir_with(cwd: &Path, home: Option<PathBuf>, app_dirs: &[PathBuf]) -> PathBuf {
+    let launched = cwd.parent().is_none() || app_dirs.iter().any(|d| cwd.starts_with(d));
+    match home {
+        Some(home) if launched && home.is_dir() => home,
+        _ => cwd.to_path_buf(),
+    }
 }
 
 /// `src/main.rs:42` → (`src/main.rs`, line 41). A path that exists as written keeps its colon.
@@ -235,6 +253,23 @@ mod tests {
         let (_, files) = targets_in(dir.path(), &["+7".to_string(), "a.rs".to_string(), "b.rs".to_string()]);
         assert_eq!(files[0], (dir.path().join("a.rs"), Some(Pos::new(6, 0))));
         assert_eq!(files[1], (dir.path().join("b.rs"), None));
+    }
+
+    #[test]
+    fn a_launcher_start_opens_the_home_folder() {
+        let home = tempfile::tempdir().unwrap();
+        let h = Some(home.path().to_path_buf());
+        let app = PathBuf::from("/Applications/nsvim.app/Contents/MacOS");
+        // Finder and desktop launchers start in `/`, the Start menu in the app's or system folder.
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[]), home.path());
+        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app)), home.path());
+        // A terminal start keeps its folder, even above the app's own folder.
+        assert_eq!(launch_dir_with(Path::new("/work/proj"), h.clone(), &[app]), Path::new("/work/proj"));
+        assert_eq!(
+            launch_dir_with(Path::new("/Applications"), h, &[PathBuf::from("/Applications/nsvim.app/Contents/MacOS")]),
+            Path::new("/Applications")
+        );
+        assert_eq!(launch_dir_with(Path::new("/"), None, &[]), Path::new("/"));
     }
 
     #[test]
