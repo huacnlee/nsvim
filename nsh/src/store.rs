@@ -41,6 +41,11 @@ pub struct Session {
     started: Stored<Instant>,
     /// What the press of a drag selects by (`Drag::data`).
     drag_data: Stored<f32>,
+    /// The one wake timer that is set, and when it fires (`wake_after`).
+    wake: Stored<Option<(Instant, Spawned<()>)>>,
+    /// The owner of the session. Wake timers run under it, so they live as long as the
+    /// session and not only as long as the view that made the update.
+    owner: Owner,
     /// The editor's window, once its content is made (`attach`).
     win: Stored<Option<WindowRef>>,
     /// What the text area shows.
@@ -68,7 +73,18 @@ impl Session {
             let rows = grid.with(|g| g.rows);
             app.with(|a| model::app_frame(a, rows))
         });
-        Session { app, rev, grid, started: stored(Instant::now()), drag_data: stored(0.0), win: stored(None), frame, font }
+        Session {
+            app,
+            rev,
+            grid,
+            started: stored(Instant::now()),
+            drag_data: stored(0.0),
+            wake: stored(None),
+            owner: Owner::current(),
+            win: stored(None),
+            frame,
+            font,
+        }
     }
 
     /// A memo of the part of the app a view shows. It runs again after each update, and its
@@ -102,7 +118,19 @@ impl Session {
 
     /// `update` for an input event with these modifiers and this button.
     pub fn update_with<R>(&self, mut tx: Tx, f: impl FnOnce(&mut App, &mut Tx) -> R) -> R {
+        // The app's clock is the time of this update, so an edit records the time it happened.
+        let clock = self.clock();
+        let edited_at = self.app.with(|a| {
+            a.clock = clock;
+            a.last_edit
+        });
         let out = self.app.with(|a| f(a, &mut tx));
+        // Only a poll runs the work that follows an edit: the title's mark, the language
+        // server's sync, the git signs and the swap file. Each asks for its own later wake.
+        // Nothing else polls after a key, so an edit asks for a poll now.
+        if self.app.with(|a| a.last_edit != edited_at) {
+            tx.wake_after(Duration::ZERO);
+        }
         self.rev.update(|n| *n += 1);
         // NSH takes no activation token from the app. Without one, a Wayland compositor marks
         // the window as wanting attention.
@@ -176,9 +204,28 @@ impl Session {
                 });
             }
             Effect::PopupMenu { menu, x, y, then } => crate::ui::overlays::native_menu(me, menu, x, y, then),
-            Effect::WakeAfter(delay) => {
-                set_timeout(delay, move || me.poll());
-            }
+            Effect::WakeAfter(delay) => me.wake_after(delay),
+        }
+    }
+
+    /// Polls the app after `delay`. One timer at a time: each poll asks again for what it
+    /// still waits for, so one timer is enough. A timer that fires as soon or sooner keeps its
+    /// place. A later one is cancelled for the new one. Before, each ask set a timer of its
+    /// own, and every poll asked for up to three more, so the polls piled up.
+    fn wake_after(&self, delay: Duration) {
+        let at = nsh_core::time::now() + delay;
+        if self.wake.with(|w| w.as_ref().is_some_and(|(t, _)| *t <= at)) {
+            return;
+        }
+        let me = *self;
+        let timer = self.owner.run(|| {
+            set_timeout(delay, move || {
+                me.wake.with(|w| *w = None);
+                me.poll();
+            })
+        });
+        if let Some((_, old)) = self.wake.with(|w| w.replace((at, timer))) {
+            old.cancel();
         }
     }
 

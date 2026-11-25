@@ -380,3 +380,21 @@ fn every_key_shows_in_a_list_with_search() {
     f.keys("?");
     assert!(f.check(|a| picking(a, PickKind::Keys)), "? in the tree shows every key");
 }
+
+/// An edit when the app is quiet still runs the work that follows it. Only a poll runs that
+/// work, and before the fix nothing polled after a key: the title kept no `[+]`, and the
+/// language server, the git signs and the swap file never heard of the edit.
+#[test]
+fn an_edit_when_the_app_is_quiet_reaches_the_title_the_server_the_signs_and_the_swap() {
+    let dir = scratch();
+    let file = write(dir.path(), "quiet.rs", "fn main() {}\n");
+    let mut f = flow(&file, Some(&keymap_config("neovim")));
+    // Past the swap file's 2 s pause, so no wake from the open is left.
+    f.ui.idle(Duration::from_millis(2500)).unwrap();
+    f.keys("x");
+    let p = file.clone();
+    f.settle("the edit reaches every follower", move |a| {
+        let (m, next) = (&a.meta[&p], a.ed.buf().version() + 1);
+        a.title.contains("[+]") && m.lsp_sent == next && m.signs_asked == next && m.swapped == next
+    });
+}

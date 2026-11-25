@@ -591,8 +591,9 @@ impl App {
         if m.signs_asked == version + 1 {
             return false;
         }
-        if version != m.signs_version && clock - self.last_edit < 0.3 && version > 0 {
-            tx.wake_after(Duration::from_millis(320));
+        let idle = clock - self.last_edit;
+        if version != m.signs_version && idle < 0.3 && version > 0 {
+            tx.wake_after(Duration::from_secs_f64(0.32 - idle));
             return false;
         }
         m.signs_asked = version + 1;

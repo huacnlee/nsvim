@@ -6,7 +6,7 @@
 
 mod common;
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use common::{Flow, flow, keymap_config, scratch, write};
 use editor::buffer::{Buffer, Pos};
@@ -201,6 +201,9 @@ fn bench_first_edit_in_core() {
     }
 }
 
+/// The first edit keys in a small file, as the engine thread does them. A step of the test
+/// driver waits until the app is quiet, so its wall time also counts work on other threads.
+/// The engine thread's CPU time is the cost of the key alone.
 #[test]
 #[ignore]
 fn bench_first_edit_small_file() {
@@ -209,10 +212,75 @@ fn bench_first_edit_small_file() {
     let t = Instant::now();
     let mut f = flow(&file, Some(&keymap_config("neovim")));
     eprintln!("small file open: {:.2} ms", ms(t));
-    for k in ["x", "x", "u", "u", "x"] {
-        let took = keys(&mut f, k);
-        eprintln!("small file {k}: {took:.2} ms");
-        budget("a key in a small file", took, 200.0);
+    let engine = Thread::engine(&f);
+    let io = engine.io_calls();
+    // The first key at once, while the open's background work is not in yet. The driver waits
+    // for that work: the language server's first message and the file watcher's first event.
+    // That wait is wall time, not work of the key.
+    let (wall, cpu) = engine.time(|| f.keys("x"));
+    eprintln!("small file, first x at once: wall {wall:.2} ms, engine thread {cpu:.3} ms");
+    budget("the engine thread's time for the first key", cpu, 10.0);
+    budget("the first key with the open's background work", wall, 500.0);
+    // The next keys, each when the app is quiet: the wall time is the key's own.
+    for k in ["x", "u", "u", "x"] {
+        f.ui.idle(Duration::from_millis(250)).unwrap();
+        let (wall, cpu) = engine.time(|| f.keys(k));
+        eprintln!("small file {k}: wall {wall:.2} ms, engine thread {cpu:.3} ms");
+        budget("a key in a small file", wall, 20.0);
+        budget("the engine thread's time for a key", cpu, 5.0);
+    }
+    // The app's key handler alone, without the platform's dispatch and the frame.
+    for k in ['x', 'u'] {
+        let took = f.on_engine(move |s| {
+            let t = Instant::now();
+            s.key(editor::editor::KeyInput::ch(k));
+            ms(t)
+        });
+        eprintln!("small file {k}, the app's handler: {took:.3} ms");
+        budget("the app's key handler", took, 2.0);
+    }
+    // File and process work belongs on the workers.
+    let calls = engine.io_calls().zip(io).map(|(b, a)| b - a);
+    eprintln!("the engine thread's read and write calls for the keys: {calls:?}");
+    assert!(calls.unwrap_or(0) == 0, "the engine thread made {calls:?} read or write calls for the keys");
+    if let Some(children) = engine.read("children") {
+        assert!(children.trim().is_empty(), "the engine thread started processes: {children}");
+    }
+}
+
+/// The engine thread, seen through `/proc`. On other systems it reads nothing and checks
+/// nothing.
+struct Thread(Option<String>);
+
+impl Thread {
+    fn engine(f: &Flow) -> Thread {
+        Thread(f.on_engine(|_| std::fs::read_link("/proc/thread-self").ok()?.file_name().map(|n| n.to_string_lossy().into_owned())))
+    }
+
+    fn read(&self, file: &str) -> Option<String> {
+        std::fs::read_to_string(format!("/proc/self/task/{}/{file}", self.0.as_ref()?)).ok()
+    }
+
+    /// The CPU time the thread used, in ms.
+    fn cpu_ms(&self) -> Option<f64> {
+        Some(self.read("schedstat")?.split_whitespace().next()?.parse::<u64>().ok()? as f64 / 1e6)
+    }
+
+    /// The wall time and the thread's CPU time of `step`, in ms. The CPU time is 0 where
+    /// `/proc` is not.
+    fn time(&self, step: impl FnOnce()) -> (f64, f64) {
+        let cpu = self.cpu_ms();
+        let t = Instant::now();
+        step();
+        let wall = ms(t);
+        (wall, self.cpu_ms().zip(cpu).map_or(0.0, |(b, a)| b - a))
+    }
+
+    /// The read and write calls the thread made, on any file, pipe or socket.
+    fn io_calls(&self) -> Option<u64> {
+        let io = self.read("io")?;
+        let count = |k: &str| io.lines().find_map(|l| l.strip_prefix(k)?.trim().parse::<u64>().ok());
+        Some(count("syscr:")? + count("syscw:")?)
     }
 }
 
