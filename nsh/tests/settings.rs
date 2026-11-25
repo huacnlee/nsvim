@@ -32,6 +32,8 @@ fn get<'a>(t: &'a toml::Table, section: &str, key: &str) -> Option<&'a toml::Val
 /// The app on its first launch, in an empty project. Keep the folder while the app runs.
 fn first_launch() -> (Headless, tempfile::TempDir) {
     isolate_home();
+    // These tests run from target/debug. Their setup writes to their own home as a release does.
+    nsh_app_editor::app::setup::treat_dev_build_as_release();
     // Finishing the setup writes under $HOME. It must be the tests' own.
     let home = std::env::var("HOME").unwrap_or_default();
     assert!(home.ends_with("editor-nsh-home/home"), "HOME is not isolated: {home}");

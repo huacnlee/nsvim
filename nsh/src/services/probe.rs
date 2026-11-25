@@ -19,6 +19,8 @@ pub enum Answer {
     Facts {
         /// This binary, with links resolved.
         exe: Option<PathBuf>,
+        /// This is a development build (`setup::dev_build`).
+        dev_build: bool,
         /// The leader key `~/.config/nvim` sets, if any.
         nvim_leader: Option<char>,
     },
@@ -33,7 +35,9 @@ pub fn start(out: Out) -> Sender<Job> {
             for job in rx {
                 let answer = match job {
                     Job::Facts => {
-                        Answer::Facts { exe: std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()), nvim_leader: nvim_leader() }
+                        let exe = std::env::current_exe().ok().and_then(|e| e.canonicalize().ok());
+                        let dev_build = crate::app::setup::dev_build(exe.as_deref());
+                        Answer::Facts { exe, dev_build, nvim_leader: nvim_leader() }
                     }
                 };
                 out.send(Event::Setup(answer));
@@ -73,7 +77,9 @@ mod tests {
         let (tx, rx) = channel();
         let jobs = start(Out { tx, waker: Arc::new(|| {}) });
         jobs.send(Job::Facts).unwrap();
-        let Ok(Event::Setup(Answer::Facts { exe, .. })) = rx.recv() else { panic!("the facts") };
-        assert!(exe.is_some_and(|e| e.is_absolute()));
+        let Ok(Event::Setup(Answer::Facts { exe, dev_build, .. })) = rx.recv() else { panic!("the facts") };
+        let exe = exe.expect("this binary");
+        assert!(exe.is_absolute());
+        assert_eq!(dev_build, crate::app::setup::dev_build(Some(&exe)));
     }
 }

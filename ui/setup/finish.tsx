@@ -91,6 +91,7 @@ export function ReadyStep(props: Step) {
   // How to start nsvim after this window: the aliases, or the launcher and the full path.
   const start = () => {
     const s = st();
+    if (s.devBuild) return `This is a development build. The terminal step is off. Run ${s.program} in a terminal.`;
     if (terminal() && s.on.includes("vim")) return "Then, in a new terminal, nvim . opens a folder. \\nvim still runs Neovim.";
     const launcher = terminal() ? "the app launcher" : "the Start menu";
     return `Then, open nsvim from ${launcher}, or run ${s.program} in a terminal.`;

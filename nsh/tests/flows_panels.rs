@@ -290,6 +290,8 @@ fn the_look_cards_in_a_row_have_one_height() {
 /// the switch goes off.
 #[test]
 fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
+    // This test runs from target/debug. A development build has no terminal step.
+    nsh_app_editor::app::setup::treat_dev_build_as_release();
     let dir = scratch();
     let mut f = common::flow_with(nsh_app_editor::Launch {
         project: Some(dir.path().to_path_buf()),

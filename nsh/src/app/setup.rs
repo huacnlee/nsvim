@@ -34,6 +34,9 @@ pub struct Setup {
     pub terminal: bool,
     /// The default-app choice shows. Only Linux reads the desktop entry it writes.
     pub desktop_entry: bool,
+    /// This is a development build: the NSH dev host, or a binary in a cargo `target` folder.
+    /// The terminal step does not show, and nothing names this binary.
+    pub dev_build: bool,
     /// This binary, with links resolved. The aliases, `$EDITOR` and git name it by its full path.
     pub exe: Option<PathBuf>,
     /// The leader key `~/.config/nvim` sets, as the probe worker found it.
@@ -69,6 +72,8 @@ impl Setup {
             focus: 0,
             terminal: !cfg!(target_os = "windows"),
             desktop_entry: cfg!(target_os = "linux"),
+            // The probe worker also looks at the path of this binary (`App::setup_answer`).
+            dev_build: dev_build(None),
             // The probe worker answers this from the disk (`App::setup_answer`).
             exe: None,
             nvim_leader: None,
@@ -107,7 +112,7 @@ impl Setup {
                 c.extend((0..FONTS.len()).map(Choice::Font));
                 c.extend((0..SIZES.len()).map(Choice::Size));
             }
-            4 => {
+            4 if self.terminal_step() => {
                 // Setup puts no command on $PATH. The aliases open this binary by its full path.
                 c.extend([Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git")]);
                 // The default-app step writes a desktop entry, which only Linux reads.
@@ -167,14 +172,19 @@ impl Setup {
         }
     }
 
-    /// The rows of the summary on the last step.
-    pub fn rows(&self) -> usize {
-        if self.terminal { 5 } else { 4 }
+    /// The terminal step shows. Windows and development builds have none.
+    pub fn terminal_step(&self) -> bool {
+        self.terminal && !self.dev_build
     }
 
-    /// The steps that show, by name. Windows has no terminal step.
+    /// The rows of the summary on the last step.
+    pub fn rows(&self) -> usize {
+        if self.terminal_step() { 5 } else { 4 }
+    }
+
+    /// The steps that show, by name. Windows and development builds have no terminal step.
     pub fn steps(&self) -> Vec<&'static str> {
-        STEPS.iter().copied().filter(|t| self.terminal || *t != "Terminal").collect()
+        STEPS.iter().copied().filter(|t| self.terminal_step() || *t != "Terminal").collect()
     }
 
     pub fn rc_file(&self) -> String {
@@ -194,7 +204,7 @@ impl Setup {
         let rc = self.rc_file();
         let program = self.program();
         let mut out = Vec::new();
-        if !self.terminal {
+        if !self.terminal_step() {
             return out;
         }
         if cli.vim_aliases {
@@ -269,7 +279,7 @@ impl App {
         let Screen::Setup(s) = &mut self.screen else { return };
         let mut next = (s.step as isize + by).clamp(1, STEPS.len() as isize) as usize;
         // Without the terminal step, a move goes over it.
-        if !s.terminal && STEPS[next - 1] == "Terminal" {
+        if !s.terminal_step() && STEPS[next - 1] == "Terminal" {
             next = if by < 0 { next - 1 } else { next + 1 };
         }
         s.step = next;
@@ -279,8 +289,20 @@ impl App {
     /// The probe worker answered: keep what it found for the setup screen.
     pub fn setup_answer(&mut self, answer: crate::services::probe::Answer) {
         let Screen::Setup(s) = &mut self.screen else { return };
-        let crate::services::probe::Answer::Facts { exe, nvim_leader } = answer;
+        let crate::services::probe::Answer::Facts { exe, dev_build, nvim_leader } = answer;
         s.exe = exe;
+        // A development build must not put its own path in the user's shell, git or desktop.
+        if dev_build {
+            s.dev_build = true;
+            s.cfg.cli.vim_aliases = false;
+            s.cfg.cli.editor_env = false;
+            s.cfg.cli.git = false;
+            s.cfg.cli.default_app = false;
+            if s.step == 4 {
+                s.step = 5;
+                s.focus = 0;
+            }
+        }
         s.nvim_leader = nvim_leader;
     }
 
@@ -360,6 +382,30 @@ impl App {
     }
 }
 
+/// Set by `treat_dev_build_as_release`.
+static AS_RELEASE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Makes setup treat this development build as a release build. The integration tests run
+/// from `target/debug`, and their setup must write to their own home as a release build does.
+pub fn treat_dev_build_as_release() {
+    AS_RELEASE.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// This is a development build: the NSH dev host (`nsh run` sets `NSH_DEV_APP_DIR`), or the
+/// binary `exe` is in a cargo `target` folder (`dev_path`).
+pub fn dev_build(exe: Option<&std::path::Path>) -> bool {
+    !AS_RELEASE.load(std::sync::atomic::Ordering::Relaxed) && (std::env::var_os("NSH_DEV_APP_DIR").is_some() || exe.is_some_and(dev_path))
+}
+
+/// `exe` is a development build: it is in a cargo `target` folder, as `target/debug/nsvim`,
+/// `target/<triple>/release/nsvim`, the NSH dev host in `.nsh/rust/target/debug`, or a shared
+/// target folder such as `~/.cargo/targets/<name>/debug`.
+pub fn dev_path(exe: &std::path::Path) -> bool {
+    let parts: Vec<_> = exe.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect();
+    let profile = |i: usize| parts.get(i).is_some_and(|p| ["debug", "release", "quick"].contains(&p.as_str()));
+    parts.iter().enumerate().any(|(i, p)| (p == "target" || p == "targets") && (i + 1..=i + 3).any(profile))
+}
+
 /// The leader a Lua or Vimscript source sets.
 pub fn leader_in(src: &str) -> Option<char> {
     for line in src.lines() {
@@ -396,7 +442,11 @@ struct Integration {
 #[cfg(not(target_arch = "wasm32"))]
 impl Integration {
     fn run(self) {
-        let Ok(exe) = std::env::current_exe() else { return };
+        let Some(exe) = std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()) else { return };
+        // The last guard: setup may finish before the probe worker answers.
+        if dev_build(Some(&exe)) {
+            return;
+        }
         let home = dirs::home_dir().unwrap_or_default();
         let rc = PathBuf::from(self.rc.replacen('~', &home.to_string_lossy(), 1));
         let append = |line: String| {
@@ -451,6 +501,7 @@ mod tests {
         let mut s = Setup::new(None);
         s.step = 4;
         s.terminal = true;
+        s.dev_build = false;
         s.exe = Some(PathBuf::from("/home/dev/.local/share/nsvim/nsvim"));
         let line = "alias nvim=\"/home/dev/.local/share/nsvim/nsvim\" vim=\"/home/dev/.local/share/nsvim/nsvim\" vi=\"/home/dev/.local/share/nsvim/nsvim\"";
         let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with(&format!("echo '{line}' >> ")));
@@ -481,6 +532,7 @@ mod tests {
     fn the_terminal_step_shows_what_it_runs() {
         let mut s = Setup::new(None);
         s.terminal = true;
+        s.dev_build = false;
         s.desktop_entry = true;
         s.exe = Some(PathBuf::from("/opt/nsvim/nsvim"));
         s.cfg.cli.default_app = true;
@@ -517,6 +569,28 @@ mod tests {
         let Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
         s.step = 5;
         assert_eq!(s.choices().iter().filter(|c| matches!(c, Choice::Change(_))).count(), 4, "no terminal row");
+    }
+
+    #[test]
+    fn a_binary_in_a_cargo_target_folder_is_a_development_build() {
+        for dev in [
+            "/home/dev/nsvim/target/debug/nsvim",
+            "/home/dev/nsvim/target/release/nsvim",
+            "/home/dev/nsvim/target/quick/nsvim",
+            "/home/dev/nsvim/target/x86_64-unknown-linux-gnu/release/nsvim",
+            "/home/dev/nsvim/.nsh/rust/target/debug/nsh-app-nsh-app-editor-linux-host",
+            "/home/dev/.cargo/targets/editor-7241c46d/debug/nsvim",
+        ] {
+            assert!(dev_path(std::path::Path::new(dev)), "{dev}");
+        }
+        for release in [
+            "/home/dev/.local/share/nsvim/nsvim",
+            "/Users/dev/Applications/nsvim.app/Contents/MacOS/nsvim",
+            "/opt/target/nsvim",
+            "/home/dev/debug/nsvim",
+        ] {
+            assert!(!dev_path(std::path::Path::new(release)), "{release}");
+        }
     }
 
     #[test]

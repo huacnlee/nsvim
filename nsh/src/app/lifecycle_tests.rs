@@ -103,7 +103,7 @@ fn the_window_follows_the_config() {
 fn setup_takes_the_workers_answers() {
     use crate::services::probe::Answer;
     let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
-    a.setup_answer(Answer::Facts { exe: Some(PathBuf::from("/opt/editor")), nvim_leader: Some('\\') });
+    a.setup_answer(Answer::Facts { exe: Some(PathBuf::from("/opt/editor")), dev_build: false, nvim_leader: Some('\\') });
     let super::Screen::Setup(s) = &a.screen else { panic!("setup shows") };
     assert_eq!((s.exe.clone(), s.nvim_leader), (Some(PathBuf::from("/opt/editor")), Some('\\')));
 }
@@ -130,4 +130,28 @@ fn the_file_worker_copies_the_old_folders_and_says_so() {
     assert!(message(&a).contains("The old folders stay"), "{}", message(&a));
     assert!(new.join("undo/1.json").is_file());
     assert!(old.join("undo/1.json").is_file());
+}
+
+/// A development build must not put its own path in the shell, git or the desktop.
+#[test]
+fn a_development_build_skips_the_terminal_step_and_runs_nothing() {
+    use crate::services::probe::Answer;
+    let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
+    if let super::Screen::Setup(s) = &mut a.screen {
+        s.terminal = true;
+        s.step = 4;
+    }
+    let exe = PathBuf::from("/home/dev/nsvim/.nsh/rust/target/debug/nsh-app-nsh-app-editor-linux-host");
+    a.setup_answer(Answer::Facts { exe: Some(exe), dev_build: true, nvim_leader: None });
+    let super::Screen::Setup(s) = &a.screen else { panic!("setup shows") };
+    assert!(s.dev_build);
+    assert_eq!(s.step, 5, "the terminal step was open, so ready shows");
+    assert_eq!(s.steps(), ["Keys", "Mouse", "Look", "Ready"]);
+    assert!(s.commands().is_empty(), "{:?}", s.commands());
+    let cli = &s.cfg.cli;
+    assert!(!cli.vim_aliases && !cli.editor_env && !cli.git && !cli.default_app, "every integration is off");
+    a.setup_go(-1);
+    a.setup_go(1);
+    let super::Screen::Setup(s) = &a.screen else { panic!("setup shows") };
+    assert_eq!(s.step, 5, "back and on go over the terminal step");
 }

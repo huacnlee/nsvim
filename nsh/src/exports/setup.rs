@@ -80,6 +80,8 @@ pub struct SetupState {
     pub program: String,
     /// The default-app choice shows: Linux only.
     pub desktop_entry: bool,
+    /// This is a development build. It has no terminal step.
+    pub dev_build: bool,
     /// The commands that finishing setup runs. A line that starts with `# ` is a note.
     pub commands: Vec<String>,
 }
@@ -192,6 +194,7 @@ fn of(s: &Setup, app: &App, system_dark: bool) -> SetupState {
         omarchy: s.omarchy_name.clone(),
         program: s.program(),
         desktop_entry: s.desktop_entry,
+        dev_build: s.dev_build,
         commands: if s.step >= 4 { s.commands() } else { Vec::new() },
     }
 }
