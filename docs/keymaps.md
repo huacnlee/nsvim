@@ -1,6 +1,6 @@
 # Keys
 
-editor has two keymaps. Setup asks which one you want. To switch later, run
+nsvim has two keymaps. Setup asks which one you want. To switch later, run
 `:set keymap=classic` or `:set keymap=neovim`, use Settings › keys & mouse, or pick
 `Keymap: Neovim` or `Keymap: classic` in the command palette.
 
@@ -705,7 +705,7 @@ The first launch runs setup in five steps.
 | Chars, `Backspace` | Type, delete the name of the terminal command, on the name field |
 
 The `skip`, `back` and `next →` buttons on the bottom line do the same with the mouse. On the
-last step, click `open editor →`, or go to the last choice and press `Enter`. The editor then
+last step, click `open nsvim →`, or go to the last choice and press `Enter`. The editor then
 writes `config.toml` and opens.
 
 ### Agent proposals
