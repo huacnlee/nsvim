@@ -30,7 +30,7 @@ measured and small. A pull request that adds a feature without that agreement ma
 
 ## The look and the text
 
-- Follow [DESIGN.md](DESIGN.md) and the [NSH Design Guides](https://nsh.dev/docs/design-guides.md).
+- Follow [docs/DESIGN.md](docs/DESIGN.md) and the [NSH Design Guides](https://nsh.dev/docs/design-guides.md).
 - Colours come only from theme tokens. Corners use `rounded-(--radius)`.
 - Interface text is in sentence case. Docs, comments and messages use
   [ASD-STE100](https://www.asd-ste100.org/) Simplified Technical English: short sentences, active voice, no em

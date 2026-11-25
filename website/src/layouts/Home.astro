@@ -14,8 +14,8 @@ const canonical = new URL(asset(language === 'en' ? '' : 'zh-CN/'), Astro.site);
 const site = 'https://huacnlee.github.io/nsvim';
 const sourceCommand = `git clone ${repo} && cd nsvim && cargo build --release --locked && nsh build --release -o target/release/nsh`;
 const commands = [
-  { id: 'linux', label: 'macOS / Linux', command: `curl -fsSL ${site}/install.sh | sh`, note: t.installNote, href: `${repo}/blob/main/install.sh`, link: t.script },
-  { id: 'windows', label: 'Windows', command: `irm ${site}/install.ps1 | iex`, note: t.installNote, href: `${repo}/blob/main/install.ps1`, link: t.script },
+  { id: 'linux', label: 'macOS / Linux', command: `curl -fsSL ${site}/install.sh | sh`, note: t.installNote, href: `${repo}/blob/main/scripts/install.sh`, link: t.script },
+  { id: 'windows', label: 'Windows', command: `irm ${site}/install.ps1 | iex`, note: t.installNote, href: `${repo}/blob/main/scripts/install.ps1`, link: t.script },
   { id: 'source', label: t.fromSource, command: sourceCommand, note: t.sourceNote, href: `${repo}/blob/main/docs/install.md#build-from-source`, link: t.installGuide },
 ];
 const relatedProjects = [

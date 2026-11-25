@@ -161,7 +161,7 @@ test('the installers are served next to the pages', async ({ page }) => {
   const powershell = await page.request.get('/nsvim/install.ps1');
   expect(powershell.ok()).toBe(true);
   expect(await powershell.text()).toContain('NSVIM_INSTALL_DIR');
-  await expect(page.locator('#panel-linux .script-link')).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/install.sh');
+  await expect(page.locator('#panel-linux .script-link')).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/scripts/install.sh');
   await page.goto('./zh-CN/');
   await expect(page.getByRole('tab', { name: '从源码构建', exact: true })).toBeVisible();
   await expect(page.locator('#panel-linux .script-link')).toHaveText('查看安装脚本 ↗');

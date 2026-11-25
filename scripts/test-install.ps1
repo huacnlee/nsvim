@@ -2,7 +2,7 @@
 # shortcut, so it never changes the real system.
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Run these installer tests on Windows.' }
-$installer = Join-Path (Split-Path $PSScriptRoot -Parent) 'install.ps1'
+$installer = Join-Path $PSScriptRoot 'install.ps1'
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('nsvim-installer-test-' + [Guid]::NewGuid().ToString('N'))
 $oldArchitecture = $env:PROCESSOR_ARCHITECTURE
 $oldWowArchitecture = $env:PROCESSOR_ARCHITEW6432
