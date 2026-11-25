@@ -70,7 +70,9 @@ try {
     $shortcut = $shell.CreateShortcut($startMenu)
     $shortcut.TargetPath = Join-Path $InstallDir 'nsvim.exe'
     $shortcut.WorkingDirectory = $InstallDir
-    $shortcut.IconLocation = "$InstallDir\nsvim.exe,0"
+    # Older releases have no icon in nsvim.exe; nsh\icon.ico is the same icon.
+    $icon = Join-Path $InstallDir 'nsh\icon.ico'
+    $shortcut.IconLocation = if (Test-Path -LiteralPath $icon -PathType Leaf) { "$icon,0" } else { "$InstallDir\nsvim.exe,0" }
     $shortcut.Save()
     Write-Host "Installed $InstallDir. Open nsvim from the Start menu."
     Write-Host "The program is $(Join-Path $InstallDir 'nsvim.exe')."
