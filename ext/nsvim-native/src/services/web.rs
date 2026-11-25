@@ -15,7 +15,7 @@ use super::grep::Hit;
 pub const ROOT: &str = "/demo";
 
 /// The file the demo opens first.
-pub const FIRST: &str = "src/main.rs";
+pub const FIRST: &str = "README.md";
 
 /// The demo project's files, by path from `ROOT`.
 const FILES: &[(&str, &str)] = &[
@@ -287,7 +287,8 @@ mod tests {
     fn the_demo_has_a_rust_file_a_readme_and_a_manifest() {
         let disk = Disk::demo();
         assert_eq!(disk.list(), ["Cargo.toml", "README.md", "src/main.rs", "src/note.rs"]);
-        assert!(disk.read(&at(FIRST)).is_some_and(|t| t.contains("fn main")));
+        assert!(disk.read(&at(FIRST)).is_some_and(|t| t.starts_with("# notes")));
+        assert!(disk.read(&at("src/main.rs")).is_some_and(|t| t.contains("fn main")));
         assert_eq!(disk.read(Path::new("/elsewhere/a.rs")), None);
     }
 
@@ -325,7 +326,7 @@ mod tests {
     #[test]
     fn signs_compare_with_the_first_text() {
         let text = format!("// new\n{}", FILES[2].1);
-        let signs = Disk::signs(&at(FIRST), &text);
+        let signs = Disk::signs(&at("src/main.rs"), &text);
         assert_eq!(signs.len(), 1);
         assert_eq!(signs[0].line, 0);
     }

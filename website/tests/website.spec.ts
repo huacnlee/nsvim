@@ -42,16 +42,13 @@ test('the origin section credits the original authors in both languages', async 
   }
 });
 
-test('the hero and the header draw the N with bars in the brand color', async ({ page }) => {
+test('the header draws the N with its left stroke in the brand color', async ({ page }) => {
   for (const [colorScheme, fill] of [['dark', 'rgb(108, 158, 255)'], ['light', 'rgb(47, 95, 208)']] as const) {
     await page.emulateMedia({ colorScheme });
     await page.goto('./');
     await expect(page.locator('.mark-legend')).toHaveCount(0);
-    for (const mark of ['.mark-art svg', '.brand-mark']) {
-      await expect(page.locator(`${mark} rect`)).toHaveCount(2);
-      await expect(page.locator(`${mark} rect`).first()).toHaveCSS('fill', fill);
-      await expect(page.locator(`${mark} line`)).toHaveCount(1);
-    }
+    await expect(page.locator('.brand-mark line')).toHaveCount(4);
+    await expect(page.locator('.brand-mark line').first()).toHaveCSS('stroke', fill);
   }
 });
 
@@ -189,7 +186,7 @@ for (const width of [360, 768, 1440]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await expect(page.locator('h1')).toBeVisible();
       if (width > 680) {
-        await expect(page.locator('.mark-art svg')).toBeVisible();
+        await expect(page.locator('.shot img')).toBeVisible();
       }
     }
   });

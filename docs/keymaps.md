@@ -182,6 +182,7 @@ status line says why.
 | `K` | Show hover information, with the language server |
 | `gf` | Open the file whose name is under the cursor. It looks beside this file, then at the project root |
 | `gt` `gT` | Next, previous tab |
+| `Ctrl w h`, `Ctrl w w`, `Ctrl w Ctrl w` | Show the file tree and give it the focus. `Ctrl w p` does the same |
 | `ZZ` | Write the buffer if it changed, then close it. After the last buffer, quit |
 | `ZQ` | Close the buffer. Do not write it |
 | `Esc` `Ctrl c` `Ctrl [` | Cancel a command you started to type |
@@ -537,7 +538,7 @@ classic keymap.
 | `F2` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `Ctrl .` | List the code actions |
 | `Ctrl B` | Show or hide the file tree |
-| `Ctrl ⇧ E` | Show the file tree and give it the focus |
+| `Ctrl ⇧ E` | Show the file tree and give it the focus. From the tree, give the focus back to the text |
 | `Ctrl Tab` `Ctrl ⇧ Tab` | Next, previous tab |
 | `Ctrl Q` | Quit. A modified buffer stops it |
 | `Ctrl W` | Close the tab. A modified tab stays open |
@@ -596,8 +597,9 @@ These keys work in both keymaps, unless a row says otherwise.
 
 ### File tree
 
-`SPC e` and `SPC g s` in the Neovim keymap, and `Ctrl ⇧ E` in the classic keymap, show the
-tree and give it the focus. `:Tree` and the classic `Ctrl B` show or hide it. A click on the
+`SPC e`, `SPC g s` and `Ctrl w h` in the Neovim keymap, and `Ctrl ⇧ E` in the classic keymap,
+show the tree and give it the focus. `Ctrl w w` and `Ctrl ⇧ E` move the focus between the tree
+and the text. `:Tree` and the classic `Ctrl B` show or hide it. A click on the
 text gives the focus back. The mouse wheel over the tree scrolls it, with or without the
 focus. These keys work while the tree has the focus.
 
@@ -611,6 +613,8 @@ focus. These keys work while the tree has the focus.
 | `Enter` `o` | Open or close a folder, or open a file |
 | `h` `←` | Close an open folder, or go to the parent folder |
 | `Esc` `q` | Give the focus back to the text |
+| `Ctrl w l`, `Ctrl w w`, `Ctrl w Ctrl w` | Give the focus back to the text. `Ctrl w p` does the same. `Ctrl w h` keeps the focus in the tree. Neovim keymap |
+| `Ctrl ⇧ E` | Give the focus back to the text. Classic keymap |
 | `?` | Show every key, with search |
 | `:` | Open the command line. Neovim keymap |
 | `SPC` | Open the leader menu. Neovim keymap |
@@ -760,8 +764,8 @@ actions and find in project. macOS and Windows show the system's menu. On Linux,
 
 ### No file open
 
-With no file open, the Neovim keymap takes the leader and `:`. The classic keymap takes
-`Ctrl P`, `Ctrl ⇧ P`, `Ctrl ⇧ F`, `Ctrl B`, `Ctrl ,` and `Ctrl Q`, which quits.
+With no file open, the Neovim keymap takes the leader, `:` and `Ctrl w h`. The classic keymap
+takes `Ctrl P`, `Ctrl ⇧ P`, `Ctrl ⇧ F`, `Ctrl B`, `Ctrl ⇧ E`, `Ctrl ,` and `Ctrl Q`, which quits.
 
 ## Mouse
 

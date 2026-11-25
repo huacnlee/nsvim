@@ -1,10 +1,12 @@
-// The buffer line: the project folder over the tree, then the tabs that Rust lists. A click on
+// The buffer line: the project folder over the tree, then the tabs that Rust lists. It is the
+// window's title bar (`./title-bar.tsx`): a press on it outside a tab drags the window. A click on
 // a tab shows it. A click on its close button or a middle click closes it. A tab with unsaved
 // changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
 import { signal, Text, View, type MouseEvent } from "nsh";
 import { Icon, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
+import { Controls, controlsLeft, DRAG } from "./title-bar";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
  * size and not the system text size. */
@@ -96,7 +98,7 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
   );
 }
 
-/** The line of open files above the text. */
+/** The line of open files above the text, and the window's title bar. */
 export function BufferLine() {
   const project = signal<BufferLineState["project"]>(undefined);
   const tabs = signal<TabState[]>([]);
@@ -110,13 +112,14 @@ export function BufferLine() {
     if (font().family !== s.fontFamily || font().size !== s.fontSize) font.set({ family: s.fontFamily, size: s.fontSize });
   });
   return (
-    <View class="flex-row items-center h-7 shrink-0 overflow-hidden bg-muted" role="tablist" testID="buffer-line">
-      <If when={project()}>
+    <View class="flex-row items-center h-9 shrink-0 overflow-hidden bg-muted" role="tablist" testID="buffer-line" desktop={DRAG}>
+      <If when={project()} else={<Controls side="left" />}>
         {(p) => (
-          // As wide as the tree. The path keeps its end, which tells folders apart.
+          // As wide as the tree, with the window controls at its start. The path keeps its end,
+          // which tells folders apart.
           <View
-            class="flex-row shrink-0 self-stretch items-center px-3 overflow-hidden border-r border-border"
-            style={{ width: p().width }}
+            class="flex-row shrink-0 self-stretch items-center pr-3 overflow-hidden border-r border-border"
+            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : 12 }}
             accessibilityLabel={p().path}
             testID="project"
           >
@@ -127,6 +130,8 @@ export function BufferLine() {
       <Each of={tabs()} key="index">
         {(tab, index) => <Tab tab={tab} index={index()} font={font} />}
       </Each>
+      <View class="flex-1 self-stretch" />
+      <Controls side="right" />
     </View>
   );
 }

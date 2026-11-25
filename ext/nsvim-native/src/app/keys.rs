@@ -149,6 +149,17 @@ impl App {
 
     /// Keys with no file open: the leader, `:`, and the classic shortcuts that open things.
     fn docless_key(&mut self, k: KeyInput, tx: &mut Tx) {
+        // `Ctrl-w h`, `w`, `p` or `Ctrl-w` give the keyboard to the tree, as in a file.
+        if std::mem::take(&mut self.tree.window_key) {
+            if let KeyCode::Char('h' | 'w' | 'p') = k.code {
+                self.focus_tree();
+            }
+            return;
+        }
+        if self.ed.keymap == Keymap::Vim && k.ctrl && k.code == KeyCode::Char('w') {
+            self.tree.window_key = true;
+            return;
+        }
         let actions = match (self.ed.keymap, k.code) {
             (Keymap::Vim, KeyCode::Char(c)) if c == self.ed.vim.leader && !k.ctrl => vec![Action::LeaderMenu],
             (Keymap::Vim, KeyCode::Char(':')) => {

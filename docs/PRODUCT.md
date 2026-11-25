@@ -58,9 +58,11 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 
 - Name: `nsvim`, lowercase.
 - Tagline: "Read fast. Edit quick."
-- Icon: a letter N on a black tile. The bars are grey. The white diagonal lies over the left bar and under the right bar. It takes
-  nothing from the Neovim logo. `assets/editor.svg` and `assets/editor-light.svg` are the same
-  file. The app and the website draw the bars in the theme's primary colour.
+- Icon: a letter N of round strokes on a black tile. The left stem is blue (primary) and the
+  right stem is green (insert). The diagonal is white and lies over both stems. A ring in the
+  tile colour cuts the diagonal free of the stems. It takes nothing from the Neovim logo.
+  `assets/editor.svg` and `assets/editor-light.svg` are the same file. The app draws the stems
+  in the theme's tokens.
 - Voice: plain, short, technical, no hype (ASD-STE100 style).
 - Interface copy: sentence case for labels, hints and states, per the NSH Design Guides. Vim's
   own text (`NORMAL`, `E37: ...`) stays as Vim writes it.

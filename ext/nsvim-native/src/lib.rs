@@ -80,6 +80,10 @@ pub const DEFAULT_SIZE: (f32, f32) = (1440.0, 900.0);
 /// The least size of the window in points.
 pub const MIN_SIZE: (f32, f32) = (640.0, 420.0);
 
+/// The height of the title bar the app draws, in points: the buffer line, and the top bar of
+/// Settings and setup. `h-9` in TSX. The system's window controls center in it.
+pub const TITLE_BAR: f32 = 36.0;
+
 /// The window's attributes for `cfg`: its title, least size, a transparent background when
 /// `[window] opacity` is below 100, and a close button that asks the app first.
 pub fn window_attributes(cfg: &config::Config) -> nsh_core::desktop::WindowAttributes {
@@ -87,6 +91,11 @@ pub fn window_attributes(cfg: &config::Config) -> nsh_core::desktop::WindowAttri
     a.min_size = Some(Some(Size::new(Points(MIN_SIZE.0), Points(MIN_SIZE.1))));
     a.transparent = Some(opacity(cfg) < 1.0);
     a.close_on_press = Some(false);
+    // The app draws its own title bar: the buffer line, with the window controls in it.
+    let mut bar = nsh_core::desktop::TitleBarOptions::default();
+    bar.style = nsh_core::desktop::TitleBarStyle::Hidden;
+    bar.height = Some(Points(TITLE_BAR));
+    a.title_bar = Some(bar);
     a
 }
 

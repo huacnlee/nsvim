@@ -93,3 +93,17 @@ fn alt_click_adds_a_cursor_in_the_classic_keymap() {
     let extra = f.read(|a| a.ed.doc().extra.iter().map(|c| c.pos).collect::<Vec<_>>());
     assert_eq!(extra, vec![Pos::new(2, 4)]);
 }
+
+#[test]
+fn ctrl_shift_e_moves_the_keyboard_to_the_tree_and_back() {
+    let dir = common::scratch();
+    let file = common::write(dir.path(), "a.rs", "fn a() {}\n");
+    let mut f = common::flow(&file, Some(&common::keymap_config("classic")));
+    f.settle("the project index", |a| a.files.len() == 1);
+    f.press("ctrl+shift+e");
+    assert!(f.read(|a| a.tree.show && a.tree.focus), "the tree has the keyboard");
+    f.press("ctrl+shift+e");
+    assert!(f.read(|a| a.tree.show && !a.tree.focus), "the text has it again");
+    f.press("ctrl+shift+e");
+    assert!(f.read(|a| a.tree.focus));
+}

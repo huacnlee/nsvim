@@ -153,6 +153,17 @@ pub(crate) fn parse(keys: &[KeyInput], leader: char, recording: bool) -> Parse<C
     if i == 0 && keys.len() == 1 && ch(&k) == Some(leader) {
         return done(Act::Leader);
     }
+    // Ctrl-w and a second key move between the tree and the text. The text is the right
+    // window, so h, w, p and Ctrl-w go to the tree, and l stays here.
+    if ctrl_ch(&k) == Some('w') {
+        return match rest.get(1) {
+            None => Parse::More,
+            Some(k2) => match ctrl_ch(k2).or_else(|| ch(k2)) {
+                Some('h' | 'w' | 'p') => done(Act::App(Action::FocusTree)),
+                _ => Parse::Bad,
+            },
+        };
+    }
     if let Some(c) = ctrl_ch(&k) {
         let act = match c {
             'r' => Act::Redo,

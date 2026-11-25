@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use super::fx::{Tx, WheelEvent};
-use editor::editor::{KeyCode, KeyInput};
+use editor::editor::{Action, KeyCode, KeyInput};
 
 use super::App;
 use super::picker::PickKind;
@@ -203,6 +203,22 @@ impl App {
         let half = (self.tree_visible() / 2).max(1);
         let page = self.tree_visible().saturating_sub(1).max(1);
         let vim = self.is_vim();
+        // `Ctrl-w l`, `w`, `p` or `Ctrl-w` give the keyboard to the text. `Ctrl-w h` keeps it.
+        if std::mem::take(&mut self.tree.window_key) {
+            if let KeyCode::Char('l' | 'w' | 'p') = k.code {
+                self.tree.focus = false;
+            }
+            return true;
+        }
+        if vim && k.ctrl && k.code == KeyCode::Char('w') {
+            self.tree.window_key = true;
+            return true;
+        }
+        // The classic key that focuses the tree gives the focus back from it.
+        if !vim && super::keys::classic_window_key(&k) == Some(Action::FocusTree) {
+            self.tree.focus = false;
+            return true;
+        }
         match k.code {
             KeyCode::Char('d') if k.ctrl && vim => go(cur + half, self),
             KeyCode::Char('u') if k.ctrl && vim => go(cur.saturating_sub(half), self),

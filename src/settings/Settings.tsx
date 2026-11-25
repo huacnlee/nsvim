@@ -9,6 +9,7 @@ import { Button } from "nsh/base";
 import { Icon, type SettingsItem, type SettingsState, SettingsPage, Shell } from "nsvim-native";
 import { act, Check, Chips, Choice, ChoiceGroup, FontSelect, Stepper } from "../controls";
 import { Preview } from "./Preview";
+import { Controls, controlsLeft, DRAG } from "../title-bar";
 
 /** Wider than this, the page shows the preview. */
 const PREVIEW_FROM = 1100;
@@ -46,10 +47,16 @@ export function Settings() {
   );
 }
 
-/** The title, a failed write of config.toml, and the close button. */
+/** The title, a failed write of config.toml, and the close button. It is the window's title bar:
+ * Settings covers the buffer line. */
 function Header(props: { state: () => SettingsState }) {
   return (
-    <View class="flex-row h-11 shrink-0 pl-6 pr-2 gap-4 items-center border-b border-border">
+    <View
+      class="flex-row h-9 shrink-0 pr-2 gap-4 items-center border-b border-border"
+      style={{ paddingLeft: controlsLeft() > 0 ? 0 : 24 }}
+      desktop={DRAG}
+    >
+      <Controls side="left" />
       <Text class="text-base font-medium text-foreground" role="header">
         Settings
       </Text>
@@ -68,6 +75,7 @@ function Header(props: { state: () => SettingsState }) {
       >
         <Icon name="x" size={16} class="text-muted-foreground" />
       </Button>
+      <Controls side="right" />
     </View>
   );
 }
