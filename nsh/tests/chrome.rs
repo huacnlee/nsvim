@@ -239,12 +239,29 @@ fn the_wheel_scrolls_the_tree() -> Result<(), String> {
     let mut app = start(&files[0]);
     app.wait_for("role:treeitem[file00.txt]")?;
     assert!(!has(&app, "role:treeitem[file79.txt]"));
+    // The file list and the reveal of the open file can come after the first row shows. A long
+    // turn clamps at the end, so turn until each end shows.
+    wheel_until(&mut app, 22.0 * 200.0, "role:treeitem[file79.txt]")?;
+    wheel_until(&mut app, -22.0 * 200.0, "role:treeitem[file00.txt]")?;
+    // Now the tree is still: ten rows of wheel scroll ten rows.
     app.wheel("id:tree", Point::new(Points(0.0), Points(22.0 * 10.0)))?;
     app.wait_for_gone("role:treeitem[file00.txt]", WAIT)?;
     app.wait_for("role:treeitem[file10.txt]")?;
-    app.wheel("id:tree", Point::new(Points(0.0), Points(22.0 * 200.0)))?;
-    app.wait_for("role:treeitem[file79.txt]")?;
     Ok(())
+}
+
+/// Turns the wheel over the tree by `dy` until `sel` shows.
+fn wheel_until(app: &mut Headless, dy: f32, sel: &str) -> Result<(), String> {
+    let end = std::time::Instant::now() + WAIT;
+    loop {
+        app.wheel("id:tree", Point::new(Points(0.0), Points(dy)))?;
+        if app.wait_for_within(sel, std::time::Duration::from_millis(200)).is_ok() {
+            return Ok(());
+        }
+        if std::time::Instant::now() > end {
+            return Err(format!("{sel} never showed: {:?}", app.screen().texts()));
+        }
+    }
 }
 
 #[test]
