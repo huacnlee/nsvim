@@ -169,11 +169,12 @@ pub fn chips(colors: Vec<Color>, w: f32, h: f32) -> impl IntoElement {
 /// A box with a title over its top border, as the Rune app drew its panels.
 pub fn titled(title: impl Into<SharedString>) -> View {
     let title: SharedString = title.into();
-    view().rounded_md().border_1().border_color(move || color("border")).bg(move || color("background")).child(
+    view().rounded_md().bg(move || color("background")).child(crate::ui::style::frame(6.0)).child(
         view()
             .absolute()
             .left(px(12.0))
             .top(px(-9.0))
+            .z_index(1)
             .px(px(5.0))
             .bg(move || color("background"))
             .child(text(title).text_xs().text_color(move || color("muted-foreground"))),

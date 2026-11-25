@@ -120,3 +120,10 @@ pub struct CodeFont {
     pub row_h: f32,
     pub weight: u16,
 }
+
+/// The border of a box with a title in its top edge. It is the box's first child, so the title,
+/// a later child, paints over the line. A border on the box itself paints over its children on
+/// some platforms, and the line then crosses the title.
+pub fn frame(radius: f32) -> View {
+    view().absolute().inset(px(0.0)).rounded(px(radius)).border_1().border_color(move || color("border"))
+}

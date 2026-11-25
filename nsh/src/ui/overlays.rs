@@ -69,11 +69,12 @@ fn scrim(s: Session, keys: ElementRef) -> View {
 
 /// A box with a 1 pt border and its title in the top edge, as the design draws panels.
 pub(crate) fn titled(title: impl IntoReactive<SharedString>, size: f32) -> View {
-    view().border_1().border_color(move || color("border")).rounded(px(6.0)).bg(move || color("background")).child(
+    view().rounded(px(6.0)).bg(move || color("background")).child(crate::ui::style::frame(6.0)).child(
         view()
             .absolute()
             .left(px(12.0))
             .top(px(-9.0))
+            .z_index(1)
             .px(px(5.0))
             .bg(move || color("background"))
             .child(text(title).text_size(px(size)).number_of_lines(1).text_color(move || color("primary"))),

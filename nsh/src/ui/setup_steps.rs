@@ -73,15 +73,16 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
         .pb(px(14.0))
         .px(px(18.0))
         .rounded(px(6.0))
-        .border(px(if on { 2.0 } else { 1.0 }))
-        .border_color(move || color(border))
         .bg(move || color("background"))
         .hover(|st| st.bg(move || color("surface-raised")))
+        // The border is a child under the tag, so the tag hides the line under it.
+        .child(view().absolute().inset(px(0.0)).rounded(px(6.0)).border(px(if on { 2.0 } else { 1.0 })).border_color(move || color(border)))
         .child(
             view()
                 .absolute()
                 .left(px(12.0))
                 .top(px(-9.0))
+                .z_index(1)
                 .px(px(5.0))
                 .bg(move || color("background"))
                 .child(text(tag.to_string()).text_xs().text_color(move || color(if on { "primary" } else { "muted-foreground" }))),
