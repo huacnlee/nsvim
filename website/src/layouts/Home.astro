@@ -1,0 +1,204 @@
+---
+import '../styles/global.css';
+import { copy } from '../lib/copy';
+import EditorDemo from '../components/EditorDemo.astro';
+interface Props { language: 'en' | 'zh-CN' }
+const { language } = Astro.props;
+const t = copy[language];
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const asset = (path: string) => `${base}/${path}`;
+const repo = 'https://github.com/huacnlee/nsvim';
+const origin = 'https://github.com/bjarneo/editor';
+const sponsorUrl = 'https://github.com/sponsors/huacnlee';
+const canonical = new URL(asset(language === 'en' ? '' : 'zh-CN/'), Astro.site);
+const commands = [
+  { id: 'cargo', label: t.cargo, command: `cargo install --locked --git ${repo} nsh-app-editor`, note: t.cargoNote, href: `${repo}#install`, link: t.readSetup },
+  { id: 'clone', label: t.clone, command: `git clone ${repo} && cd nsvim && cargo install --locked --path nsh`, note: t.cloneNote, href: `${repo}/blob/main/docs/development.md`, link: t.devGuide },
+];
+const relatedProjects = [
+  { name: 'Disktree', href: 'https://huacnlee.github.io/disktree/', description: t.relatedDescriptions.disktree },
+  { name: 'Omasend', href: 'https://huacnlee.github.io/omasend/', description: t.relatedDescriptions.omasend },
+  { name: 'Omamail', href: 'https://huacnlee.github.io/omamail/', description: t.relatedDescriptions.omamail },
+  { name: 'Noop', href: 'https://huacnlee.github.io/noop/', description: t.relatedDescriptions.noop },
+  { name: 'huacnlee/cargo', href: 'https://huacnlee.github.io/cargo/', description: t.relatedDescriptions.cargo },
+  { name: 'omarchy-which-key', href: 'https://github.com/huacnlee/omarchy-which-key', description: t.relatedDescriptions.whichKey },
+];
+// The mark's parts, in the app's mode colors (assets/editor.svg).
+const legend = [['normal', '#6c9eff'], ['visual', '#c39bff'], ['insert', '#a7d46f'], ['command', '#ffa266']] as const;
+---
+<!doctype html>
+<html lang={language} data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={t.description} />
+    <meta name="theme-color" content="#0e1016" />
+    <title>nsvim — {t.title}</title>
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={new URL(asset(''), Astro.site)} />
+    <link rel="alternate" hreflang="zh-CN" href={new URL(asset('zh-CN/'), Astro.site)} />
+    <link rel="alternate" hreflang="x-default" href={new URL(asset(''), Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href={asset('favicon.svg')} />
+    <meta property="og:title" content={`nsvim — ${t.title}`} />
+    <meta property="og:description" content={t.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(asset('favicon.svg'), Astro.site)} />
+    <meta name="twitter:card" content="summary" />
+    <script is:inline>
+      let mode;
+      try { mode = localStorage.getItem('nsvim-mode'); } catch {}
+      document.documentElement.dataset.theme = (mode === 'light' || (mode !== 'dark' && matchMedia('(prefers-color-scheme: light)').matches)) ? 'light' : 'dark';
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.skip}</a>
+    <header><div class="shell nav-row">
+      <a href={asset(language === 'en' ? '' : 'zh-CN/')} class="brand" aria-label="nsvim"><svg class="brand-mark" aria-hidden="true" viewBox="24 24 80 88"><path d="M33 30h17l45 60H78z" fill="#c39bff"/><rect x="30" y="30" width="18" height="60" rx="5" fill="#6c9eff"/><rect x="80" y="30" width="18" height="60" rx="5" fill="#a7d46f"/><rect x="30" y="98" width="68" height="8" rx="4" fill="#ffa266"/></svg>nsvim</a>
+      <nav aria-label={t.nav}>
+        <a class="sponsor-button" href={sponsorUrl} target="_blank" rel="noopener">{t.sponsor}</a>
+        <a class="icon-control" href={repo} aria-label="GitHub" title="GitHub"><svg aria-hidden='true' fill='currentColor' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/></svg></a>
+        <div class="language-control">
+          <button id="language-toggle" class="icon-control" type="button" aria-label={t.language} title={t.language} aria-haspopup="menu" aria-expanded="false" aria-controls="language-menu"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h12M9 2v3M5 5c1 6 5 10 10 12M13 5c-1 6-5 10-10 12M14 21l4-11 4 11M15.5 17h5"/></svg></button>
+          <div id="language-menu" role="menu" aria-label={t.language} hidden>
+            <a role="menuitemradio" aria-checked={language === 'en' ? 'true' : 'false'} tabindex="-1" href={asset('')} lang="en" hreflang="en">English</a>
+            <a role="menuitemradio" aria-checked={language === 'zh-CN' ? 'true' : 'false'} tabindex="-1" href={asset('zh-CN/')} lang="zh-CN" hreflang="zh-CN">简体中文</a>
+          </div>
+        </div>
+        <button id="theme-toggle" class="icon-control" type="button" aria-label={t.darkMode} title={t.darkMode} aria-pressed="true"><svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button>
+      </nav>
+    </div></header>
+    <main id="main" class="shell">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy"><p class="eyebrow">{t.eyebrow}</p><h1 id="hero-title">{language === 'zh-CN' ? <><span>Vim 的按键</span><span>原生的窗口</span></> : t.title}</h1><p class="intro">{t.intro}</p><div class="actions"><a class="text-link" href="#workflow">{t.explore} <span aria-hidden="true">↗</span></a></div><p class="note">{t.note}</p></div>
+        <figure class="mark" aria-label={t.illustration}>
+          <ul class="mark-legend" aria-hidden="true">{legend.map(([mode, color]) => <li style={`--part:${color}`}>{t.modes[mode]}</li>)}</ul>
+          <div class="mark-art" aria-hidden="true">
+            <svg viewBox="0 0 128 128">
+              <path class="part" style="--order:1" d="M33 30h17l45 60H78z" fill="#c39bff"/>
+              <rect class="part" style="--order:0" x="30" y="30" width="18" height="60" rx="5" fill="#6c9eff"/>
+              <rect class="part" style="--order:2" x="80" y="30" width="18" height="60" rx="5" fill="#a7d46f"/>
+              <rect class="part part-command" style="--order:3" x="30" y="98" width="68" height="8" rx="4" fill="#ffa266"/>
+            </svg>
+          </div>
+        </figure>
+      </section>
+      <section id="install" class="quick-install" aria-labelledby="install-title">
+        <div class="install-heading"><h2 id="install-title">{t.terminal}</h2><div class="install-tabs" role="tablist" aria-label={t.tabs}>
+          {commands.map(({ id, label }, index) => <button id={`tab-${id}`} type="button" role="tab" aria-controls={`panel-${id}`} aria-selected={index === 0 ? 'true' : 'false'} tabindex={index === 0 ? 0 : -1}>{label}</button>)}
+        </div></div>
+        {commands.map(({ id, command, note, href, link }, index) => <div id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} tabindex="0" hidden={index !== 0}>
+          <div class="command-block"><pre id={`command-${id}`}><code>{command}</code></pre><button type="button" class="copy-button" data-copy={`command-${id}`} data-copied={t.copied} data-error={t.copyFailed}>{t.copy}</button></div>
+          <div class="install-meta"><p>{note}</p><a class="script-link" href={href}>{link} ↗</a></div>
+        </div>)}
+        <p id="copy-status" class="sr-only" role="status" aria-live="polite"></p>
+        <p class="requirements">{t.requirements} <a class="text-link" href={`${repo}/blob/main/docs/keymaps.md`}>{t.guide} ↗</a></p>
+      </section>
+      <aside class="sponsor"><p>{t.sponsorText}</p><a class="sponsor-button" href={sponsorUrl} target="_blank" rel="noopener">{t.sponsorButton}</a></aside>
+      <section id="demo" class="demo" aria-labelledby="demo-title">
+        <div class="demo-heading"><h2 id="demo-title">{t.demo}</h2><p>{t.demoIntro}</p></div>
+        <EditorDemo label={t.demoLabel} intro={t.demoIntro} modes={t.modes} />
+      </section>
+      <section id="workflow" class="section workflow">
+        <div class="section-heading"><span class="index" aria-hidden="true">01 /</span><h2>{t.workflow}</h2><p>{t.workflowIntro}</p></div>
+        <ol class="steps">{t.steps.map(([title, body], i) => <li><span class="step-number" aria-hidden="true">0{i + 1}</span><div><h3>{title}</h3><p>{body}</p></div></li>)}</ol>
+      </section>
+      <section class="section details"><div class="section-heading"><span class="index" aria-hidden="true">02 /</span><h2>{t.details}</h2></div><dl>{t.facts.map(([title, body]) => <div><dt>{title}</dt><dd>{body}</dd></div>)}</dl></section>
+      <section id="origin" class="section origin"><div class="section-heading"><span class="index" aria-hidden="true">03 /</span><h2>{t.origin}</h2></div><div class="origin-text"><p>{t.originText}</p><p>{t.originSeparate}</p><p class="origin-links"><a class="text-link" href={origin}>{t.originLink} ↗</a> · <a class="text-link" href="https://github.com/bjarneo">Bjarne Oeverli ↗</a> · <a class="text-link" href={`${repo}/blob/main/LICENSE`}>{t.licenseLink} ↗</a></p></div></section>
+      <section class="related-projects" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title">{t.related}</h2><p>{t.relatedIntro}</p></div><ul>{relatedProjects.map(project => <li><a href={project.href}>{project.name} <span aria-hidden="true">↗</span></a><p>{project.description}</p></li>)}</ul></section>
+    </main>
+    <footer><div class="shell"><span>nsvim · {t.footer} <a class="text-link" href={origin}>bjarneo/editor</a></span><span>{t.built} <a class="text-link" href="https://nsh.dev">Native Shell</a> · <a class="text-link" href={repo}>{t.source}</a></span></div></footer>
+    <script>
+      const root = document.documentElement;
+      const modeQuery = matchMedia('(prefers-color-scheme: light)');
+      const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+      let explicitMode: string | null = null;
+      try { explicitMode = localStorage.getItem('nsvim-mode'); } catch {}
+      function applyMode(light: boolean) {
+        root.setAttribute('data-theme-changing', '');
+        root.dataset.theme = light ? 'light' : 'dark';
+        toggle?.setAttribute('aria-pressed', String(!light));
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#fafaf7' : '#0e1016');
+        requestAnimationFrame(() => requestAnimationFrame(() => root.removeAttribute('data-theme-changing')));
+      }
+      applyMode(root.dataset.theme === 'light');
+      toggle?.addEventListener('click', () => {
+        const light = root.dataset.theme !== 'light';
+        explicitMode = light ? 'light' : 'dark';
+        try { localStorage.setItem('nsvim-mode', explicitMode); } catch {}
+        applyMode(light);
+      });
+      modeQuery.addEventListener('change', event => {
+        if (explicitMode !== 'light' && explicitMode !== 'dark') applyMode(event.matches);
+      });
+      const languageToggle = document.querySelector<HTMLButtonElement>('#language-toggle');
+      const languageMenu = document.getElementById('language-menu');
+      const languages = Array.from(languageMenu?.querySelectorAll<HTMLAnchorElement>('[role="menuitemradio"]') || []);
+      function closeLanguages(restore = false) {
+        if (languageMenu) languageMenu.hidden = true;
+        languageToggle?.setAttribute('aria-expanded', 'false');
+        if (restore) languageToggle?.focus();
+      }
+      function openLanguages(last = false) {
+        if (languageMenu) languageMenu.hidden = false;
+        languageToggle?.setAttribute('aria-expanded', 'true');
+        languages[last ? languages.length - 1 : 0]?.focus();
+      }
+      languageToggle?.addEventListener('click', () => languageMenu?.hidden ? openLanguages() : closeLanguages());
+      languageToggle?.addEventListener('keydown', event => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault(); openLanguages(event.key === 'ArrowUp');
+        }
+      });
+      languageMenu?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { event.preventDefault(); closeLanguages(true); return; }
+        if (event.key === 'Tab') { closeLanguages(true); return; }
+        const index = languages.indexOf(document.activeElement as HTMLAnchorElement);
+        const next = event.key === 'ArrowDown' ? (index + 1) % languages.length
+          : event.key === 'ArrowUp' ? (index + languages.length - 1) % languages.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? languages.length - 1 : -1;
+        if (next >= 0) { event.preventDefault(); languages[next].focus(); }
+      });
+      document.addEventListener('click', event => {
+        if (!(event.target as Element).closest('.language-control')) closeLanguages();
+      });
+      const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+      function selectTab(tab: HTMLButtonElement) {
+        tabs.forEach(item => {
+          const selected = item === tab;
+          item.setAttribute('aria-selected', String(selected));
+          item.tabIndex = selected ? 0 : -1;
+          const panel = document.getElementById(item.getAttribute('aria-controls') || '');
+          if (panel) panel.hidden = !selected;
+        });
+        const status = document.getElementById('copy-status');
+        if (status) status.textContent = '';
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectTab(tab));
+        tab.addEventListener('keydown', event => {
+          const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length
+            : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+          if (next < 0) return;
+          event.preventDefault();
+          selectTab(tabs[next]);
+          tabs[next].focus();
+        });
+      });
+      document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const text = document.getElementById(button.dataset.copy || '')?.textContent || '';
+          const status = document.getElementById('copy-status');
+          try {
+            await navigator.clipboard.writeText(text);
+            if (status) status.textContent = button.dataset.copied || '';
+            const original = button.textContent;
+            button.textContent = button.dataset.copied || '';
+            setTimeout(() => { button.textContent = original; }, 1800);
+          } catch { if (status) status.textContent = button.dataset.error || ''; }
+        });
+      });
+    </script>
+  </body>
+</html>
