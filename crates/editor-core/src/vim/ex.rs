@@ -135,7 +135,7 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
             "" => out.push(Action::OpenProject),
             dir => out.push(Action::OpenFolder(dir.to_string())),
         },
-        "NewFile" | "Touch" => out.push(Action::NewFile(required(args)?)),
+        "NewFile" | "Create" | "Touch" => out.push(Action::NewFile(required(args)?)),
         "Mkdir" | "NewFolder" => out.push(Action::NewFolder(required(args)?)),
         "Move" => out.push(Action::MovePath(required(args)?)),
         "Delete" | "Remove" => {

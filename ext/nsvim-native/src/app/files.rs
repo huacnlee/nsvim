@@ -110,7 +110,7 @@ impl App {
                     self.fs(FsOp::Move { from, to });
                 }
             }
-            KeyCode::Char('C') => {
+            KeyCode::Char('C' | 'O') => {
                 let Some(sel) = sel.filter(|s| self.known_folder(s)) else {
                     self.ed.message("C opens a folder as the project. Pick a folder row");
                     return true;
