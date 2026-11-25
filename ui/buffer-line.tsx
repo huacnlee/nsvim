@@ -76,34 +76,22 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
       testID={`tab-${i}`}
       onPress={() => then(() => Tabs.show(i))}
       onMouseUp={(e: MouseEvent) => {
-        if (e.button === "middle" && props.tab().closable) then(() => Tabs.close(i));
+        if (e.button === "middle") then(() => Tabs.close(i));
       }}
     >
       <Label font={props.font} on={props.tab().on} text={props.tab().name} />
-      <If
-        when={props.tab().closable}
-        else={
-          // A tab without a close button shows only the square, while it has unsaved changes.
-          <If when={props.tab().dirty} else={<View class="pr-3" />}>
-            <View class="self-stretch justify-center px-2.5">
-              <Mark font={props.font} index={i} dirty />
-            </View>
-          </If>
-        }
+      <View
+        class="self-stretch justify-center px-2.5 cursor-pointer hover:bg-border"
+        role="button"
+        accessibilityLabel="Close"
+        testID={`tab-close-${i}`}
+        onPress={() => then(() => Tabs.close(i))}
       >
-        <View
-          class="self-stretch justify-center px-2.5 cursor-pointer hover:bg-border"
-          role="button"
-          accessibilityLabel="Close"
-          testID={`tab-close-${i}`}
-          onPress={() => then(() => Tabs.close(i))}
-        >
-          {/* Each mark is its own icon, made again only when the tab becomes dirty or clean. */}
-          <If when={props.tab().dirty} else={<Mark font={props.font} index={i} dirty={false} />}>
-            <Mark font={props.font} index={i} dirty />
-          </If>
-        </View>
-      </If>
+        {/* Each mark is its own icon, made again only when the tab becomes dirty or clean. */}
+        <If when={props.tab().dirty} else={<Mark font={props.font} index={i} dirty={false} />}>
+          <Mark font={props.font} index={i} dirty />
+        </If>
+      </View>
     </View>
   );
 }

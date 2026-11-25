@@ -34,17 +34,16 @@ impl App {
     /// the next launch recovers them.
     pub fn close_requested(&mut self, tx: &mut Tx) {
         let dirty = self.dirty_names();
-        let settings = self.settings.is_some() && self.cfg != self.disk_cfg;
-        if dirty.is_empty() && !settings {
+        if dirty.is_empty() {
             return self.quit(tx);
         }
         let again = self.close_asked.is_some_and(|t| self.clock - t <= CLOSE_AGAIN_SECS);
         if !again {
             self.close_asked = Some(self.clock);
-            let what = match dirty.as_slice() {
-                [] => "Settings have".to_string(),
-                [one] => format!("\"{one}\" has"),
-                [first, rest @ ..] => format!("\"{first}\" and {} more have", rest.len()),
+            // `dirty` is not empty here.
+            let what = match dirty.len() {
+                1 => format!("\"{}\" has", dirty[0]),
+                n => format!("\"{}\" and {} more have", dirty[0], n - 1),
             };
             self.ed.error(format!("E37: {what} unsaved changes. Close again to quit and keep them for recovery, :wqa writes them"));
             return;
@@ -72,8 +71,7 @@ impl App {
     }
 
     /// config.toml changed on disk, and the watcher read it again. The new config applies at
-    /// once. Unsaved changes in the Settings tab stay, and the next write of Settings replaces
-    /// the file.
+    /// once. Settings writes each change at once, so it has no changes of its own to keep.
     pub fn config_reloaded(&mut self, loaded: Result<Config, String>) {
         let cfg = match loaded {
             Ok(c) => c,
@@ -81,11 +79,6 @@ impl App {
         };
         // The editor's own write, or a file the setup screen is about to write.
         if cfg == self.disk_cfg || matches!(self.screen, Screen::Setup(_)) {
-            return;
-        }
-        if self.settings.is_some() && self.cfg != self.disk_cfg {
-            self.disk_cfg = cfg;
-            self.ed.message("config.toml changed on disk. The Settings tab has changes, :w there writes them over it");
             return;
         }
         self.cfg = cfg.clone();

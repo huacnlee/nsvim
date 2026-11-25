@@ -324,7 +324,7 @@ fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<()
     assert!(has(&app, "id:branch-icon"), "a branch icon goes before the name");
     app.wait_for("role:treeitem[a.txt] >> text:U")?;
     app.wait_for("role:treeitem[src] >> id:tree-changes")?;
-    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-changes"), "a file shows its letter, not the dot");
+    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-changes"), "a file shows its letter, not the square");
     Ok(())
 }
 
@@ -349,7 +349,7 @@ fn the_status_line_counts_errors_and_warnings_and_shows_the_scroll() {
     assert_eq!((st.errors, st.warnings), (2, 1));
     assert_eq!(st.file, "a.rs");
     assert_eq!(position_of(&app).scroll, "Top");
-    assert_eq!((st.badge.as_deref(), st.badge_color), (Some("NORMAL"), ModeColor::Primary));
+    assert_eq!((st.badge.as_deref(), st.mode_color), (Some("NORMAL"), ModeColor::Primary));
     app.ed.doc_mut().view.cursor.line = 49;
     assert_eq!(position_of(&app).scroll, "50%");
     app.ed.doc_mut().view.cursor.line = 100;

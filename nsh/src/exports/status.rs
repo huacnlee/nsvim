@@ -22,7 +22,7 @@ pub enum ModeColor {
     ModeInsert,
     /// Visual mode: `mode-visual`.
     ModeVisual,
-    /// Command mode, a `:s///c` confirm and the Settings tab: `mode-command`.
+    /// Command mode and a `:s///c` confirm: `mode-command`.
     ModeCommand,
     /// Replace mode: `destructive`.
     Destructive,
@@ -31,11 +31,9 @@ pub enum ModeColor {
 /// What the status line shows, except the position.
 #[derive(Debug, Clone, Default, PartialEq, JsObject)]
 pub struct StatusState {
-    /// The text of the mode badge: the vim mode, or `Settings` on the Settings tab. None in the classic keymap.
+    /// The text of the mode badge: the vim mode. None in the classic keymap.
     pub badge: Option<String>,
-    /// The colour of the mode badge.
-    pub badge_color: ModeColor,
-    /// The colour of the mode. The position takes it in vim.
+    /// The colour of the mode. The badge and, in vim, the position take it.
     pub mode_color: ModeColor,
     /// The keymap is vim.
     pub vim: bool,
@@ -43,8 +41,6 @@ pub struct StatusState {
     pub branch: Option<String>,
     /// The file relative to the project, with ` [+]` when it has unsaved changes.
     pub file: String,
-    /// On the Settings tab: the theme mode and name.
-    pub settings: Option<String>,
     /// The number of errors in the file.
     pub errors: u32,
     /// The number of warnings in the file.
@@ -103,19 +99,8 @@ pub fn status_of(app: &App) -> StatusState {
         mode.label()
     };
     let mut st = StatusState { mode_color, vim, branch: app.git.branch.clone(), ..StatusState::default() };
-    if app.on_settings {
-        st.badge = Some("Settings".into());
-        st.badge_color = ModeColor::ModeCommand;
-        let dirty = if app.cfg != app.disk_cfg { " [+]" } else { "" };
-        st.file = format!("config.toml{dirty}");
-        let t = &app.cfg.theme;
-        let resolved = crate::theme::resolve(crate::theme::Source::parse(&t.mode), &t.dark, &t.light, true, app.omarchy.as_ref()).1;
-        st.settings = Some(format!("{} · {}", sentence(&t.mode), crate::theme::name(&resolved)));
-        return st;
-    }
     if vim {
         st.badge = Some(label.into());
-        st.badge_color = mode_color;
     }
     if !app.ed.has_doc() {
         st.file = "[No Name]".into();
@@ -140,12 +125,6 @@ pub fn status_of(app: &App) -> StatusState {
     st.proposals = count(app.proposals.len());
     st.outside = count(app.outside.len());
     st
-}
-
-/// `text` with its first letter in capitals: `system` is `System`.
-fn sentence(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map(|c| c.to_uppercase().chain(chars).collect()).unwrap_or_default()
 }
 
 /// The name of a language as people write it, for the status line: `rust` is `Rust`.
@@ -195,9 +174,9 @@ pub fn language_name(id: &str) -> &'static str {
     }
 }
 
-/// Where the cursor is. Both texts are empty on the Settings tab and when no file shows.
+/// Where the cursor is. Both texts are empty when no file shows.
 pub fn position_of(app: &App) -> PositionState {
-    if app.on_settings || !app.ed.has_doc() {
+    if !app.ed.has_doc() {
         return PositionState::default();
     }
     let d = app.ed.doc();
@@ -243,10 +222,5 @@ impl Status {
     /// Calls `listener` with the interface font, now and after each change.
     pub fn on_font(#[args(font)] listener: Callback<FontState>) -> Stop {
         crate::bridge::subscribe(font_of, listener)
-    }
-
-    /// Writes the settings to config.toml.
-    pub fn write_config() {
-        crate::bridge::update(|a, _| a.write_config());
     }
 }

@@ -5,7 +5,7 @@ mod common;
 
 use std::time::Duration;
 
-use common::{flow, isolate_home, keymap_config, scratch, start_files, typ, type_text, write};
+use common::{flow, keymap_config, scratch, start_files, typ, type_text, write};
 use nsh_app_editor::app::DocMeta;
 use nsh_app_editor::app::review::Hunk;
 use nsh_app_editor::exports::language_name;
@@ -95,27 +95,6 @@ fn the_status_line_text_follows_the_configured_size() -> Result<(), String> {
     })?;
     let cmd = app.screen().span_style("id:command-line >> text:/1L/")?;
     assert!((cmd.font_size.0 - 12.5).abs() < 0.01, "the command line keeps its size: {}", cmd.font_size.0);
-    Ok(())
-}
-
-#[test]
-fn the_write_button_writes_config_and_gives_the_keys_back() -> Result<(), String> {
-    isolate_home();
-    let dir = scratch();
-    let a = write(dir.path(), "a.txt", "alpha\n");
-    let mut f = flow(&a, None);
-    type_text(&mut f.ui, ":Settings\n");
-    wait_text(&mut f.ui, "id:mode", "Settings")?;
-    // The theme mode starts with a capital letter: `System · Tokyo Night`.
-    f.ui.wait_for("id:status-line >> text:/^[A-Z][a-z]+ · /")?;
-    f.update(|app, _| app.cfg.ui.size += 1.0);
-    wait_text(&mut f.ui, "id:file", "config.toml [+]")?;
-    f.ui.press("label:Write config.toml")?;
-    wait_text(&mut f.ui, "id:file", "config.toml")?;
-    assert!(f.check(|app| app.cfg == app.disk_cfg), "the settings are written");
-    // The press gives the keys back to the editor.
-    type_text(&mut f.ui, ":");
-    wait_text(&mut f.ui, "id:command-input", ":")?;
     Ok(())
 }
 

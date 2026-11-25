@@ -2,7 +2,7 @@
 // language, the encoding and the position. Rust gives each part (`Status` in nsvim/native).
 
 import { signal, View } from "nsh";
-import { Icon, type ModeColor, type PositionState, Shell, Status, type StatusState } from "nsvim/native";
+import { Icon, type ModeColor, type PositionState, Status, type StatusState } from "nsvim/native";
 import { type FontState, Line, useFont } from "./font";
 
 /** The fill of each mode colour. */
@@ -36,30 +36,6 @@ function Tail(props: {
         </Line>
       </View>
     </If>
-  );
-}
-
-/** The end of the line on the Settings tab: the theme, and `:w` to write config.toml. */
-function SettingsEnd(props: { font: () => FontState; theme: string }) {
-  return (
-    <View class="flex-row items-center self-stretch">
-      <Line font={props.font} delta={DELTA} class="px-3 text-muted-foreground">
-        {props.theme}
-      </Line>
-      <View
-        class="justify-center self-stretch px-3 bg-primary cursor-pointer"
-        role="button"
-        accessibilityLabel="Write config.toml"
-        onPress={() => {
-          Status.writeConfig();
-          Shell.focusKeys();
-        }}
-      >
-        <Line font={props.font} delta={DELTA} class="font-bold text-primary-foreground">
-          :w
-        </Line>
-      </View>
-    </View>
   );
 }
 
@@ -101,7 +77,7 @@ export function StatusLine() {
           <>
             <If when={st().badge}>
               {(badge) => (
-                <View class={`justify-center self-stretch px-3 ${FILL[st().badgeColor]}`} testID="mode-badge">
+                <View class={`justify-center self-stretch px-3 ${FILL[st().modeColor]}`} testID="mode-badge">
                   <Line font={font} delta={DELTA} class="font-medium tracking-wide text-primary-foreground" testID="mode">
                     {badge()}
                   </Line>
@@ -122,7 +98,6 @@ export function StatusLine() {
               {st().file}
             </Line>
             <View class="flex-1" />
-            <If when={st().settings}>{(theme) => <SettingsEnd font={font} theme={theme()} />}</If>
             <Tail font={font} text={st().errors > 0 ? `E ${st().errors}` : ""} color="text-destructive" id="errors" />
             <Tail font={font} text={st().warnings > 0 ? `W ${st().warnings}` : ""} color="text-warning" id="warnings" />
             <Tail

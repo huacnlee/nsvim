@@ -47,18 +47,6 @@ fn a_config_that_does_not_parse_keeps_the_one_in_use() {
 }
 
 #[test]
-fn unsaved_settings_stay_when_the_file_changes() {
-    let mut a = app();
-    a.settings = Some(super::Settings::default());
-    a.cfg.font.size = 20.0;
-    let mut disk = Config::default();
-    disk.indent.width = 8;
-    a.event(Event::Config(Ok(disk.clone())), &mut Tx::new());
-    assert_eq!(a.cfg.font.size, 20.0, "the Settings tab's change stays");
-    assert_eq!(a.disk_cfg, disk);
-}
-
-#[test]
 fn a_new_omarchy_theme_recolours_the_editor() {
     let mut a = app();
     a.cfg.theme.mode = "omarchy".into();

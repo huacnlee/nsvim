@@ -62,7 +62,7 @@ pub struct TreeRows {
 /// The rows on screen: from the scroll position, as many as fit and one more.
 pub fn rows_of(app: &App) -> TreeRows {
     let rows = app.tree.index.rows(&app.tree.open);
-    let active = if app.ed.has_doc() && !app.on_settings {
+    let active = if app.ed.has_doc() {
         app.ed.buf().path.as_ref().and_then(|p| p.strip_prefix(&app.ed.root).ok()).map(|r| r.to_string_lossy().replace('\\', "/"))
     } else {
         None

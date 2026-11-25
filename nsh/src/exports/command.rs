@@ -71,8 +71,6 @@ pub fn command_of(app: &App) -> CommandState {
     let vim = app.is_vim();
     (info.text, info.tone) = if let Some(m) = &app.ed.msg {
         (m.text.clone(), if m.error { MessageTone::Error } else { MessageTone::Quiet })
-    } else if app.on_settings {
-        (":Settings".into(), MessageTone::Quiet)
     } else {
         match app.ed.mode {
             Mode::Insert if vim && editor::vim::replacing(&app.ed.vim) => ("-- REPLACE --".into(), MessageTone::Mode),

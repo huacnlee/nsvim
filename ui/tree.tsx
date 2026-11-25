@@ -110,9 +110,9 @@ function Row(props: { item: () => TreeItem; frame: Signal<TreeFrame> }) {
       </Text>
       <View class="flex-1" />
       <If when={r().changes}>
-        {/* A folder with changes inside shows a solid dot. */}
+        {/* A folder with changes inside shows a small square, as an unsaved tab does. */}
         <View class="pl-2">
-          <View class="size-[7px] rounded-full bg-warning" testID="tree-changes" />
+          <View class="size-[7px] rounded-[1px] bg-warning" testID="tree-changes" />
         </View>
       </If>
       <If when={r().git}>
