@@ -3,19 +3,28 @@
 //! UI, and a missing server only means that language has no LSP.
 
 mod edits;
+#[cfg(not(target_arch = "wasm32"))]
 mod server;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
 use editor::buffer::Pos;
-use serde_json::{Value, json};
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::Value;
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::{Event, Out};
 pub use edits::{FileEdit, TextEdit, summary as edits_summary};
+#[cfg(not(target_arch = "wasm32"))]
 use server::{FromServer, Server};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Files bigger than this don't go to a language server: sending them on each change would
 /// cost more than it gives.
 const MAX_BYTES: usize = 4 * 1024 * 1024;
@@ -97,6 +106,7 @@ pub struct Item {
     pub insert: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The language server for an editor language: its key, its LSP language id and its command.
 fn server_for(lang: &str) -> Option<(&'static str, &'static str, &'static [&'static str])> {
     Some(match lang {
@@ -147,12 +157,14 @@ pub fn path_of(uri: &str) -> Option<PathBuf> {
     Some(PathBuf::from(String::from_utf8_lossy(&out).into_owned()))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 struct Doc {
     server: usize,
     version: i64,
     text: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// What an answer to a request is for.
 enum Pending {
     Definition,
@@ -164,11 +176,13 @@ enum Pending {
     Resolve,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 enum Msg {
     Job(Job),
     Server(FromServer),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     let (job_tx, job_rx) = channel::<Job>();
     let (tx, rx) = channel::<Msg>();
@@ -228,6 +242,7 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     job_tx
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 struct Manager {
     root: PathBuf,
     out: Out,
@@ -243,6 +258,7 @@ struct Manager {
     actions: Vec<(usize, Value)>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Manager {
     fn server(&mut self, key: &'static str, name: &'static str, cmd: &[&str]) -> Option<usize> {
         if let Some(slot) = self.keys.get(key) {
@@ -561,6 +577,7 @@ impl Manager {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A char column as the server counts it: chars (utf-32) or UTF-16 units.
 fn to_wire(text: &str, pos: Pos, utf32: bool) -> usize {
     if utf32 {
@@ -569,6 +586,7 @@ fn to_wire(text: &str, pos: Pos, utf32: bool) -> usize {
     text.split('\n').nth(pos.line).map_or(pos.col, |l| l.chars().take(pos.col).map(char::len_utf16).sum())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn from_utf16(line: &str, units: usize) -> usize {
     let mut n = 0;
     for (i, c) in line.chars().enumerate() {
@@ -580,6 +598,7 @@ fn from_utf16(line: &str, units: usize) -> usize {
     line.chars().count()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn hover_text(contents: &Value) -> String {
     match contents {
         Value::String(s) => s.clone(),
@@ -589,6 +608,7 @@ fn hover_text(contents: &Value) -> String {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn completion_items(result: &Value) -> Vec<Item> {
     let list = match result {
         Value::Array(a) => a.as_slice(),
@@ -617,6 +637,7 @@ fn completion_items(result: &Value) -> Vec<Item> {
     items.into_iter().map(|(_, i)| i).take(60).collect()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn kind_name(k: u64) -> &'static str {
     match k {
         2 => "Method",

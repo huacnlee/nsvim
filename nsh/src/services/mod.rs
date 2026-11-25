@@ -5,11 +5,13 @@
 pub mod editorconfig;
 pub mod git;
 pub mod grep;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod index;
 pub mod io;
 pub mod ipc;
 pub mod lsp;
 pub mod probe;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod watch;
 pub mod web;
 

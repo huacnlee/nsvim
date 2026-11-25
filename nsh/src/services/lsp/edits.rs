@@ -1,11 +1,15 @@
 //! LSP workspace edits (from rename, code actions and `workspace/applyEdit`) turned into char
 //! positions per file, and the file operations they carry.
 
-use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
+use std::path::PathBuf;
 
 use editor::buffer::Pos;
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::Value;
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::{from_utf16, path_of};
 
 /// One text change: replace `start..end` with `text`.
@@ -23,6 +27,7 @@ pub struct FileEdit {
     pub edits: Vec<TextEdit>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A file created, renamed or deleted by an edit.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FileOp {
@@ -31,6 +36,7 @@ pub enum FileOp {
     Delete(PathBuf),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The text edits and file operations of a `WorkspaceEdit`, in order. `text_of` gives a file's
 /// text for turning UTF-16 columns into chars; it is not called when the server counts chars.
 pub fn convert(edit: &Value, utf32: bool, text_of: &dyn Fn(&Path) -> Option<String>) -> (Vec<FileEdit>, Vec<FileOp>) {

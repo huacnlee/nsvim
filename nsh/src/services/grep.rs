@@ -1,11 +1,16 @@
 //! Project search behind `SPC /`: ripgrep when it is installed, else a plain walk.
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
 use std::process::Command;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::{Event, Out};
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The search stops after this many matches.
 const MAX_HITS: usize = 2000;
 
@@ -23,6 +28,7 @@ pub struct Hit {
     pub text: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     let (tx, rx) = channel::<Job>();
     std::thread::Builder::new()
@@ -48,6 +54,7 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     tx
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `None` when `rg` isn't installed.
 fn ripgrep(root: &Path, pattern: &str) -> Option<(Vec<Hit>, Option<String>)> {
     let out = Command::new("rg")
@@ -81,6 +88,7 @@ fn ripgrep(root: &Path, pattern: &str) -> Option<(Vec<Hit>, Option<String>)> {
     Some((hits, error.filter(|e| !e.is_empty())))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `path:line:col:text`, with 1-based line and byte column.
 fn parse_vimgrep(line: &str) -> Option<Hit> {
     let mut it = line.splitn(4, ':');
@@ -92,6 +100,7 @@ fn parse_vimgrep(line: &str) -> Option<Hit> {
     Some(Hit { path, line: ln.saturating_sub(1), col: char_col, text })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn walk_search(root: &Path, pattern: &str) -> Vec<Hit> {
     let smart = pattern.chars().any(|c| c.is_uppercase());
     let needle = if smart { pattern.to_string() } else { pattern.to_lowercase() };

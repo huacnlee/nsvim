@@ -14,7 +14,9 @@ use nsh_platform_macos as platform;
 #[cfg(target_os = "windows")]
 use nsh_platform_windows as platform;
 
+#[cfg(not(target_arch = "wasm32"))]
 use nsh_app_editor::args::{self, Command};
+#[cfg(not(target_arch = "wasm32"))]
 use nsh_app_editor::{DEFAULT_SIZE, ipc, timing};
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -38,6 +40,7 @@ fn main() -> impl std::process::Termination {
     )
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Runs what needs no window: help, the version, `ctl`, `mcp`, and opening files in the
 /// editor already running for the project. Returns the exit status, or None to open a window.
 fn without_window() -> Option<i32> {
@@ -66,5 +69,10 @@ fn without_window() -> Option<i32> {
     ipc::client::open_in_running(&root, &files, wait)
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+/// On the web, the page mounts `App` from the library (`nsh.json` names it). This program has
+/// nothing to do there.
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows", target_arch = "wasm32")))]
 compile_error!("nsvim runs on macOS, Windows and Linux.");

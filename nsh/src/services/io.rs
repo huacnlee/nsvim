@@ -2,12 +2,17 @@
 //! for reloads. One thread, so writes to one file land in the order they were asked for.
 
 use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
-use editor::buffer::{Buffer, History, Pos};
+#[cfg(not(target_arch = "wasm32"))]
+use editor::buffer::Buffer;
+use editor::buffer::{History, Pos};
 use serde::{Deserialize, Serialize};
 
-use super::{AfterSave, Event, Out, WriteKind, editorconfig};
+use super::{AfterSave, WriteKind};
+#[cfg(not(target_arch = "wasm32"))]
+use super::{Event, Out, editorconfig};
 
 /// Unsaved text kept while editing, so a crash loses at most a couple of seconds of work.
 #[derive(Serialize, Deserialize)]
@@ -41,6 +46,7 @@ fn key(path: &Path) -> u64 {
     h.finish()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Histories bigger than this aren't kept; they would cost more to load than they give.
 const MAX_HISTORY_BYTES: usize = 16 * 1024 * 1024;
 
@@ -90,9 +96,11 @@ pub enum Job {
     },
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// A preview reads at most this much of a file.
 const PREVIEW_BYTES: usize = 64 * 1024;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start(out: Out) -> Sender<Job> {
     let (tx, rx) = channel::<Job>();
     std::thread::Builder::new()
@@ -180,6 +188,7 @@ pub fn start(out: Out) -> Sender<Job> {
     tx
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn bytecount_lines(bytes: &[u8]) -> usize {
     let n = bytes.iter().filter(|b| **b == b'\n').count();
     if bytes.last().is_some_and(|b| *b != b'\n') { n + 1 } else { n }

@@ -5,7 +5,9 @@
 //! Windows has no Unix sockets in the standard library. There the editor serves no socket, and
 //! the clients report that no editor runs.
 
+#[cfg(not(target_arch = "wasm32"))]
 pub mod client;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod mcp;
 
 use std::hash::{Hash, Hasher};

@@ -155,6 +155,27 @@ pub extern "C" fn iswspace(c: u32) -> c_int {
     wide(c, char::is_whitespace)
 }
 
+/// The case of `c` that `map` gives, when that is one character. Else `c` as it is.
+fn case(c: u32, map: fn(char) -> Option<char>) -> u32 {
+    char::from_u32(c).and_then(map).map_or(c, u32::from)
+}
+
+/// One character from a case map that gives exactly one.
+fn single(mut it: impl Iterator<Item = char>) -> Option<char> {
+    let c = it.next()?;
+    it.next().is_none().then_some(c)
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn towlower(c: u32) -> u32 {
+    case(c, |c| single(c.to_lowercase()))
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn towupper(c: u32) -> u32 {
+    case(c, |c| single(c.to_uppercase()))
+}
+
 /// No clock: the parser has no time limit.
 #[unsafe(no_mangle)]
 pub extern "C" fn clock() -> i64 {

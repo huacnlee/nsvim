@@ -16,6 +16,7 @@ pub const STEPS: &[&str] = &["keys", "mouse", "look", "terminal", "ready"];
 
 /// The desktop entry and icon the default-app choice installs on Linux.
 const DESKTOP: &str = include_str!("../../../assets/editor.desktop");
+#[cfg(not(target_arch = "wasm32"))]
 const ICON: &str = include_str!("../../../assets/editor.svg");
 pub const FONTS: &[&str] = &["JetBrains Mono", "IBM Plex Mono", "Fira Code"];
 pub const SIZES: &[f32] = &[12.0, 13.0, 14.0, 16.0];
@@ -359,7 +360,10 @@ impl App {
     /// Writes config.toml, runs the terminal steps the user left on, and opens the editor.
     pub fn finish_setup(&mut self, _tx: &mut Tx) {
         let Screen::Setup(s) = std::mem::replace(&mut self.screen, Screen::Editor) else { return };
+        // The web has no terminal to set up.
+        #[cfg(not(target_arch = "wasm32"))]
         let cmds = s.commands();
+        #[cfg(not(target_arch = "wasm32"))]
         let integrate = Integration {
             name: s.cfg.cli.name.clone(),
             link: s.cfg.cli.path && s.installable() && !s.in_bin(),
@@ -387,6 +391,7 @@ impl App {
         }
         self.config_changed();
         self.write_config();
+        #[cfg(not(target_arch = "wasm32"))]
         if !cmds.is_empty() {
             std::thread::spawn(move || integrate.run());
         }
@@ -420,6 +425,7 @@ pub fn leader_in(src: &str) -> Option<char> {
     None
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The terminal step's changes, run off the UI thread after setup.
 struct Integration {
     name: String,
@@ -435,6 +441,7 @@ struct Integration {
     rc: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Integration {
     fn run(self) {
         let Ok(exe) = std::env::current_exe() else { return };
@@ -485,6 +492,7 @@ impl Integration {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The desktop entry with `Exec` set to this binary.
 fn desktop_entry(exe: &std::path::Path) -> String {
     let exe = exe.display().to_string().replace('\\', "\\\\").replace('"', "\\\"");

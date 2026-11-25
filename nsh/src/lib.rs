@@ -194,7 +194,10 @@ pub fn window(s: Session) -> impl IntoElement {
     s.start();
     let keys = element_ref();
     // A view takes the focus only once its window shows, which comes after the first layout on
-    // Linux. Ask until it holds the focus, for at most 5 seconds.
+    // Linux. Ask until it holds the focus, for at most 5 seconds. On the web the editor is often
+    // a frame in a larger page, and it must not take the focus from that page. There it takes the
+    // focus when the user clicks it.
+    #[cfg(not(target_arch = "wasm32"))]
     spawn(async move {
         for _ in 0..50 {
             if s.read(|a| a.key_focus) {

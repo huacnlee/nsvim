@@ -3,12 +3,14 @@
 
 #[cfg(unix)]
 use std::io::{BufRead, BufReader};
+#[cfg(not(target_arch = "wasm32"))]
 use std::io::{Read, Write};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
 use std::process::{Command, Stdio};
 
 #[cfg(unix)]
@@ -80,6 +82,7 @@ fn serve(stream: UnixStream, out: Out) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The shell that runs `:!` commands and filters: `sh -c`, or `cmd /C` on Windows.
 fn shell(cmd: &str) -> Command {
     let (sh, flag) = if cfg!(windows) { ("cmd", "/C") } else { ("sh", "-c") };
@@ -88,6 +91,7 @@ fn shell(cmd: &str) -> Command {
     c
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Runs `cmd` through the shell in `cwd` with `input` on its stdin, off the UI thread.
 pub fn run_shell(
     cmd: String,

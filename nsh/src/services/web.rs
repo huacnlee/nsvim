@@ -262,6 +262,9 @@ mod page {
             self.out.send(Event::Grep { generation, hits, error: None });
         }
 
+        /// The web has no old folders to copy.
+        pub fn migrate(&self, _m: crate::migrate::Migration) {}
+
         /// The web has no setup screen.
         pub fn probe_setup(&self) {}
 
@@ -288,6 +291,15 @@ mod tests {
         assert_eq!(disk.list(), ["Cargo.toml", "README.md", "src/main.rs", "src/note.rs"]);
         assert!(disk.read(&at(FIRST)).is_some_and(|t| t.contains("fn main")));
         assert_eq!(disk.read(Path::new("/elsewhere/a.rs")), None);
+    }
+
+    #[test]
+    fn the_demo_starts_in_the_editor_with_vim_keys_and_the_first_file() {
+        let app = demo_app();
+        assert!(matches!(app.screen, crate::app::Screen::Editor), "the web has no setup screen");
+        assert!(app.is_vim());
+        assert!(!app.cfg.ipc.enabled);
+        assert_eq!(app.to_open, [(at(FIRST), None)]);
     }
 
     #[test]

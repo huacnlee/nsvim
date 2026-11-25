@@ -15,18 +15,21 @@ path = "src/main.rs"
 editor = { package = "editor-core", path = "../crates/editor-core" }
 nsh-core = "0.7.0"
 nsh-base = "0.7.0"
-env_logger = "0.11"
 unicode-width = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
 dirs = "6"
-ignore = "0.4"
 globset = "0.4"
-notify = "8"
 similar = "2"
 # The workers wake the engine thread through a tokio channel, which any executor can await.
 tokio = { version = "1", default-features = false, features = ["sync"] }
+
+# The workers that walk and watch the disk, and the log. The web build has none of them.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.11"
+ignore = "0.4"
+notify = "8"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 nsh-platform-linux = { version = "0.7.0", default-features = false, features = ["svg"] }
