@@ -1,25 +1,32 @@
-//! The app's one store: the core `Editor`, kept out of the reactive graph, and a revision
-//! signal that every change bumps. Views never read the editor directly. They read
-//! `Session::frame`, a memo of what the screen shows, so a key changes only the rows, the
-//! cursor and the status parts whose content changed.
+//! The app's one store. `App` (all editor state, in `crate::app`) lives in a `stored` cell,
+//! out of the reactive graph. Every change goes through `Session::update`, which bumps a
+//! revision signal and then carries out the effects the app recorded on its `Tx`.
 //!
-//! File reads and writes run on tokio's blocking threads (`blocking`). Their results come
-//! back on the engine thread in a `spawn`, which writes the store.
+//! Views never read `App` in a body. Each view makes a memo of the part it shows with
+//! `Session::view`, so a key changes only the views whose part changed.
+//!
+//! The workers (`crate::services`) send events on a channel and call a waker. The waker sends
+//! on a tokio channel that a task on the engine thread awaits, and that task polls the app.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::time::{Duration, Instant};
 
-use editor::buffer::Buffer;
-use editor::editor::{Action, Doc, Editor, KeyInput, Keymap};
+use editor::editor::KeyInput;
+use nsh_core::desktop::WindowAttributes;
+use nsh_core::element::desktop::current_window;
 use nsh_core::prelude::*;
 
+use crate::app::App;
+use crate::app::fx::{Clip, Drag, Effect, Mods, Phase, PointerButton, Tx, WheelEvent};
 use crate::model::{self, Frame};
+use crate::ui::style::CodeFont;
 
-/// The size of one cell of the code font, measured, and the text area's size in cells.
+/// The text area's size in cells.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Grid {
     /// The advance of one char of the code font.
     pub cell_w: f32,
-    /// The height of one row: the font size times the line height.
+    /// The height of one row.
     pub cell_h: f32,
     pub rows: usize,
     pub cols: usize,
@@ -28,202 +35,181 @@ pub struct Grid {
 /// The store. `Copy`: capture it in closures freely.
 #[derive(Clone, Copy)]
 pub struct Session {
-    ed: Stored<Editor>,
+    app: Stored<App>,
     rev: Signal<u64>,
     grid: Signal<Grid>,
-    /// What the screen shows. Recomputed when `rev` or `grid` changes. Readers run again only
-    /// when their part of it changed.
+    started: Stored<Instant>,
+    /// What the press of a drag selects by (`Drag::data`).
+    drag_data: Stored<f32>,
+    /// What the text area shows.
     pub frame: Memo<Frame>,
+    /// The code font, from config.toml.
+    pub font: Memo<CodeFont>,
 }
 
 impl Session {
-    pub fn new(root: PathBuf, cell_w: f32, cell_h: f32) -> Session {
-        let ed = stored(Editor::new(root));
+    pub fn new(app: App) -> Session {
+        let app = stored(app);
         let rev = signal(0_u64);
-        let grid = signal(Grid { cell_w, cell_h, rows: 30, cols: 100 });
+        let font = computed(move || {
+            rev.get();
+            app.with(|a| CodeFont {
+                family: a.font_family,
+                size: a.cfg.font.size,
+                row_h: crate::geometry::row_height(a),
+                weight: a.cfg.font.weight,
+            })
+        });
+        let grid = signal(Grid { cell_w: 7.8, cell_h: 22.0, rows: 30, cols: 100 });
         let frame = computed(move || {
             rev.get();
             let rows = grid.with(|g| g.rows);
-            ed.with(|e| model::frame(e, rows))
+            app.with(|a| model::frame(&a.ed, rows))
         });
-        Session { ed, rev, grid, frame }
+        Session { app, rev, grid, started: stored(Instant::now()), drag_data: stored(0.0), frame, font }
+    }
+
+    /// A memo of the part of the app a view shows. It runs again after each update, and its
+    /// readers run again only when the part changed.
+    pub fn view<T: Clone + PartialEq + 'static>(&self, part: impl Fn(&App) -> T + 'static) -> Memo<T> {
+        let (app, rev) = (self.app, self.rev);
+        computed(move || {
+            rev.get();
+            app.with(|a| part(a))
+        })
     }
 
     pub fn grid(&self) -> Grid {
         self.grid.get()
     }
 
-    /// Reads the editor without subscribing. For listeners and tests.
-    pub fn read<R>(&self, f: impl FnOnce(&Editor) -> R) -> R {
-        self.ed.with(|e| f(e))
+    /// Seconds since the session started: the app's clock.
+    pub fn clock(&self) -> f64 {
+        self.started.with(|s| s.elapsed().as_secs_f64())
     }
 
-    /// Changes the editor, then tells the views.
-    pub fn edit<R>(&self, f: impl FnOnce(&mut Editor) -> R) -> R {
-        let out = self.ed.with(f);
+    /// Reads the app without subscribing. For listeners and tests.
+    pub fn read<R>(&self, f: impl FnOnce(&App) -> R) -> R {
+        self.app.with(|a| f(a))
+    }
+
+    /// Changes the app, tells the views, then carries out what the app asked of the window.
+    pub fn update<R>(&self, f: impl FnOnce(&mut App, &mut Tx) -> R) -> R {
+        self.update_with(Tx::new(), f)
+    }
+
+    /// `update` for an input event with these modifiers and this button.
+    pub fn update_with<R>(&self, mut tx: Tx, f: impl FnOnce(&mut App, &mut Tx) -> R) -> R {
+        let out = self.app.with(|a| f(a, &mut tx));
         self.rev.update(|n| *n += 1);
+        let raise = self.app.with(|a| a.raise.take());
+        if raise.is_some() {
+            current_window().focus();
+        }
+        for e in tx.effects {
+            self.run(e);
+        }
         out
     }
 
-    /// The text area got a new size: fit the editor's rows and columns to it.
-    pub fn resize(&self, width: f32, height: f32) {
-        let g = self.grid.get_untracked();
-        let gutter = self.read(model::gutter_cols) as f32 * g.cell_w;
-        let rows = ((height / g.cell_h).floor() as usize).max(1);
-        let cols = (((width - gutter) / g.cell_w).floor() as usize).max(10);
-        if rows == g.rows && cols == g.cols {
+    fn run(&self, effect: Effect) {
+        let me = *self;
+        match effect {
+            Effect::Quit => {
+                me.update(|a, _| crate::app::session::save(a));
+                current_window().close();
+            }
+            Effect::SetTitle(title) => {
+                let mut attrs = WindowAttributes::default();
+                attrs.title = Some(title);
+                current_window().set(attrs);
+            }
+            Effect::Copy(text) => drop(set_clipboard(text)),
+            Effect::ReadClipboard(then) => {
+                spawn(async move {
+                    let text = clipboard_string().await;
+                    me.update(|a, tx| then(a, Clip(text), tx));
+                });
+            }
+            Effect::PopupMenu { menu, x, y, then } => crate::ui::overlays::native_menu(me, menu, x, y, then),
+            Effect::WakeAfter(delay) => {
+                set_timeout(delay, move || me.poll());
+            }
+        }
+    }
+
+    /// Applies what the workers sent.
+    pub fn poll(&self) {
+        let clock = self.clock();
+        self.update(|a, tx| a.poll(clock, tx));
+    }
+
+    /// Starts the workers. Their events wake a task here that polls the app.
+    pub fn start(&self) {
+        let (wake_tx, mut wake_rx) = tokio::sync::mpsc::unbounded_channel::<()>();
+        let waker: crate::services::Waker = std::sync::Arc::new(move || {
+            let _ = wake_tx.send(());
+        });
+        self.update(|a, _| a.setup(waker));
+        let me = *self;
+        spawn(async move {
+            while wake_rx.recv().await.is_some() {
+                // Many events can come at once. One poll takes them all.
+                while wake_rx.try_recv().is_ok() {}
+                me.poll();
+            }
+        });
+        // The first poll sets the title and opens what is ready.
+        set_timeout(Duration::from_millis(1), move || me.poll());
+    }
+
+    /// A key, through the app's routing: setup, overlays, command line, tree, keymap.
+    pub fn key(&self, key: KeyInput) {
+        self.update(|a, tx| a.key(key, tx));
+    }
+
+    /// The text area got a new size, or the font changed: fit the grid to it.
+    pub fn resize(&self, width: f32, height: f32, cell_w: f32) {
+        let cell_h = self.font.with_untracked(|f| f.row_h);
+        let gutter = self.read(crate::geometry::gutter_cols) as f32 * cell_w;
+        let rows = ((height / cell_h).floor() as usize).max(1);
+        let cols = (((width - gutter) / cell_w).floor() as usize).max(10);
+        let g = Grid { cell_w, cell_h, rows, cols };
+        if g == self.grid.get_untracked() {
             return;
         }
         batch(|| {
-            self.grid.set(Grid { rows, cols, ..g });
-            self.edit(|e| {
-                e.rows = rows;
-                e.cols = cols;
-                if e.has_doc() {
-                    e.scroll_to_cursor();
+            self.grid.set(g);
+            self.update(|a, _| {
+                a.m.cw = cell_w;
+                a.m.row_h = cell_h;
+                a.m.gutter = gutter;
+                a.m.text[2] = width;
+                a.m.text[3] = height;
+                a.ed.rows = rows;
+                a.ed.cols = cols;
+                if a.ed.has_doc() {
+                    a.ed.scroll_to_cursor();
                 }
             });
         });
     }
 
-    /// A key for the active keymap. Actions outside the text come back and run here.
-    pub fn key(&self, key: KeyInput) {
-        let actions = self.edit(|e| {
-            e.msg = None;
-            if !e.has_doc() {
-                return Vec::new();
-            }
-            match e.keymap {
-                Keymap::Vim => editor::vim::handle_key(e, key),
-                Keymap::Classic => editor::classic::handle_key(e, key),
-            }
-        });
-        for a in actions {
-            self.run(a);
-        }
+    /// A press, drag or release on the text area, in points from its top left.
+    pub fn drag(&self, x: f32, y: f32, phase: Phase, clicks: u32, mods: Mods) {
+        let mut d = Drag { x, y, start_x: x, start_y: y, phase, clicks, data: self.drag_data.with(|v| *v) };
+        self.update_with(Tx::with_input(mods, PointerButton::Primary), |a, tx| a.text_drag(&mut d, tx));
+        self.drag_data.with(|v| *v = d.data);
     }
 
-    /// Scrolls by `lines`, negative up.
-    pub fn scroll(&self, lines: isize) {
-        self.edit(|e| e.scroll_by(lines));
+    /// A wheel turn over the text area. `dy` is in points, positive scrolls down.
+    pub fn wheel(&self, dx: f32, dy: f32, mods: Mods) {
+        let e = WheelEvent { dx: -dx, dy: -dy, mods };
+        self.update(|a, tx| a.text_wheel(e, tx));
     }
 
-    /// A click at a point in the text area, relative to its top left.
-    pub fn click(&self, x: f32, y: f32) {
-        let g = self.grid.get_untracked();
-        self.edit(|e| {
-            if !e.has_doc() {
-                return;
-            }
-            let gutter = model::gutter_cols(e) as f32 * g.cell_w;
-            let doc = e.doc();
-            let line = (doc.view.top + (y / g.cell_h).max(0.0) as usize).min(doc.buf.last_line());
-            let text = doc.buf.line(line);
-            let left = model::columns(&text, e.opts.tab_width)[doc.view.left.min(text.chars().count())];
-            let col = left + ((x - gutter).max(0.0) / g.cell_w) as usize;
-            let ch = model::char_at_column(&text, e.opts.tab_width, col);
-            e.set_cursor(editor::buffer::Pos::new(line, ch));
-        });
-    }
-
-    /// Opens `path` off the engine thread and shows it.
+    /// Opens `path`, as `:e path` does.
     pub fn open(&self, path: PathBuf) {
-        let me = *self;
-        spawn(async move {
-            let path = absolute(&path);
-            let shown = path.clone();
-            match blocking(move || Buffer::open(&path)).await {
-                Ok(Ok(buf)) => me.edit(|e| {
-                    e.docs.push(Doc::new(buf));
-                    e.active = e.docs.len() - 1;
-                    e.mode = e.rest_mode();
-                    e.scroll_to_cursor();
-                }),
-                Ok(Err(err)) => me.edit(|e| e.error(format!("{}: {err}", shown.display()))),
-                Err(err) => me.edit(|e| e.error(format!("open: {err}"))),
-            }
-        });
+        self.update(|a, _| a.open_path(path, None));
     }
-
-    /// Writes the active buffer off the engine thread, then marks that version clean.
-    fn save(&self, to: Option<PathBuf>) {
-        let prepared = self.edit(|e| {
-            if !e.has_doc() {
-                return Err("E32: No file name".to_string());
-            }
-            if let Some(p) = to {
-                let p = if p.is_absolute() { p } else { e.root.join(p) };
-                e.doc_mut().buf.path = Some(p);
-            }
-            let opts = e.opts.save;
-            let doc = e.doc_mut();
-            let at = doc.view.cursor;
-            let out = doc.buf.prepare_save_at(opts, at).map_err(|err| err.to_string());
-            doc.view.cursor = doc.buf.clamp(at, false);
-            out
-        });
-        let (path, bytes, version) = match prepared {
-            Ok(p) => p,
-            Err(err) => return self.edit(|e| e.error(err)),
-        };
-        let me = *self;
-        spawn(async move {
-            let at = path.clone();
-            let len = bytes.len();
-            let written = blocking(move || write_atomic(&at, &bytes).and_then(|()| std::fs::metadata(&at)?.modified())).await;
-            me.edit(|e| match written {
-                Ok(Ok(mtime)) => {
-                    if let Some(doc) = e.docs.iter_mut().find(|d| d.buf.path.as_deref() == Some(path.as_path())) {
-                        doc.buf.mark_saved(version, Some(mtime));
-                    }
-                    e.message(format!("\"{}\" {len}B written", path.display()));
-                }
-                Ok(Err(err)) => e.error(format!("{}: {err}", path.display())),
-                Err(err) => e.error(format!("write: {err}")),
-            });
-        });
-    }
-
-    /// Carries out an action of a keymap. The port runs the ones a text area needs. The
-    /// others say so on the command line.
-    fn run(&self, action: Action) {
-        match action {
-            Action::Save(to) => self.save(to),
-            Action::Open(path) => self.open(path),
-            Action::Quit { .. } | Action::QuitAll { .. } => {
-                nsh_core::element::desktop::current_window().close();
-            }
-            Action::Copy(text) => {
-                // The write is done when the platform says so. Nothing waits for it.
-                drop(set_clipboard(text));
-            }
-            Action::Message(text) => self.edit(|e| e.message(text)),
-            Action::Error(text) => self.edit(|e| e.error(text)),
-            other => {
-                let name = format!("{other:?}");
-                let name = name.split(['(', ' ', '{']).next().unwrap_or("").to_string();
-                self.edit(|e| e.message(format!("{name}: not in the NSH port yet")));
-            }
-        }
-    }
-}
-
-fn absolute(path: &Path) -> PathBuf {
-    if path.is_absolute() { path.to_path_buf() } else { std::env::current_dir().map(|d| d.join(path)).unwrap_or_else(|_| path.into()) }
-}
-
-/// Writes `bytes` to a temporary file beside `path`, then renames it over `path`, so a crash
-/// mid-write never leaves half a file. Keeps the old file's permissions.
-fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    let dir = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    std::fs::create_dir_all(dir)?;
-    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let tmp = dir.join(format!(".{name}.editor-{}.tmp", std::process::id()));
-    std::fs::write(&tmp, bytes)?;
-    if let Ok(meta) = std::fs::metadata(path) {
-        let _ = std::fs::set_permissions(&tmp, meta.permissions());
-    }
-    std::fs::rename(&tmp, path).inspect_err(|_| {
-        let _ = std::fs::remove_file(&tmp);
-    })
 }

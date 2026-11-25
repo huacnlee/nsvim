@@ -4,7 +4,7 @@ use nsh_core::prelude::*;
 
 use crate::model::{Bottom, Tone};
 use crate::store::Session;
-use crate::theme::{CODE_FAMILY, color};
+use crate::ui::style::color;
 
 pub fn status_line(s: Session) -> impl IntoElement {
     let status = computed(move || s.frame.with(|f| f.status.clone()));
@@ -43,7 +43,6 @@ pub fn status_line(s: Session) -> impl IntoElement {
             text(move || status.with(|st| st.pos.clone()))
                 .text_xs()
                 .px_3()
-                .font_family(CODE_FAMILY)
                 .text_color(move || color("muted-foreground"))
                 .test_id("position"),
         )
@@ -58,7 +57,6 @@ pub fn command_line(s: Session) -> impl IntoElement {
             Bottom::Message(m) | Bottom::Error(m) => m,
         })
         .text_xs()
-        .font_family(CODE_FAMILY)
         .truncate()
         .text_color(move || color(if matches!(bottom.get(), Bottom::Error(_)) { "destructive" } else { "foreground" }))
         .test_id("command-line"),

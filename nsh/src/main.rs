@@ -1,4 +1,4 @@
-//! Runs editor on this machine's native backend: `cargo run -- [file]`.
+//! Runs editor on this machine's native backend: `cargo run -- [path[:line]]...`.
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
@@ -12,9 +12,9 @@ use nsh_platform_windows as platform;
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 fn main() -> impl std::process::Termination {
     env_logger::init();
-    let path = std::env::args().nth(1);
+    nsh_app_editor::timing::start();
     platform::run_app(
-        platform::AppSource::Rust(nsh_app_editor::root(path)),
+        platform::AppSource::Rust(nsh_app_editor::root()),
         platform::AppOptions {
             title: "editor".to_owned(),
             #[cfg(any(target_os = "linux", target_os = "windows"))]
