@@ -44,7 +44,6 @@ fn space_opens_the_leader_menu_and_b_lists_buffers() {
 }
 
 #[test]
-#[ignore = "needs overlays"]
 fn the_leader_menu_and_the_buffer_list_show_their_rows() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(" ");
@@ -73,7 +72,6 @@ fn colon_settings_opens_the_tab_and_w_writes_the_config() {
 }
 
 #[test]
-#[ignore = "needs settings"]
 fn the_settings_tab_shows_its_sections_and_rows() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(":Settings\n");
@@ -97,7 +95,6 @@ fn space_e_focuses_the_tree_and_space_e_again_hides_it() {
 }
 
 #[test]
-#[ignore = "needs chrome"]
 fn the_tree_shows_folders_and_files() {
     let (_dir, mut f) = tree_project();
     f.ui.wait_for("id:tree >> text:src").unwrap();
@@ -245,7 +242,6 @@ fn setup_keys_move_pick_and_change_the_step() {
 }
 
 #[test]
-#[ignore = "needs settings"]
 fn setup_shows_its_steps() {
     let dir = scratch();
     let mut f = common::flow_with(nsh_app_editor::Launch {

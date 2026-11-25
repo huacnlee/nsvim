@@ -6,6 +6,9 @@ pub mod fx;
 pub mod ipc;
 pub mod key_list;
 pub mod keys;
+pub mod lifecycle;
+#[cfg(test)]
+mod lifecycle_tests;
 pub mod lsp;
 pub mod menu;
 pub mod mouse;
@@ -167,6 +170,12 @@ pub struct App {
     pub proposals: Vec<review::Proposal>,
     /// An agent asked to bring the window forward, with its activation token on Wayland.
     pub raise: Option<Option<String>>,
+    /// The config file the watcher reads again when it changes. None: no reload.
+    pub config_file: Option<PathBuf>,
+    /// When the user last asked to close the window over unsaved edits (`close_requested`).
+    pub close_asked: Option<f64>,
+    /// `exit` ran: the session is written.
+    pub exited: bool,
 }
 
 impl App {
@@ -184,14 +193,9 @@ impl App {
         let omarchy = crate::theme::read_omarchy();
         crate::timing::mark("omarchy theme read");
         let mut app = App::new(cfg, root.clone(), first, omarchy);
+        app.config_file = Some(config::config_path());
         app.to_open = targets;
-        if app.to_open.is_empty()
-            && let Some(s) = session::load(&root)
-        {
-            app.restore_active = s.active.clone();
-            app.tree.open = s.tree_open.into_iter().collect();
-            app.to_open = s.files.into_iter().map(|f| (f.path, Some(Pos::new(f.line, f.col)))).collect();
-        }
+        app.restore_session();
         if let Some((p, _)) = app.to_open.first()
             && let Some(dir) = p.parent().and_then(|d| d.strip_prefix(&root).ok())
         {
@@ -266,6 +270,9 @@ impl App {
             outside: Vec::new(),
             proposals: Vec::new(),
             raise: None,
+            config_file: None,
+            close_asked: None,
+            exited: false,
         }
     }
 
@@ -276,6 +283,9 @@ impl App {
         crate::timing::mark("workers started");
         for (path, at) in self.to_open.drain(..) {
             svc.open(path, at);
+        }
+        if let Some(f) = &self.config_file {
+            svc.watch_config(f.clone());
         }
         self.svc = Some(svc);
     }
@@ -448,6 +458,7 @@ impl App {
                     p.preview = Some((path, text));
                 }
             }
+            Event::Config(loaded) => self.config_reloaded(loaded),
             Event::Omarchy(o) => {
                 if o.is_some() {
                     self.omarchy = o;
@@ -671,11 +682,7 @@ impl App {
 
     /// Writes the session and quits.
     pub fn quit(&mut self, tx: &mut Tx) {
-        session::save(self);
-        self.release_waiters();
-        if let Some(svc) = &self.svc {
-            svc.close_socket();
-        }
+        self.exit();
         tx.quit();
     }
 

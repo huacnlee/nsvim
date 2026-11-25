@@ -11,6 +11,8 @@ use super::{Event, Out};
 
 pub enum Job {
     Add(PathBuf),
+    /// Watch the config file. Its folder is watched, as editors replace the file on save.
+    Config(PathBuf),
 }
 
 enum Msg {
@@ -45,6 +47,7 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
             if let Some(dir) = &omarchy {
                 let _ = watcher.watch(dir, RecursiveMode::Recursive);
             }
+            let mut config: Option<PathBuf> = None;
             while let Ok(first) = rx.recv() {
                 // Batch what arrives within 100 ms: one save is several events.
                 let mut msgs = vec![first];
@@ -52,6 +55,7 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
                 msgs.extend(rx.try_iter());
                 let mut changed: Vec<PathBuf> = Vec::new();
                 let mut theme = false;
+                let mut config_changed = false;
                 for m in msgs {
                     match m {
                         Msg::Job(Job::Add(path)) => {
@@ -59,8 +63,20 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
                                 let _ = watcher.watch(&path, RecursiveMode::NonRecursive);
                             }
                         }
+                        Msg::Job(Job::Config(file)) => {
+                            if let Some(dir) = file.parent() {
+                                let _ = std::fs::create_dir_all(dir);
+                                if !dir.starts_with(&root) {
+                                    let _ = watcher.watch(dir, RecursiveMode::NonRecursive);
+                                }
+                            }
+                            config = Some(file);
+                        }
                         Msg::Fs(Ok(e)) => {
                             for p in e.paths {
+                                if config.as_ref() == Some(&p) {
+                                    config_changed = true;
+                                }
                                 if omarchy.as_ref().is_some_and(|d| p.starts_with(d)) {
                                     theme = true;
                                 } else if !ignored(&root, &p) && !changed.contains(&p) {
@@ -73,6 +89,11 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
                 }
                 if theme {
                     out.send(Event::Omarchy(crate::theme::read_omarchy()));
+                }
+                if let Some(file) = config.as_ref().filter(|_| config_changed)
+                    && let Ok(src) = std::fs::read_to_string(file)
+                {
+                    out.send(Event::Config(crate::config::parse(file, &src)));
                 }
                 if !changed.is_empty() {
                     out.send(Event::FsChanged(changed));

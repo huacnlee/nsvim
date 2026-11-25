@@ -8,7 +8,6 @@ use editor::editor::Mode;
 use nsh_testing::DragOptions;
 
 #[test]
-#[ignore = "needs text"]
 fn a_click_places_the_cursor_and_a_drag_selects_in_visual_mode() {
     let (_dir, mut f) = rust_flow("neovim", &(0..60).map(|i| format!("line number {i}\n")).collect::<String>());
     let (cw, rh, gutter) = f.read(|a| (a.m.cw, a.m.row_h, a.m.gutter));
@@ -29,7 +28,6 @@ fn a_click_places_the_cursor_and_a_drag_selects_in_visual_mode() {
 /// A drag near the bottom keeps the text under the pointer still. Scrolloff used to scroll at
 /// every move there, so the selection ran away to the end of the file.
 #[test]
-#[ignore = "needs text"]
 fn a_drag_near_the_bottom_selects_what_is_under_the_pointer() {
     let src: String = (1..=300).map(|i| format!("line {i}\n")).collect();
     let (_dir, mut f) = rust_flow("neovim", &src);
@@ -45,7 +43,6 @@ fn a_drag_near_the_bottom_selects_what_is_under_the_pointer() {
 }
 
 #[test]
-#[ignore = "needs text"]
 fn right_click_opens_the_menu_and_copy_takes_the_selection() {
     let src: String = (0..100).map(|i| format!("row {i}\n")).collect();
     let (_dir, mut f) = rust_flow("neovim", &src);
@@ -60,7 +57,6 @@ fn right_click_opens_the_menu_and_copy_takes_the_selection() {
 }
 
 #[test]
-#[ignore = "needs chrome"]
 fn a_middle_click_closes_a_clean_tab() {
     let dir = common::scratch();
     let two = common::write(dir.path(), "two.rs", "two\n");
@@ -76,7 +72,6 @@ fn a_middle_click_closes_a_clean_tab() {
 /// The wheel over the tree scrolls it a row per 22 points, adds up a trackpad's small steps
 /// and leaves the keyboard row alone. Keys bring the keyboard row back on screen.
 #[test]
-#[ignore = "needs chrome"]
 fn the_wheel_scrolls_the_tree_and_keys_bring_the_row_back() {
     let dir = common::scratch();
     for i in 1..200 {

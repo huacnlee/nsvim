@@ -1,12 +1,17 @@
 //! Talking to a running editor from outside it: a Unix socket per project, one JSON request
 //! and one JSON reply per line. `editor ctl` and `editor mcp` are its clients, and AI agents,
 //! scripts and shells use those. See `docs/agents.md`.
+//!
+//! Windows has no Unix sockets in the standard library. There the editor serves no socket, and
+//! the clients report that no editor runs.
 
 pub mod client;
 pub mod mcp;
 
 use std::hash::{Hash, Hasher};
+#[cfg(unix)]
 use std::io::{BufRead, BufReader, Write};
+#[cfg(unix)]
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -48,17 +53,23 @@ impl Response {
 pub fn runtime_dir() -> PathBuf {
     match std::env::var_os("XDG_RUNTIME_DIR") {
         Some(d) if !d.is_empty() => PathBuf::from(d).join("editor"),
-        _ => {
-            // SAFETY: getuid has no preconditions and cannot fail.
-            let uid = unsafe { libc_getuid() };
-            std::env::temp_dir().join(format!("editor-{uid}"))
-        }
+        _ => std::env::temp_dir().join(format!("editor-{}", user_id())),
     }
 }
 
-unsafe extern "C" {
-    #[link_name = "getuid"]
-    fn libc_getuid() -> u32;
+#[cfg(unix)]
+fn user_id() -> String {
+    unsafe extern "C" {
+        #[link_name = "getuid"]
+        fn libc_getuid() -> u32;
+    }
+    // SAFETY: getuid has no preconditions and cannot fail.
+    unsafe { libc_getuid() }.to_string()
+}
+
+#[cfg(not(unix))]
+fn user_id() -> String {
+    std::env::var("USERNAME").unwrap_or_else(|_| "user".into())
 }
 
 /// The socket of the editor whose project is `root`.
@@ -69,8 +80,15 @@ pub fn socket_for(root: &Path) -> PathBuf {
 }
 
 /// Whether an editor answers on `path`.
+#[cfg(unix)]
 pub fn alive(path: &Path) -> bool {
     UnixStream::connect(path).is_ok()
+}
+
+/// Whether an editor answers on `path`: never, on a system without Unix sockets.
+#[cfg(not(unix))]
+pub fn alive(_path: &Path) -> bool {
+    false
 }
 
 /// The socket of the editor for `dir`: the nearest folder at or above it with a running editor,
@@ -97,6 +115,7 @@ pub fn running() -> Vec<PathBuf> {
 
 /// Sends one request and waits for its reply. `timeout` bounds the wait; `None` waits for as
 /// long as the editor takes (`open --wait` returns when the buffer closes).
+#[cfg(unix)]
 pub fn call(socket: &Path, cmd: &str, args: Value, timeout: Option<Duration>) -> std::io::Result<Response> {
     let mut stream = UnixStream::connect(socket)?;
     stream.set_read_timeout(timeout)?;
@@ -111,6 +130,12 @@ pub fn call(socket: &Path, cmd: &str, args: Value, timeout: Option<Duration>) ->
         return Err(std::io::Error::other("the editor closed the connection"));
     }
     serde_json::from_str(&reply).map_err(std::io::Error::other)
+}
+
+/// Sends one request: on a system without Unix sockets, no editor can answer.
+#[cfg(not(unix))]
+pub fn call(_socket: &Path, _cmd: &str, _args: Value, _timeout: Option<Duration>) -> std::io::Result<Response> {
+    Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "the control socket needs Unix sockets"))
 }
 
 #[cfg(test)]

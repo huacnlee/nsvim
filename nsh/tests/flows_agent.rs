@@ -56,7 +56,6 @@ fn a_proposal_shows_until_y_accepts_or_n_rejects() {
 }
 
 #[test]
-#[ignore = "needs text"]
 fn a_proposal_shows_its_diff_in_the_text_area() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     let new = SRC.replace("println!", "eprintln!");

@@ -80,7 +80,6 @@ fn settings_take_the_classic_window_shortcuts_and_wq_closes_them() {
 }
 
 #[test]
-#[ignore = "needs text"]
 fn alt_click_adds_a_cursor_in_the_classic_keymap() {
     let (_dir, mut f) = rust_flow("classic", SRC);
     let (cw, rh, gutter) = f.read(|a| (a.m.cw, a.m.row_h, a.m.gutter));
