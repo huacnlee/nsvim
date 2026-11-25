@@ -2,7 +2,7 @@
 
 <img src="assets/editor.svg" width="96" alt="nsvim icon: an N on a black tile: a blue left stem, a green right stem and a white diagonal">
 
-# nsvim
+# NSVim
 
 **A modal code editor with Vim keys, drawn with the native views of each platform.**
 
@@ -11,32 +11,32 @@
 
 </div>
 
-![nsvim with the file tree open and a Rust file in Normal mode](assets/screenshot.png)
+![NSVim with the file tree open and a Rust file in Normal mode](assets/screenshot.png)
 
 ## The name
 
-nsvim has two meanings:
+NSVim has two meanings:
 
 - **N**ext **S**imple **VIM**: a small, fast editor with the Vim keys you know.
 - **N**ative **S**hell **VIM**: it draws its UI with [NSH (Native Shell)](https://nsh.dev).
 
 ## Where it comes from
 
-nsvim is a fork of [editor](https://github.com/bjarneo/editor) by
+NSVim is a fork of [editor](https://github.com/bjarneo/editor) by
 [Bjarne Oeverli](https://github.com/bjarneo) and its contributors, under the MIT license. The
 git history keeps their work, and [LICENSE](LICENSE) keeps their copyright.
 
-nsvim is a separate project. It does not follow editor's releases, and its changes do not go
-back to editor. Report nsvim issues here, not to editor.
+NSVim is a separate project. It does not follow editor's releases, and its changes do not go
+back to editor. Report NSVim issues here, not to editor.
 
-The main change: nsvim draws its UI with [NSH](https://nsh.dev), which uses the native views of
+The main change: NSVim draws its UI with [NSH](https://nsh.dev), which uses the native views of
 each platform (GTK 4 on Linux, AppKit on macOS, WinUI on Windows). The screens are
 [`App.tsx`](App.tsx) and [`src/`](src). The app's Rust is in [`ext/nsvim-native`](ext/nsvim-native). The editing core (buffer, Vim and classic keymaps, tree-sitter) is the crate
 `editor-core` in [`crates/editor-core`](crates/editor-core).
 
 ## What it is
 
-nsvim is for opening code, reading it, finding your way around it and making quick edits.
+NSVim is for opening code, reading it, finding your way around it and making quick edits.
 
 - **Real Vim, or classic keys.** Counts, operators, text objects, dot repeat, registers,
   macros, marks and Visual block. Or no modes at all, with multiple cursors. Pick one at first
@@ -47,7 +47,7 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 - **Find anything.** A fuzzy file finder, project search through ripgrep, a file tree with git
   status, and a list of every key with search: `F1`.
 - **Works with your AI agent.** No AI inside. Claude Code, Codex or any CLI agent sees what you
-  look at and drives nsvim over its `mcp` or `ctl` command. It reads your selection and unsaved
+  look at and drives NSVim over its `mcp` or `ctl` command. It reads your selection and unsaved
   text, points you at code, and proposes changes that you accept with `y`.
 - **Safe.** Crash recovery, undo that survives a restart, changed lines marked when a git
   checkout or an agent changes a file, and atomic saves.
@@ -77,7 +77,7 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 
 ## Install
 
-nsvim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
+NSVim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
 or later, and Windows x86_64.
 
 **macOS / Linux**
@@ -114,11 +114,11 @@ nvim .                  # this folder as the project
 nvim src/main.rs:42     # a file, at line 42
 ```
 
-The installer puts no command on `PATH`. Open nsvim the first time from the app launcher, or
+The installer puts no command on `PATH`. Open NSVim the first time from the app launcher, or
 with the path the installer prints. The first launch runs a five-step setup: keys, mouse, look,
-terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open nsvim
+terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open NSVim
 (on by default). `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor to
-nsvim's full path. On Linux, it can make nsvim the default app for text files. It shows every
+NSVim's full path. On Linux, it can make NSVim the default app for text files. It shows every
 command before it runs, and it runs only the ones you leave on.
 
 ## Keys
@@ -151,7 +151,7 @@ Settings covers the window. Open it with `:Settings` or `SPC ,` in the Neovim ke
 
 ## AI agents
 
-Agents and scripts do not see shell aliases, so they run nsvim by its full path. `nvim --help`
+Agents and scripts do not see shell aliases, so they run NSVim by its full path. `nvim --help`
 prints it. On Linux, the installer puts it at `~/.local/share/nsvim/nsvim`:
 
 ```sh
@@ -179,20 +179,20 @@ Read [AGENTS.md](AGENTS.md), [docs/architecture.md](docs/architecture.md) and
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). It says what fits nsvim, how to name commits and pull
+Read [CONTRIBUTING.md](CONTRIBUTING.md). It says what fits NSVim, how to name commits and pull
 requests, and what to run first.
 
 ## License
 
-nsvim is released under the MIT license. See [LICENSE](LICENSE).
+NSVim is released under the MIT license. See [LICENSE](LICENSE).
 
-nsvim is based on [editor](https://github.com/bjarneo/editor), the original work of
+NSVim is based on [editor](https://github.com/bjarneo/editor), the original work of
 [Bjarne Oeverli](https://github.com/bjarneo) and its contributors, also under the MIT license.
 Their copyright notice stays in [LICENSE](LICENSE), as the license asks. The editing core, the
 keymaps, the tree-sitter support, the agent socket and much of the design come from their work.
 Thank you to them.
 
 - Copyright (c) 2026 The editor authors: the original work.
-- Copyright (c) 2026 Jason Lee and the nsvim contributors: the changes in nsvim.
+- Copyright (c) 2026 Jason Lee and the NSVim contributors: the changes in nsvim.
 
-If you copy or change nsvim, keep both copyright lines and the license text.
+If you copy or change NSVim, keep both copyright lines and the license text.

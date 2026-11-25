@@ -1,16 +1,16 @@
 # AI agents and scripts
 
-nsvim has no AI inside it. Instead, a running nsvim is something an agent in your terminal
+NSVim has no AI inside it. Instead, a running NSVim is something an agent in your terminal
 can see and drive: Claude Code, Codex, opencode, or a shell script. The agent can read what you
 are looking at, point you at code, propose changes you review as a diff, and use the editor's
 language server diagnostics.
 
 ## Connect an agent
 
-Every running nsvim serves a socket for its project. Two commands of the nsvim program use it:
+Every running NSVim serves a socket for its project. Two commands of the NSVim program use it:
 
 - `mcp`, a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. Agents
-  that speak MCP get nsvim as tools.
+  that speak MCP get NSVim as tools.
 - `ctl`, a command-line client for any agent or script.
 
 Agents and scripts do not see the shell aliases that setup makes (`nvim`, `vim`, `vi`). They
@@ -80,7 +80,7 @@ Do not run `nvim`: it is Neovim here.
 [cli.md](cli.md) has every command, flag and exit status. Lines and columns are 1-based. Paths are
 absolute or relative to the project root. `ctl`
 prints JSON for data and plain text for `read` and `selection`; add `--json` for JSON
-everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no nsvim is running.
+everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no NSVim is running.
 
 In your own terminal, the alias works, so `nvim ctl` is the same command:
 
@@ -107,7 +107,7 @@ $ sed 's/println!/eprintln!/' src/main.rs | nvim ctl propose src/main.rs --label
 
 ## `$EDITOR`, git and second launches
 
-`nvim PATH` opens the file in the nsvim already running for that project, brings it forward
+`nvim PATH` opens the file in the NSVim already running for that project, brings it forward
 and exits. `nvim --wait PATH` waits until you close that buffer, so it works as `$EDITOR` for
 git commit messages and for agents that open a prompt in your editor. `--new` always opens a new
 window.

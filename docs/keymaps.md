@@ -1,6 +1,6 @@
 # Keys
 
-nsvim has two keymaps. Setup asks which one you want. To switch later, run
+NSVim has two keymaps. Setup asks which one you want. To switch later, run
 `:set keymap=classic` or `:set keymap=neovim`, use Settings › keys & mouse, or pick
 `Keymap: Neovim` or `Keymap: classic` in the command palette.
 

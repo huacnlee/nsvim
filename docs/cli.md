@@ -1,15 +1,15 @@
 # Command line
 
 You type `nvim`. It is a shell alias that the first-run setup makes, with `vim` and `vi`. Each
-one runs the nsvim program by its full path. `\nvim` still runs Neovim. The installer puts
+one runs the NSVim program by its full path. `\nvim` still runs Neovim. The installer puts
 nothing on `PATH`.
 
 Scripts and AI agents do not see aliases, so they run the program by its full path. This page
 calls it PROGRAM. `nvim --help` prints it. The installer puts it at `~/.local/share/nsvim/nsvim`
 on Linux, and at `~/Applications/nsvim.app/Contents/MacOS/nsvim` on macOS.
 
-The program opens files and folders. `ctl` drives an nsvim that is already running, from a
-shell, a script or an AI agent. `mcp` serves that same nsvim to agents that speak the Model
+The program opens files and folders. `ctl` drives an NSVim that is already running, from a
+shell, a script or an AI agent. `mcp` serves that same NSVim to agents that speak the Model
 Context Protocol.
 
 ```sh
@@ -34,8 +34,8 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 | `nvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
 | `nvim a.rs b.rs` | Opens both files. The last one is active. |
 | `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
-| `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
-| `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
+| `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use NSVim as `$EDITOR`](#use-nsvim-as-editor). |
+| `nvim --new` | Opens a new window, also when NSVim runs for the project already. |
 | `nvim --help`, `nvim -h` | Prints the usage. |
 | `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.0`. |
 
@@ -43,7 +43,7 @@ A file that does not exist opens as a new, empty buffer. `:w` creates it.
 
 ### The project folder
 
-The project is the folder the file tree, the finder and project search use. nsvim picks it
+The project is the folder the file tree, the finder and project search use. NSVim picks it
 this way:
 
 1. A folder you name is the project.
@@ -55,7 +55,7 @@ this way:
 
 ### One window per project
 
-When nsvim already runs for the project, `nvim PATH` opens the file in that window,
+When NSVim already runs for the project, `nvim PATH` opens the file in that window,
 brings the window forward, and exits at once. On Wayland, the new process passes its
 `XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
@@ -67,9 +67,9 @@ window forward. `--new` skips this and always opens a new window.
 | `0` | The window closed, the file opened in the running editor, or `--wait` returned. |
 | `1` | The running editor did not answer, or could not open the file. The reason is on stderr. |
 
-## Use nsvim as `$EDITOR`
+## Use NSVim as `$EDITOR`
 
-`--wait` makes nsvim a blocking editor, for git, `crontab -e` and agents that open a prompt
+`--wait` makes NSVim a blocking editor, for git, `crontab -e` and agents that open a prompt
 in your editor:
 
 ```sh
@@ -79,8 +79,8 @@ git config --global core.editor "PROGRAM --wait"
 
 Git and other tools do not see aliases, so these lines name PROGRAM, the full path.
 
-With nsvim running for the project, the file opens there, and the command returns when
-you close that buffer: `:q`, `:wq`, `ZZ`, `SPC q` or `Ctrl W`. Without one, nsvim opens a
+With NSVim running for the project, the file opens there, and the command returns when
+you close that buffer: `:q`, `:wq`, `ZZ`, `SPC q` or `Ctrl W`. Without one, NSVim opens a
 window and returns when you close the window. Setup's terminal step can add these lines for
 you.
 

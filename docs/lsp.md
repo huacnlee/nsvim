@@ -1,6 +1,6 @@
 # Language servers
 
-nsvim uses any language server that is installed and on your `PATH`. There is nothing to
+NSVim uses any language server that is installed and on your `PATH`. There is nothing to
 configure: open a file, and its server starts.
 
 | Language | Server |
@@ -49,8 +49,8 @@ events, so a slow or stuck server never blocks typing.
 
 - **Sync.** The app sends a file's full text 150 ms after you stop typing, and at once before a
   request, so answers match what you see.
-- **Positions.** nsvim asks servers to count columns in chars (UTF-32). For servers that count
+- **Positions.** NSVim asks servers to count columns in chars (UTF-32). For servers that count
   UTF-16 units, it converts with the line's text.
 - **Large files.** Files over 4 MiB do not go to a server.
-- **Server requests.** nsvim answers `workspace/configuration` and applies
+- **Server requests.** NSVim answers `workspace/configuration` and applies
   `workspace/applyEdit`, which code actions often send.

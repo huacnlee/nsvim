@@ -20,7 +20,7 @@ Linux desktop users (Omarchy among them). The site speaks to all of them; neithe
 
 ## Product Purpose
 
-nsvim opens code fast, makes it pleasant to read, and makes quick edits quick. It is not an
+NSVim opens code fast, makes it pleasant to read, and makes quick edits quick. It is not an
 IDE and not for writing all day. Success: a developer reaches for it for every "look at this
 file" moment, and it opens before they finish the thought.
 

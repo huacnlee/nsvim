@@ -1,4 +1,4 @@
-# Working on nsvim
+# Working on NSVim
 
 A modal code editor. The core and all app state are Rust. The screens are TSX on
 [NSH](https://nsh.dev), which draws with the native views of each platform. Read
@@ -50,7 +50,7 @@ HOME=$S/home XDG_CONFIG_HOME=$S/config XDG_STATE_HOME=$S/state nsh run
 - Corners are square: `rounded-(--radius)` (2px). Use checkboxes, not switches.
 - A selected row shows its state with `aria-selected:` classes, and has no hover style.
 - Interface copy follows the NSH Design Guides: sentence case for labels, hints and states.
-  Keep the casing of `nsvim`, file names, commands (`:w`), key names, acronyms (UTF-8, LSP)
+  Write the product name as NSVim. Keep the casing of the `nsvim` binary, file names, commands (`:w`), key names, acronyms (UTF-8, LSP)
   and Vim's own text (`NORMAL`, `E37: ...`).
 
 ## Rules

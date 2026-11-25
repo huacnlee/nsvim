@@ -1,6 +1,6 @@
 # nsvim-native
 
-This crate is the Rust of the nsvim app, as an nshm. `nsh.json` at the repository root lists it
+This crate is the Rust of the NSVim app, as an nshm. `nsh.json` at the repository root lists it
 as a path dependency, and `App.tsx` imports it from `"nsvim-native"`. The crate also builds the
 program `nsvim`. It draws the editor with [NSH](https://nsh.dev), on the native
 views of each platform: GTK 4 on Linux, AppKit on macOS and WinUI on Windows. The editing core

@@ -11,7 +11,7 @@ Before you write code, read [AGENTS.md](AGENTS.md) (the rules, commands and conv
 
 ## Scope
 
-nsvim is for opening code, reading it, finding your way around it and making quick edits. It is not an IDE. Small
+NSVim is for opening code, reading it, finding your way around it and making quick edits. It is not an IDE. Small
 binaries, fast start-up and fast keys are part of its design. Each feature costs all of them for every user.
 
 These changes need no issue first:
@@ -61,7 +61,7 @@ Commit subjects and pull request titles name the area first, then say what chang
 <area>: <What the change does>
 ```
 
-- The area is the part of nsvim that the change is about, in lower case: `core`, `vim`, `classic`, `syntax`,
+- The area is the part of NSVim that the change is about, in lower case: `core`, `vim`, `classic`, `syntax`,
   `lsp`, `git`, `agent`, `ui`, `tree`, `finder`, `settings`, `setup`, `ipc`, `install`, `release`, `web`,
   `website`, `docs` or `ci`, or a platform (`linux`, `macos`, `windows`). Name one area only. When a change spans
   several, name the part that it is mostly about.

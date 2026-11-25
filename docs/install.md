@@ -1,4 +1,4 @@
-# Install nsvim
+# Install NSVim
 
 Releases are at <https://github.com/huacnlee/nsvim/releases>. The installers download a release
 and verify it with the release's `SHA256SUMS` before they install it. They run as the current
@@ -27,7 +27,7 @@ curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh -s -- --version 0.4.
 | `--version VERSION` | `NSVIM_VERSION` | the latest release |
 | `--dir DIRECTORY` | `NSVIM_INSTALL_DIR` | `~/Applications` on macOS, `~/.local` on Linux |
 
-To upgrade, run the installer again. Close nsvim first.
+To upgrade, run the installer again. Close NSVim first.
 
 ### What the installer puts on macOS
 
@@ -54,7 +54,7 @@ The program reads its interface from `nsh/bundle.nshc` next to it. Keep the fold
 
 ### The first launch
 
-The installer puts no command on `PATH`. Open nsvim the first time from the app launcher (Finder
+The installer puts no command on `PATH`. Open NSVim the first time from the app launcher (Finder
 on macOS), or run the program by the path that the installer prints:
 
 ```sh
@@ -91,7 +91,7 @@ Invoke-WebRequest https://huacnlee.github.io/nsvim/install.ps1 -OutFile "$env:TE
 `%LOCALAPPDATA%\Programs\nsvim`. The installer replaces the folder as one unit and adds a Start
 menu shortcut. It does not change `PATH`. The program is `nsvim.exe` in that folder.
 
-To upgrade, close nsvim and run the installer again. If the PowerShell policy stops scripts,
+To upgrade, close NSVim and run the installer again. If the PowerShell policy stops scripts,
 download the Windows ZIP from the release page and extract it.
 
 ## mise
@@ -140,12 +140,12 @@ touch it. To remove it, run `rm ~/.local/bin/nsvim`.
 
 ## Uninstall
 
-Close nsvim, then remove what the installer added:
+Close NSVim, then remove what the installer added:
 
 - macOS: `~/Applications/nsvim.app`.
 - Linux: under the prefix, `share/nsvim/`, `share/applications/nsvim.desktop` and
   `share/icons/hicolor/scalable/apps/nsvim.svg`.
-- Windows: the install folder and the nsvim Start menu shortcut.
+- Windows: the install folder and the NSVim Start menu shortcut.
 
 Your settings, session, undo history and recovery files stay. On Linux, they are in
 `~/.config/nsvim` and `~/.local/state/nsvim`. The first-run setup can add lines to your shell startup file
