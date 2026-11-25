@@ -30,7 +30,7 @@ function Menu(props: { part: () => MenuState }) {
   return (
     <View class="absolute" style={{ left: left(), top: top() }} onPress={() => Shell.focusKeys()}>
       <View
-        class="py-[4px] rounded-[6px] bg-muted border border-border shadow-lg"
+        class="py-[4px] rounded-(--radius) bg-muted border border-border shadow-lg"
         style={{ width: WIDTH }}
         role="menu"
         testID="context-menu"
@@ -42,8 +42,11 @@ function Menu(props: { part: () => MenuState }) {
               else={<View class="h-px w-full my-[4px] bg-border" />}
             >
               <View
-                class="flex-row h-[24px] px-[12px] items-center hover:bg-surface-raised"
-                classList={{ "bg-surface-raised": part().sel === index() }}
+                class="flex-row h-[24px] px-[12px] items-center"
+                classList={{
+                  "bg-surface-raised": part().sel === index(),
+                  "hover:bg-surface-raised": part().sel !== index() && item().enabled,
+                }}
                 role="menuitem"
                 accessibilityLabel={item().title}
                 accessibilityState={{ selected: part().sel === index(), disabled: !item().enabled }}

@@ -51,7 +51,7 @@ function Panel(props: { head: () => PickHead }) {
   return (
     <View class="absolute" style={{ left: left(), top: top() }}>
       <View
-        class="flex-row gap-[14px] p-[10px] rounded-[8px] bg-background border border-border shadow-xl"
+        class="flex-row gap-[14px] p-[10px] rounded-(--radius) bg-background border border-border shadow-xl"
         style={{ width: width(), height: height() }}
         role="dialog"
         testID="picker"

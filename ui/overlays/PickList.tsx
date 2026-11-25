@@ -36,8 +36,8 @@ function Line(props: { row: PickRow }) {
 function Row(props: { row: PickRow; picked: boolean }) {
   return (
     <View
-      class="flex-row h-[22px] px-[8px] items-center cursor-pointer hover:bg-surface-raised"
-      classList={{ "bg-surface-raised": props.picked }}
+      class="flex-row h-[22px] px-[8px] items-center cursor-pointer"
+      classList={{ "bg-surface-raised": props.picked, "hover:bg-surface-raised": !props.picked }}
       role="option"
       accessibilityLabel={props.row.label}
       accessibilityState={{ selected: props.picked }}

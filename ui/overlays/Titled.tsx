@@ -15,8 +15,8 @@ export function Titled(props: {
   children?: JSX.Element;
 }) {
   return (
-    <View class={`rounded-[6px] bg-background ${props.class ?? ""}`} testID={props.testID} role={props.role}>
-      <View class="absolute inset-0 rounded-[6px] border border-border" />
+    <View class={`rounded-(--radius) bg-background ${props.class ?? ""}`} testID={props.testID} role={props.role}>
+      <View class="absolute inset-0 rounded-(--radius) border border-border" />
       <View class="absolute left-[12px] top-[-9px] z-1 px-[5px] bg-background">
         <Text class="line-clamp-1 text-primary" style={{ fontSize: SIZE }}>
           {props.title}
