@@ -154,6 +154,11 @@ cargo clippy --all-targets -- -D warnings
 Read [AGENTS.md](AGENTS.md), [docs/architecture.md](docs/architecture.md) and
 [docs/development.md](docs/development.md) before you change the code.
 
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md). It says what fits nsvim, how to name commits and pull
+requests, and what to run first.
+
 ## License
 
 nsvim is released under the MIT license. See [LICENSE](LICENSE).
