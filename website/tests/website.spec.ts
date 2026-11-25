@@ -13,8 +13,9 @@ test('English and Chinese routes keep correct links, language and metadata', asy
   await expect(page.locator('h1')).toHaveText('Vim keys. Native windows.');
   await expect(page.locator('.eyebrow')).toHaveText('Next Simple VIM · Native Shell VIM');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://huacnlee.github.io/nsvim/');
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/nsvim/favicon.svg');
-  const favicon = await page.request.get('/nsvim/favicon.svg');
+  // The hash of the icon makes browsers load a changed icon.
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', /^\/nsvim\/favicon\.svg\?v=[0-9a-f]{8}$/);
+  const favicon = await page.request.get((await page.locator('link[rel="icon"]').getAttribute('href'))!);
   expect(favicon.ok()).toBe(true);
   expect(favicon.headers()['content-type']).toContain('image/svg+xml');
   await expect(page.getByRole('link', { name: 'Native Shell' })).toHaveAttribute('href', 'https://nsh.dev');

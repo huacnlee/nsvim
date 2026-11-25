@@ -4,9 +4,6 @@ Releases are at <https://github.com/huacnlee/nsvim/releases>. The installers dow
 and verify it with the release's `SHA256SUMS` before they install it. They run as the current
 user and do not need administrator access.
 
-Releases up to v0.3.2 do not have the installer archives. The installers stop with a message
-for them.
-
 Release builds are for:
 
 - macOS 14 or later, Apple silicon and Intel.

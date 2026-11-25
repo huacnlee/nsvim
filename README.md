@@ -54,6 +54,27 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 - **Yours.** 16 themes. On [Omarchy](https://omarchy.org), the System look follows the desktop
   theme live. Any monospace font. Settings writes each change to `config.toml` at once.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/screenshot-review.png" alt="An agent's proposed change shown as a diff, with y to accept and n to reject"></td>
+    <td width="50%"><img src="assets/screenshot-find.png" alt="The fuzzy file finder with a preview of the selected file"></td>
+  </tr>
+  <tr>
+    <td>An agent proposes a change. Press <code>y</code> to accept it or <code>n</code> to reject it.</td>
+    <td>Find a file with <code>SPC f</code>. The preview shows the selected file.</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/screenshot-settings.png" alt="Settings with the theme list, a live preview and the config.toml it writes"></td>
+    <td width="50%"><img src="assets/screenshot-light.png" alt="nsvim in the light theme with the file tree open"></td>
+  </tr>
+  <tr>
+    <td>Settings shows a live preview and the <code>config.toml</code> that it writes.</td>
+    <td>The light theme. The System look follows your OS.</td>
+  </tr>
+</table>
+
 ## Install
 
 nsvim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
