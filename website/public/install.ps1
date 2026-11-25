@@ -1,1 +1,1 @@
-../../install.ps1
+../../scripts/install.ps1

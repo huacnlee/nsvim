@@ -51,7 +51,7 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 - 16 themes; follows the Omarchy desktop theme live.
 - Release binaries: Linux x86-64 and ARM64, macOS Apple silicon and Intel (unsigned on
   macOS), Windows x86-64. Each holds the program and its interface (`nsh/bundle.nshc`). The
-  website is at https://huacnlee.github.io/nsvim/. `install.sh` and `install.ps1` install it.
+  website is at https://huacnlee.github.io/nsvim/. `scripts/install.sh` and `scripts/install.ps1` install it.
 - Not built: `gr`, `gF`.
 
 ## Brand Commitments
