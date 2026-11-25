@@ -12,7 +12,7 @@ fn a_file_opens_with_its_name_and_language() -> Result<(), String> {
     let mut app = start(&file);
     app.wait_for("text:/println/")?;
     assert!(app.shows("NORMAL"), "{:?}", app.screen().texts());
-    assert!(app.shows("rust"));
+    assert!(app.shows("Rust"));
     assert!(app.shows("1:1"));
     Ok(())
 }

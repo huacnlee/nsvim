@@ -7,7 +7,9 @@
 
 mod areas;
 mod buffer_line;
+mod command;
 mod icon;
+mod status;
 mod tree;
 mod workspace;
 
@@ -19,7 +21,9 @@ use crate::store::Session;
 
 pub use areas::*;
 pub use buffer_line::*;
+pub use command::*;
 pub use icon::*;
+pub use status::*;
 pub use tree::*;
 pub use workspace::*;
 
@@ -30,13 +34,13 @@ pub fn register(registry: &mut Registry) {
         .register::<TextArea>()
         .register::<Icon>()
         .register::<Settings>()
-        .register::<StatusLine>()
-        .register::<CommandLine>()
         .register::<Overlays>()
         .register::<Setup>()
         .module::<Shell>()
         .module::<FileTree>()
-        .module::<Tabs>();
+        .module::<Tabs>()
+        .module::<Status>()
+        .module::<Cmdline>();
 }
 
 thread_local! {

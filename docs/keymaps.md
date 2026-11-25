@@ -20,7 +20,7 @@ mode too.
 
 Press the leader alone to see these keys in a popup. Press a key from the popup, or click
 it. `Esc` or any other key closes the popup. With the Space leader, the status line shows
-`<space> for keys`. A click on it opens the popup too.
+`Space for keys`. A click on it opens the popup too.
 
 | Keys | Does |
 | --- | --- |

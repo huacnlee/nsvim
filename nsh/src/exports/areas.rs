@@ -22,18 +22,6 @@ pub fn Settings() -> impl IntoElement {
     ui::settings_view::settings(s, keys)
 }
 
-/// The status line under the text.
-#[component]
-pub fn StatusLine() -> impl IntoElement {
-    ui::chrome::status_line(current().0)
-}
-
-/// The command line under the status line.
-#[component]
-pub fn CommandLine() -> impl IntoElement {
-    ui::chrome::command_line(current().0)
-}
-
 /// The leader menu, the pickers, the popups and the dialogs, over the editor.
 #[component]
 pub fn Overlays() -> impl IntoElement {
