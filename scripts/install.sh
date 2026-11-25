@@ -150,7 +150,7 @@ if [ "$command_state" = installed ]; then
 else
   printf '%s is not from the nsvim installer, so it stays. Run: %s .\n' "$command_path" "$program"
 fi
-printf '%s\n' 'The first launch runs a short setup. It can make nvim, vim and vi open nsvim.'
+printf '%s\n' 'To open nsvim with vim and vi, add this to your shell startup file: alias vim=nsvim vi=nsvim'
 if [ "$platform" = linux ]; then
   printf '%s\n' 'nsvim needs GTK 4.14 or later.'
 fi

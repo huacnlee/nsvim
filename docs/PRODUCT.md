@@ -32,7 +32,7 @@ Settings over the whole window that writes each change at once. Speed is the dec
 
 ## Operating Context
 
-Launched from a terminal (`nvim .` or `nvim file:42`, through the aliases that setup adds), a launcher, `$EDITOR` and git commit
+Launched from a terminal (`nsvim .` or `nsvim file:42`), a launcher, `$EDITOR` and git commit
 messages. Used alongside git checkouts and AI agents that change files underneath it.
 
 ## Capabilities and Constraints

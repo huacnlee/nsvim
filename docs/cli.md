@@ -1,12 +1,12 @@
 # Command line
 
-You type `nvim`. It is a shell alias that the first-run setup makes, with `vim` and `vi`. Each
-one runs the nsvim program by its full path. `\nvim` still runs Neovim. The installer also
+You type `nsvim`. The installer puts it on `PATH`. The first-run setup can also make `vim` and
+`vi` shell aliases to the program's full path; `\vim` still runs Vim and `nvim` stays Neovim. The installer also
 puts the command `nsvim` on `PATH` (`~/.local/bin` on macOS and Linux, the install folder on
 Windows).
 
-Scripts and AI agents do not see aliases. They run `nsvim`, or the program by its full path. This page
-calls it PROGRAM. `nvim --help` prints it. The installer puts it at `~/.local/share/nsvim/nsvim`
+Scripts and AI agents run `nsvim` too. This page
+calls it PROGRAM. `nsvim --help` prints it. The installer puts it at `~/.local/share/nsvim/nsvim`
 on Linux, and at `~/Applications/nsvim.app/Contents/MacOS/nsvim` on macOS.
 
 The program opens files and folders. `ctl` drives an nsvim that is already running, from a
@@ -14,31 +14,31 @@ shell, a script or an AI agent. `mcp` serves that same nsvim to agents that spea
 Context Protocol.
 
 ```sh
-nvim .                           # open this folder as the project
-nvim src/main.rs:42              # open a file at line 42
-nvim ctl state                   # what the running editor shows, as JSON
+nsvim .                           # open this folder as the project
+nsvim src/main.rs:42              # open a file at line 42
+nsvim ctl state                   # what the running editor shows, as JSON
 claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp
 ```
 
 ## Open files and folders
 
 ```text
-nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 ```
 
 | Form | Does |
 | --- | --- |
-| `nvim` | Opens the current folder as the project, with the files of the last session. |
-| `nvim .` | The same, for the folder you name. |
-| `nvim src/main.rs` | Opens the file, in the project around it. |
-| `nvim src/main.rs:42` | Opens the file with the cursor on line 42. |
-| `nvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
-| `nvim a.rs b.rs` | Opens both files. The last one is active. |
-| `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
-| `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
-| `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
-| `nvim --help`, `nvim -h` | Prints the usage. |
-| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.0`. |
+| `nsvim` | Opens the current folder as the project, with the files of the last session. |
+| `nsvim .` | The same, for the folder you name. |
+| `nsvim src/main.rs` | Opens the file, in the project around it. |
+| `nsvim src/main.rs:42` | Opens the file with the cursor on line 42. |
+| `nsvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
+| `nsvim a.rs b.rs` | Opens both files. The last one is active. |
+| `nsvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
+| `nsvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
+| `nsvim --new` | Opens a new window, also when nsvim runs for the project already. |
+| `nsvim --help`, `nsvim -h` | Prints the usage. |
+| `nsvim --version`, `nsvim -V` | Prints the version: `nsvim 0.1.0`. |
 
 A file that does not exist opens as a new, empty buffer. `:w` creates it.
 
@@ -56,9 +56,9 @@ this way:
 
 ### One window per project
 
-When nsvim already runs for the project, `nvim PATH` opens the file in that window,
+When nsvim already runs for the project, `nsvim PATH` opens the file in that window,
 brings the window forward, and exits at once. On Wayland, the new process passes its
-`XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
+`XDG_ACTIVATION_TOKEN`, so the window takes focus. `nsvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
 
 ### Exit status
@@ -91,7 +91,7 @@ you.
 PROGRAM ctl [--socket PATH] [--json] COMMAND [ARGS]
 ```
 
-In your own terminal, `nvim ctl` is the same command. `ctl` sends one request to the running editor of the current folder and prints the
+In your own terminal, `nsvim ctl` is the same command. `ctl` sends one request to the running editor of the current folder and prints the
 reply. Lines and columns are 1-based. Paths are absolute or relative to the project folder.
 
 | Flag | Does |
@@ -157,10 +157,10 @@ When text is selected, `selection` holds `{"start": {"line", "column"}, "end": {
 not open yet. A file that does not exist starts empty. Nothing is written until you save.
 
 ```sh
-nvim ctl reveal src/main.rs:10-14 --note "this is the bug"
-sed 's/foo/bar/' src/main.rs | nvim ctl propose src/main.rs --label "rename foo"
-nvim ctl read --lines 1-20
-nvim ctl state | jq '.active | {relative, line, dirty}'
+nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
+sed 's/foo/bar/' src/main.rs | nsvim ctl propose src/main.rs --label "rename foo"
+nsvim ctl read --lines 1-20
+nsvim ctl state | jq '.active | {relative, line, dirty}'
 ```
 
 ### Which editor answers
@@ -206,9 +206,9 @@ command of the same name. Setup for Codex and opencode, and what each tool does,
 | `EDITOR_SOCKET` | The socket `ctl` and `mcp` use first. |
 | `XDG_RUNTIME_DIR` | The folder for the control sockets. |
 | `XDG_CONFIG_HOME`, `XDG_STATE_HOME` | Move the config and state folders on Linux. |
-| `XDG_ACTIVATION_TOKEN` | Lets a second `nvim` command give the running window focus on Wayland. |
+| `XDG_ACTIVATION_TOKEN` | Lets a second `nsvim` command give the running window focus on Wayland. |
 | `SHELL` | Setup's terminal step writes to `~/.zshrc` for zsh, else `~/.bashrc`. |
-| `EDITOR_TIMING` | `EDITOR_TIMING=1 nvim .` prints how long each step of startup takes. |
+| `EDITOR_TIMING` | `EDITOR_TIMING=1 nsvim .` prints how long each step of startup takes. |
 
 ## Files
 

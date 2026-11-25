@@ -128,7 +128,7 @@ pub struct CliCfg {
     pub editor_env: bool,
     pub git: bool,
     pub default_app: bool,
-    /// `nvim`, `vim` and `vi` in the shell open nsvim (aliases in the shell's startup file).
+    /// `vim` and `vi` in the shell open nsvim (aliases in the shell's startup file).
     pub vim_aliases: bool,
 }
 

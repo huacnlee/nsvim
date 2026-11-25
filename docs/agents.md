@@ -13,11 +13,11 @@ Every running nsvim serves a socket for its project. Two commands of the nsvim p
   that speak MCP get nsvim as tools.
 - `ctl`, a command-line client for any agent or script.
 
-Agents and scripts do not see the shell aliases that setup makes (`nvim`, `vim`, `vi`). They
-run the program by its full path. `nvim --help` prints it. The examples use the Linux path of
+The installer puts the `nsvim` command on `PATH`, so agents and scripts run `nsvim` like any
+other command. Where it is not on `PATH`, run the program by its full path; `nsvim --help` prints it. The examples use the Linux path of
 the installer, `~/.local/share/nsvim/nsvim`. On macOS, it is
-`~/Applications/nsvim.app/Contents/MacOS/nsvim`. Do not give an agent `nvim`: outside your
-interactive shell, `nvim` is Neovim.
+`~/Applications/nsvim.app/Contents/MacOS/nsvim`. Do not give an agent `vim` or `vi`: outside your
+interactive shell, they are not nsvim.
 
 ### Claude Code
 
@@ -51,7 +51,7 @@ of your program:
 
 ```markdown
 The user reads code in nsvim. Run `~/.local/share/nsvim/nsvim ctl` from the project folder.
-Do not run `nvim`: it is Neovim here.
+Do not run `vim` or `vi`: they are not nsvim here.
 - `~/.local/share/nsvim/nsvim ctl state` shows the open file, the cursor and the selection.
 - `~/.local/share/nsvim/nsvim ctl read PATH` returns a buffer's text with unsaved edits.
 - `~/.local/share/nsvim/nsvim ctl diagnostics` returns the language server's errors.
@@ -82,14 +82,14 @@ absolute or relative to the project root. `ctl`
 prints JSON for data and plain text for `read` and `selection`; add `--json` for JSON
 everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no nsvim is running.
 
-In your own terminal, the alias works, so `nvim ctl` is the same command:
+In your own terminal, `nsvim ctl` is the same command:
 
 ```sh
-$ nvim ctl state | jq '.active | {relative, line, dirty}'
+$ nsvim ctl state | jq '.active | {relative, line, dirty}'
 { "relative": "src/app/keys.rs", "line": 42, "dirty": false }
 
-$ nvim ctl reveal src/app/keys.rs:40-48 --note "this match decides who gets the key"
-$ sed 's/println!/eprintln!/' src/main.rs | nvim ctl propose src/main.rs --label "log to stderr"
+$ nsvim ctl reveal src/app/keys.rs:40-48 --note "this match decides who gets the key"
+$ sed 's/println!/eprintln!/' src/main.rs | nsvim ctl propose src/main.rs --label "log to stderr"
 ```
 
 ## Review what changed
@@ -107,8 +107,8 @@ $ sed 's/println!/eprintln!/' src/main.rs | nvim ctl propose src/main.rs --label
 
 ## `$EDITOR`, git and second launches
 
-`nvim PATH` opens the file in the nsvim already running for that project, brings it forward
-and exits. `nvim --wait PATH` waits until you close that buffer, so it works as `$EDITOR` for
+`nsvim PATH` opens the file in the nsvim already running for that project, brings it forward
+and exits. `nsvim --wait PATH` waits until you close that buffer, so it works as `$EDITOR` for
 git commit messages and for agents that open a prompt in your editor. `--new` always opens a new
 window.
 

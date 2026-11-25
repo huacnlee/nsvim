@@ -86,6 +86,7 @@ try {
         }
         if (($env:Path -split ';') -notcontains $InstallDir) { $env:Path = "$env:Path;$InstallDir" }
         Write-Host 'Run nsvim from a terminal. Open a new terminal first.'
+        Write-Host 'To open nsvim with vim and vi, add this to your PowerShell $PROFILE: Set-Alias vim nsvim; Set-Alias vi nsvim'
     }
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue

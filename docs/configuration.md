@@ -66,7 +66,7 @@ right_click = false      # right-click opens a context menu
 editor_env = true        # $EDITOR and $VISUAL name the program by its full path
 git = true               # git's editor, by the full path too
 default_app = false      # Linux: the default app for the file types in editor.desktop
-vim_aliases = true       # nvim, vim and vi open nsvim (shell aliases), \nvim runs Neovim
+vim_aliases = true       # vim and vi open nsvim (shell aliases), \vim runs Vim
 ```
 
 ## Themes

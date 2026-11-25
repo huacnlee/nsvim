@@ -57,7 +57,7 @@ TMPDIR=~/.cache/nsvim-test-tmp cargo test --profile quick -p nsvim-native \
 See where launch time goes. Each line is milliseconds since `main` started:
 
 ```sh
-EDITOR_TIMING=1 nvim --new src/main.rs
+EDITOR_TIMING=1 nsvim --new src/main.rs
 ```
 
 Open and edit a large file in the core. Make the file in a folder outside `/tmp`:

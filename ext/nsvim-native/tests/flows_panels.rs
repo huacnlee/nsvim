@@ -310,7 +310,7 @@ fn the_look_cards_in_a_row_have_one_height() {
 /// The terminal step offers `nvim`, `vim` and `vi` aliases, shows the line it adds, and drops it when
 /// the switch goes off.
 #[test]
-fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
+fn the_terminal_step_offers_vim_and_vi_aliases() {
     // This test runs from target/debug. A development build has no terminal step.
     nsvim_native::app::setup::treat_dev_build_as_release();
     let dir = scratch();
@@ -322,13 +322,13 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     });
     f.update(|a, _| a.setup_go(3));
     f.ui.wait_for("text:Use nsvim from the terminal").unwrap();
-    f.ui.wait_for("label:Open nsvim with nvim, vim and vi").unwrap();
+    f.ui.wait_for("label:Open nsvim with vim and vi").unwrap();
     // The step builds again when the probe answers. Press after it.
     f.settle("the probe answers", |a| match &a.screen {
         Screen::Setup(s) => s.exe.is_some(),
         _ => false,
     });
-    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias nvim=") && t.contains(" vim=") && t.contains(" vi="));
+    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias vim=") && !t.contains("nvim=") && t.contains(" vi="));
     assert!(alias(f.ui.screen()), "the alias line shows: {:?}", f.ui.screen().texts());
     let on = |f: &common::Flow| {
         f.read(|a| match &a.screen {
@@ -339,7 +339,7 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     // Under load, a press can reach the row while the step builds again. Press again only
     // while the switch is still on, so a second press never turns it back on.
     for _ in 0..3 {
-        f.ui.press("label:Open nsvim with nvim, vim and vi").unwrap();
+        f.ui.press("label:Open nsvim with vim and vi").unwrap();
         let t = std::time::Instant::now();
         while on(&f) && t.elapsed() < std::time::Duration::from_secs(1) {
             std::thread::sleep(std::time::Duration::from_millis(20));

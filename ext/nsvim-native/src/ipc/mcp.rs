@@ -1,7 +1,7 @@
 //! `nsvim mcp`: a Model Context Protocol server over stdio, so AI agents (Claude Code, Codex,
 //! opencode) can see and drive the running editor. Each tool call is a request on the
 //! project's control socket. Connect it with, for example, `claude mcp add nsvim -- PROGRAM mcp`,
-//! where PROGRAM is the binary's full path (`nvim --help` shows it).
+//! where PROGRAM is the binary's full path (`nsvim --help` shows it).
 
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
@@ -103,7 +103,7 @@ fn call_tool(params: &Value, cwd: &std::path::Path) -> Value {
     let Some(cmd) = command_for(name) else { return text(format!("unknown tool {name}"), true) };
     let socket: Option<PathBuf> = super::find(cwd);
     let Some(socket) = socket else {
-        return text(format!("No nsvim is running for {}. Ask the user to start one with `nvim .` in the project.", cwd.display()), true);
+        return text(format!("No nsvim is running for {}. Ask the user to start one with `nsvim .` in the project.", cwd.display()), true);
     };
     let args = params.get("arguments").cloned().unwrap_or(json!({}));
     match super::call(&socket, cmd, args, Some(Duration::from_secs(30))) {

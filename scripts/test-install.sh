@@ -128,7 +128,7 @@ check "$name" '[ "$status" -eq 0 ]' &&
   check "$name" '[ "$("$dest/share/nsvim/nsvim")" = "nsvim $version" ]' &&
   check "$name" '[ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' &&
   check "$name" 'grep -q "Add $root/home/.local/bin to PATH" "$root/out"' &&
-  check "$name" 'grep -q "run: $dest/share/nsvim/nsvim \." "$root/out" && grep -q "make nvim, vim and vi open nsvim" "$root/out"' &&
+  check "$name" 'grep -q "run: $dest/share/nsvim/nsvim \." "$root/out" && grep -q "alias vim=nsvim vi=nsvim" "$root/out"' &&
   check "$name" 'grep -qxF "Exec=\"$dest/share/nsvim/nsvim\" %F" "$dest/share/applications/nsvim.desktop"' &&
   check "$name" '[ -f "$dest/share/icons/hicolor/scalable/apps/nsvim.svg" ]' &&
   check "$name" '[ -z "$(ls -A "$dest/share" | grep nsvim-install || true)" ]' &&

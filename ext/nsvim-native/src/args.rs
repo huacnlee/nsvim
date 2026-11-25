@@ -1,5 +1,5 @@
-//! Command-line arguments: `nvim [path[:line]] [+line] [--wait] [--new]`, `PROGRAM ctl` and
-//! `PROGRAM mcp`. `nvim` is the shell alias the first-run setup makes, and PROGRAM is the
+//! Command-line arguments: `nsvim [path[:line]] [+line] [--wait] [--new]`, `PROGRAM ctl` and
+//! `PROGRAM mcp`. `nsvim` is the command the installer puts on PATH, and PROGRAM is the
 //! binary's full path. The program does not read its own name, so any alias or path starts it.
 //! A folder opens as the project. A file opens in the project around it: its git work tree,
 //! else its folder.
@@ -12,20 +12,20 @@ use editor::buffer::Pos;
 const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
   PROGRAM ctl COMMAND [ARGS]
   PROGRAM mcp
 
-The first launch runs a short setup. It can make nvim, vim and vi open nsvim with shell
-aliases. \\nvim still runs Neovim. Scripts and AI agents do not see aliases, so they run the
-program by its full path:
+The first launch runs a short setup. It can make vim and vi open nsvim with shell
+aliases. Scripts and AI agents do not see aliases. They run nsvim, or the program by its
+full path:
   PROGRAM
 
 Examples:
-  nvim .                      open this folder as the project
-  nvim src/main.rs:42         open a file at line 42, in the project around it
-  nvim --wait NOTES.md        return when its buffer closes, for $EDITOR and git
-  nvim --new                  open a new window, also when one runs for the project
+  nsvim .                     open this folder as the project
+  nsvim src/main.rs:42        open a file at line 42, in the project around it
+  nsvim --wait NOTES.md       return when its buffer closes, for $EDITOR and git
+  nsvim --new                 open a new window, also when one runs for the project
   PROGRAM ctl --help          drive the running editor
   PROGRAM mcp                 serve the running editor to AI agents, over stdio
 
@@ -185,12 +185,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_help_shows_nvim_and_this_binarys_full_path() {
+    fn the_help_shows_nsvim_and_this_binarys_full_path() {
         let help = usage("/home/dev/.local/share/nsvim/nsvim");
-        assert!(help.contains("  nvim .  ") && help.contains("  nvim src/main.rs:42  "), "{help}");
-        assert!(help.contains("\\nvim still runs Neovim"), "{help}");
+        assert!(help.contains("  nsvim .  ") && help.contains("  nsvim src/main.rs:42  "), "{help}");
+        assert!(help.contains("make vim and vi open nsvim") && !help.contains("nvim"), "{help}");
         assert!(help.contains("  /home/dev/.local/share/nsvim/nsvim ctl --help "), "{help}");
-        assert!(!help.contains("PROGRAM") && !help.contains("nsvim ."), "{help}");
+        assert!(!help.contains("PROGRAM"), "{help}");
         assert!(mcp_usage("'/a b/nsvim'").contains("claude mcp add nsvim -- '/a b/nsvim' mcp"));
     }
 

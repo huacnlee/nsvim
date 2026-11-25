@@ -240,11 +240,11 @@ fn editor_env(program: &str) -> String {
     format!("export EDITOR=\"{value}\" VISUAL=\"{value}\"")
 }
 
-/// The shell line that makes `nvim`, `vim` and `vi` open nsvim, the binary `program` (a shell
-/// word). `\nvim` or `command nvim` still runs the real Neovim.
+/// The shell line that makes `vim` and `vi` open nsvim, the binary `program` (a shell word).
+/// `\vim` or `command vim` still runs the real Vim. `nvim` is left to Neovim.
 fn vim_aliases(program: &str) -> String {
     let p = in_double_quotes(program);
-    format!("alias nvim=\"{p}\" vim=\"{p}\" vi=\"{p}\"")
+    format!("alias vim=\"{p}\" vi=\"{p}\"")
 }
 
 /// The file types the desktop entry opens: its `MimeType=` line.
@@ -432,7 +432,7 @@ struct Integration {
     /// This binary as a shell word (`Setup::program`).
     program: String,
     env: bool,
-    /// `nvim`, `vim` and `vi` aliases in the shell's startup file.
+    /// `vim` and `vi` aliases in the shell's startup file.
     vim: bool,
     git: bool,
     default_app: bool,
@@ -497,13 +497,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_terminal_step_aliases_nvim_vim_and_vi_to_the_full_path() {
+    fn the_terminal_step_aliases_vim_and_vi_to_the_full_path() {
         let mut s = Setup::new(None);
         s.step = 4;
         s.terminal = true;
         s.dev_build = false;
         s.exe = Some(PathBuf::from("/home/dev/.local/share/nsvim/nsvim"));
-        let line = "alias nvim=\"/home/dev/.local/share/nsvim/nsvim\" vim=\"/home/dev/.local/share/nsvim/nsvim\" vi=\"/home/dev/.local/share/nsvim/nsvim\"";
+        let line = "alias vim=\"/home/dev/.local/share/nsvim/nsvim\" vi=\"/home/dev/.local/share/nsvim/nsvim\"";
         let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with(&format!("echo '{line}' >> ")));
         assert!(s.cfg.cli.vim_aliases && alias(&s), "on by default: {:?}", s.commands());
         assert_eq!(s.choices().first(), Some(&Choice::Toggle("vim")), "the aliases come first");
@@ -600,7 +600,7 @@ mod tests {
         assert_eq!(s.program(), "'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'");
         assert_eq!(
             vim_aliases(&s.program()),
-            "alias nvim=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\" vim=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\" vi=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\""
+            "alias vim=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\" vi=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\""
         );
         s.exe = Some(PathBuf::from("/opt/it's $HOME/nsvim"));
         assert_eq!(s.program(), "'/opt/it'\\''s $HOME/nsvim'");
@@ -608,7 +608,7 @@ mod tests {
     }
 
     /// The lines setup writes do what they say in a real shell: each alias runs the binary with
-    /// the arguments, and `\nvim` skips the alias.
+    /// the arguments, `\vim` skips the alias and `nvim` stays Neovim.
     #[cfg(unix)]
     #[test]
     fn the_alias_line_runs_the_binary_in_a_shell() {
@@ -621,11 +621,11 @@ mod tests {
         std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
         let real = dir.path().join("real");
         std::fs::create_dir_all(&real).unwrap();
-        std::fs::write(real.join("nvim"), "#!/bin/sh\necho neovim\n").unwrap();
-        std::fs::set_permissions(real.join("nvim"), std::fs::Permissions::from_mode(0o755)).unwrap();
+        std::fs::write(real.join("vim"), "#!/bin/sh\necho vim\n").unwrap();
+        std::fs::set_permissions(real.join("vim"), std::fs::Permissions::from_mode(0o755)).unwrap();
         let program = shell_word(&exe.display().to_string());
         let script = format!(
-            "{}\n{}\nnvim src/main.rs:42\nvim .\nvi -V\n\\nvim\neval \"set -- $EDITOR\"\necho \"$#\"\n",
+            "{}\n{}\nvim src/main.rs:42\nvim .\nvi -V\n\\vim\neval \"set -- $EDITOR\"\necho \"$#\"\n",
             vim_aliases(&program),
             editor_env(&program)
         );
@@ -636,7 +636,7 @@ mod tests {
             .output()
             .unwrap();
         let text = String::from_utf8_lossy(&out.stdout);
-        assert_eq!(text, "nsvim src/main.rs:42\nnsvim .\nnsvim -V\nneovim\n2\n", "{}", String::from_utf8_lossy(&out.stderr));
+        assert_eq!(text, "nsvim src/main.rs:42\nnsvim .\nnsvim -V\nvim\n2\n", "{}", String::from_utf8_lossy(&out.stderr));
     }
 
     #[test]

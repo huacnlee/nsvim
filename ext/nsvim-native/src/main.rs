@@ -1,9 +1,9 @@
 //! editor: a lightweight modal editor for opening code fast, reading it, finding your way
 //! around it and making quick edits, drawn with each platform's native views.
 //!
-//! `nvim [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
-//! already running for the project when there is one. `nvim` is the shell alias the first-run
-//! setup makes. `PROGRAM ctl` and `PROGRAM mcp`, with the binary's full path, talk to a running
+//! `nsvim [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
+//! already running for the project when there is one. `nsvim` is the command the installer
+//! puts on PATH. `PROGRAM ctl` and `PROGRAM mcp`, with the binary's full path, talk to a running
 //! editor (see `docs/agents.md`).
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]

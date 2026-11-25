@@ -66,18 +66,18 @@ Open nsvim from the app launcher (Finder on macOS), or from a terminal:
 nsvim .
 ```
 
-The first launch runs a short setup. Its terminal step adds shell aliases, so `nvim`, `vim` and
-`vi` open nsvim. `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor. Each
+The first launch runs a short setup. Its terminal step can add shell aliases, so `vim` and `vi`
+open nsvim. `\vim` still runs Vim, and `nvim` stays Neovim. The step also sets `$EDITOR` and git's editor. Each
 of them names the program by its full path, so an upgrade in the same folder keeps them working.
 Open a new terminal after setup, then:
 
 ```sh
-nvim .                  # this folder as the project
-nvim src/main.rs:42     # a file, at line 42
+nsvim .                  # this folder as the project
+nsvim src/main.rs:42     # a file, at line 42
 ```
 
-Scripts and AI agents do not see shell aliases. They run `nsvim`, or the program by its full path.
-`nvim --help` prints it.
+Scripts and AI agents do not see shell aliases. They run `nsvim`.
+`nsvim --help` prints it.
 
 ## Windows
 
@@ -104,7 +104,7 @@ download the Windows ZIP from the release page and extract it.
 ## mise
 
 mise can install the release archive, but it puts the program in a folder with the version in
-its name. The aliases name that folder, so they break after `mise upgrade`. Use the installers.
+its name. The `vim` and `vi` aliases name that folder, so they break after `mise upgrade`. Use the installers.
 
 ## Build from source
 

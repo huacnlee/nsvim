@@ -18,8 +18,8 @@ export function ShellStep(props: Step) {
           <CheckRow
             st={st}
             choice="toggle:vim"
-            label="Open nsvim with nvim, vim and vi"
-            sub={"Shell aliases to the full path of nsvim. \\nvim still runs Neovim."}
+            label="Open nsvim with vim and vi"
+            sub={"Shell aliases to the full path of nsvim. \\vim still runs Vim."}
           />
           <CheckRow st={st} choice="toggle:env" label="Set as $EDITOR and $VISUAL" sub="For tools that open an editor, like crontab -e" />
           <CheckRow st={st} choice="toggle:git" label="Use for git commit messages" sub="git waits until you close the buffer" />
@@ -61,7 +61,7 @@ export function ShellStep(props: Step) {
 
 /** The names of the terminal options, as the summary says them. */
 const SHELL: [string, string][] = [
-  ["vim", "nvim, vim and vi"],
+  ["vim", "vim and vi"],
   ["env", "$EDITOR"],
   ["git", "Git editor"],
   ["default", "Default app"],
@@ -92,7 +92,7 @@ export function ReadyStep(props: Step) {
   const start = () => {
     const s = st();
     if (s.devBuild) return `This is a development build. The terminal step is off. Run ${s.program} in a terminal.`;
-    if (terminal() && s.on.includes("vim")) return "Then, in a new terminal, nvim . opens a folder. \\nvim still runs Neovim.";
+    if (terminal() && s.on.includes("vim")) return "Then, in a new terminal, nsvim . opens a folder.";
     const launcher = terminal() ? "the app launcher" : "the Start menu";
     return `Then, open nsvim from ${launcher}, or run ${s.program} in a terminal.`;
   };

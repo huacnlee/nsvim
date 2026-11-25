@@ -1,4 +1,4 @@
-//! `PROGRAM ctl` (`nvim ctl` through setup's alias): the command-line client of a running editor, for shells, scripts and agents.
+//! `PROGRAM ctl` (`nsvim ctl` on PATH): the command-line client of a running editor, for shells, scripts and agents.
 //! It also opens files in a running editor when `edit file` finds one for the project.
 
 use std::io::Read;
@@ -11,7 +11,7 @@ const USAGE: &str = "nsvim ctl: talk to the running editor of this folder.
 
 Usage: PROGRAM ctl [--socket PATH] [--json] COMMAND [ARGS]
 
-PROGRAM is the full path of nsvim. In a shell where setup made the alias, nvim ctl works too.
+PROGRAM is the full path of nsvim. nsvim ctl works too when nsvim is on PATH.
 
 Read:
   state                         the active file, cursor, selection, open buffers (JSON)
@@ -67,7 +67,7 @@ pub fn main(args: &[String]) -> i32 {
     }
     let cwd = std::env::current_dir().unwrap_or_default();
     let Some(socket) = socket.or_else(|| super::find(&cwd)) else {
-        eprintln!("nsvim ctl: no nsvim is running for {}. Start one with `nvim .`", cwd.display());
+        eprintln!("nsvim ctl: no nsvim is running for {}. Start one with `nsvim .`", cwd.display());
         return 2;
     };
     let (req, args_json, shape) = match build(&cmd, args) {
@@ -233,7 +233,7 @@ fn build(cmd: &str, args: &[String]) -> Result<(String, Value, Shape), String> {
             }
             ("command".into(), json!({ "line": line }), Shape::Quiet)
         }
-        other => return Err(format!("unknown command `{other}`. Run `nvim ctl --help`")),
+        other => return Err(format!("unknown command `{other}`. Run `nsvim ctl --help`")),
     })
 }
 
