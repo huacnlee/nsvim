@@ -79,13 +79,13 @@ fn a_dirty_file_shows_a_dot_on_its_tab_and_a_plus_in_the_status_line() -> Result
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&a);
     app.wait_for("text:/alpha/")?;
-    wait_text(&mut app, "id:tab-mark-0", "×")?;
+    wait_text(&mut app, "id:tab-mark-0", "Close")?;
     assert!(app.shows("a.txt"));
     typ(&mut app, &["x"]);
-    wait_text(&mut app, "id:tab-mark-0", "●")?;
+    wait_text(&mut app, "id:tab-mark-0", "Unsaved changes")?;
     app.wait_for("text:a.txt [+]")?;
     typ(&mut app, &["u"]);
-    wait_text(&mut app, "id:tab-mark-0", "×")?;
+    wait_text(&mut app, "id:tab-mark-0", "Close")?;
     Ok(())
 }
 
@@ -97,7 +97,7 @@ fn the_close_button_closes_a_clean_tab_and_keeps_a_dirty_one() -> Result<(), Str
     let mut app = start_files(&[&a, &b], None);
     app.wait_for("text:/beta/")?;
     typ(&mut app, &["x"]);
-    wait_text(&mut app, "id:tab-mark-1", "●")?;
+    wait_text(&mut app, "id:tab-mark-1", "Unsaved changes")?;
     app.press("id:tab-close-1")?;
     app.wait_for("id:error")?;
     assert!(has(&app, "role:tab[b.txt]"), "a dirty tab stays open");
@@ -180,11 +180,13 @@ fn the_tree_opens_and_closes_a_folder() -> Result<(), String> {
     write(dir.path(), "src/lib.rs", "pub fn x() {}\n");
     let mut app = start(&a);
     app.wait_for("role:treeitem[src]")?;
-    assert!(app.shows("▸"), "a closed folder shows ▸");
+    assert!(has(&app, "role:treeitem[src] >> id:tree-closed"), "a closed folder shows a right chevron");
+    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-closed"), "a file shows no chevron");
     assert!(!has(&app, "role:treeitem[lib.rs]"));
     app.press("role:treeitem[src]")?;
     app.wait_for("role:treeitem[lib.rs]")?;
-    assert!(app.shows("▾"), "an open folder shows ▾");
+    assert!(has(&app, "role:treeitem[src] >> id:tree-open"), "an open folder shows a down chevron");
+    assert!(!has(&app, "role:treeitem[src] >> id:tree-closed"));
     assert!(app.screen().accessibility_state("role:treeitem[src]")?.expanded == Some(true));
     app.press("role:treeitem[src]")?;
     app.wait_for_gone("role:treeitem[lib.rs]", WAIT)?;
@@ -302,6 +304,7 @@ fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
 fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
+    write(dir.path(), "src/new.rs", "fn x() {}\n");
     let git = |args: &[&str]| {
         std::process::Command::new("git").args(args).current_dir(dir.path()).output().map(|o| o.status.success()).unwrap_or(false)
     };
@@ -312,7 +315,10 @@ fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<()
     }
     let mut app = start(&a);
     wait_text(&mut app, "id:branch", "trunk")?;
+    assert!(has(&app, "id:branch-icon"), "a branch icon goes before the name");
     app.wait_for("role:treeitem[a.txt] >> text:U")?;
+    app.wait_for("role:treeitem[src] >> id:tree-changes")?;
+    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-changes"), "a file shows its letter, not the dot");
     Ok(())
 }
 

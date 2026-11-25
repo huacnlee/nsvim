@@ -11,6 +11,7 @@ use nsh_core::prelude::*;
 use super::titled;
 use crate::app::{App, Overlay, PickKind, Picker};
 use crate::store::Session;
+use crate::ui::icons::{Lucide, icon, src};
 use crate::ui::style::{code_token, color};
 
 /// One row's height, in points.
@@ -206,7 +207,7 @@ pub fn picker(s: Session, keys: ElementRef) -> impl IntoElement {
             .px(px(8.0))
             .items_center()
             .test_id("picker-input")
-            .child(text(">").text_size(px(13.0)).w(px(18.0)).text_color(move || color("primary")))
+            .child(view().w(px(18.0)).child(icon(src(Lucide::ChevronRight)).size(px(14.0)).text_color(move || color("primary"))))
             .child(text(move || head.with(|h| h.query.clone())).text_size(px(13.0)).test_id("picker-query"))
             .child(view().w(px(1.5)).h(px(16.0)).bg(move || color("primary")).test_id("picker-caret"))
             .child(
@@ -291,7 +292,14 @@ fn list(s: Session, keys: ElementRef, head: Memo<Head>) -> impl IntoElement {
                         a.pick_accept(tx);
                     })
                 })
-                .child(text(move || if on.get() { "> " } else { "  " }).text_size(px(SIZE)).text_color(move || color("primary")))
+                .child(
+                    view().w(px(SIZE + 4.0)).flex_shrink_0().child(
+                        icon(src(Lucide::ChevronRight))
+                            .size(px(SIZE))
+                            .opacity(move || if on.get() { 1.0_f32 } else { 0.0 })
+                            .text_color(move || color("primary")),
+                    ),
+                )
                 .child(dynamic(move || row_line(row.get())))
         },
     )

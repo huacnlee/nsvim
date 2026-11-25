@@ -12,6 +12,9 @@ use super::picker::PickKind;
 /// The height of one tree row, in points.
 pub const ROW_H: f32 = 22.0;
 
+/// The git mark of a folder with changes inside. The tree draws it as a dot icon.
+pub const DIR_MARK: char = '•';
+
 /// How the tree scrolls to the keyboard row on the next frame.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Follow {
@@ -103,12 +106,12 @@ fn caseless(a: &str, b: &str) -> Ordering {
 }
 
 impl App {
-    /// The git letter for a tree row: a file's own, or `M` on a folder with changes inside.
+    /// The git letter for a tree row: a file's own, or `DIR_MARK` on a folder with changes inside.
     pub fn git_letter(&self, row: &TreeRow) -> Option<char> {
         if !row.dir {
             return self.git.status.get(&row.path).copied();
         }
-        self.git.dirs.contains(&row.path).then_some('•')
+        self.git.dirs.contains(&row.path).then_some(DIR_MARK)
     }
 
     /// Rows that fit in the tree.

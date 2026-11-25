@@ -9,6 +9,7 @@ use crate::app::App;
 use crate::app::fx::Tx;
 use crate::color::Color;
 use crate::store::Session;
+use crate::ui::icons::{Lucide, icon, src};
 use crate::ui::style::{color, swatch};
 
 /// A press that changes the app, then gives the focus back to the view that takes the keys.
@@ -91,7 +92,11 @@ pub fn stepper(key: &str, shown: impl Fn() -> String + 'static, step: impl Fn(f3
             .justify_center()
             .hover(|s| s.bg(move || color("surface-raised")))
             .active(|s| s.opacity(0.7))
-            .child(text(if dir < 0.0 { "−" } else { "+" }).text_sm().text_color(move || color("muted-foreground")))
+            .child(
+                icon(src(if dir < 0.0 { Lucide::Minus } else { Lucide::Plus }))
+                    .size(px(14.0))
+                    .text_color(move || color("muted-foreground")),
+            )
     };
     view()
         .flex_row()
@@ -153,7 +158,7 @@ pub fn font_select(key: &str, fonts: &[&str], cur: impl Fn() -> String + Copy + 
                         .font_family(move || SharedString::from(crate::geometry::family(&cur())))
                         .text_color(move || color("foreground")),
                 )
-                .child(text("▾").text_xs().text_color(move || color("muted-foreground"))),
+                .child(icon(src(Lucide::ChevronDown)).size(px(14.0)).text_color(move || color("muted-foreground"))),
         )
 }
 

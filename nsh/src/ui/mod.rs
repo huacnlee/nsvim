@@ -3,6 +3,7 @@
 //! else the editor.
 
 pub mod chrome;
+pub mod icons;
 pub mod overlays;
 pub mod popups;
 pub mod review_view;

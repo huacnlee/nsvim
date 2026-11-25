@@ -9,6 +9,7 @@ use nsh_core::prelude::*;
 
 use crate::app::{App, Overlay};
 use crate::store::Session;
+use crate::ui::icons::{Icon, Lucide, icon, src};
 use crate::ui::style::color;
 
 /// The interface font: the family and size from config.toml's `[ui]`, and the editor family
@@ -143,10 +144,28 @@ pub fn status_of(app: &App) -> StatusInfo {
 
 /// A text of the status line in the secondary colour, shown while it is not empty.
 fn tail(st: Memo<StatusInfo>, font: Memo<UiFont>, token: &'static str, id: &'static str, f: fn(&StatusInfo) -> String) -> impl IntoElement {
+    tail_with(st, font, token, id, None, f)
+}
+
+/// A status line part with an icon before its text.
+fn tail_with(
+    st: Memo<StatusInfo>,
+    font: Memo<UiFont>,
+    token: &'static str,
+    id: &'static str,
+    mark: Option<Icon>,
+    f: fn(&StatusInfo) -> String,
+) -> impl IntoElement {
     let value = computed(move || st.with(f));
     when(
         move || value.with(|v| !v.is_empty()),
-        move || ui_text(font, -0.5, move || value.get()).px_3().text_color(move || color(token)).test_id(id),
+        move || {
+            let mut part = view().flex_row().items_center().gap(px(5.0)).px_3().text_color(move || color(token));
+            if let Some(m) = mark {
+                part = part.child(icon(src(m)).size(move || px(font.get().size - 1.0)).test_id(&format!("{id}-icon")));
+            }
+            part.child(ui_text(font, -0.5, move || value.get()).text_color(move || color(token)).test_id(id))
+        },
     )
 }
 
@@ -190,7 +209,12 @@ pub fn status_line(s: Session) -> impl IntoElement {
                     .px_3()
                     .gap(px(6.0))
                     .bg(move || color("surface-raised"))
-                    .child(ui_text(font, -0.5, "⎇").text_color(move || color("muted-foreground")))
+                    .child(
+                        icon(src(Lucide::GitBranch))
+                            .size(move || px(font.get().size - 1.0))
+                            .text_color(move || color("muted-foreground"))
+                            .test_id("branch-icon"),
+                    )
                     .child(
                         ui_text(font, -0.5, move || st.with(|s| s.branch.clone().unwrap_or_default()))
                             .text_color(move || color("foreground"))
@@ -210,12 +234,14 @@ pub fn status_line(s: Session) -> impl IntoElement {
         .child(when(move || st.with(|s| s.settings.is_some()), move || settings_end(s, st, font)))
         .child(tail(st, font, "destructive", "errors", |s| if s.errors > 0 { format!("E {}", s.errors) } else { String::new() }))
         .child(tail(st, font, "warning", "warnings", |s| if s.warnings > 0 { format!("W {}", s.warnings) } else { String::new() }))
-        .child(tail(st, font, "mode-visual", "proposals", |s| match s.proposals {
+        .child(tail_with(st, font, "mode-visual", "proposals", Some(Lucide::GitCompareArrows), |s| match s.proposals {
             0 => String::new(),
-            1 => "⇄ 1 proposal".into(),
-            n => format!("⇄ {n} proposals"),
+            1 => "1 proposal".into(),
+            n => format!("{n} proposals"),
         }))
-        .child(tail(st, font, "mode-visual", "outside", |s| if s.outside > 0 { format!("Δ {}", s.outside) } else { String::new() }))
+        .child(tail_with(st, font, "mode-visual", "outside", Some(Lucide::Diff), |s| {
+            if s.outside > 0 { s.outside.to_string() } else { String::new() }
+        }))
         .child(tail(st, font, "muted-foreground", "language", |s| s.lang.clone()))
         .child(tail(st, font, "muted-foreground", "encoding", |s| if s.lang.is_empty() { String::new() } else { s.encoding.clone() }))
         .child(tail(st, font, "muted-foreground", "scroll", |s| if s.lang.is_empty() { String::new() } else { s.scroll.clone() }))

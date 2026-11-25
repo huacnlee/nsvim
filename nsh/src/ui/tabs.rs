@@ -7,10 +7,14 @@ use nsh_core::prelude::*;
 use crate::app::App;
 use crate::store::Session;
 use crate::ui::chrome::{UiFont, clear, ui_font, ui_text};
+use crate::ui::icons::{Lucide, labeled_icon, src, src_with_stroke_width};
 use crate::ui::style::color;
 
 /// The height of the buffer line, in points.
 pub const HEIGHT: f32 = 28.0;
+
+/// The line width that fills `Lucide::Dot` to a solid dot, in its 24 units.
+const DOT_STROKE: f32 = 9.0;
 
 /// One tab.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -153,10 +157,17 @@ fn tab(s: Session, font: Memo<UiFont>, tabs: Memo<Vec<TabInfo>>, i: usize) -> im
                 .label("Close")
                 .test_id(&format!("tab-close-{i}"))
                 .on_press(move || s.update(|a, _| a.close_tab(i)))
-                .child(
-                    ui_text(font, 0.0, move || if dirty() { "●" } else { "×" })
-                        .text_color(move || color(if dirty() { "mode-command" } else { "muted-foreground" }))
-                        .test_id(&format!("tab-mark-{i}")),
-                ),
+                .child({
+                    // A thick line fills the dot, so it reads as a solid mark.
+                    let dot = src_with_stroke_width(Lucide::Dot, DOT_STROKE);
+                    let close = src(Lucide::X);
+                    labeled_icon(
+                        move || if dirty() { dot.clone() } else { close.clone() },
+                        move || SharedString::from(if dirty() { "Unsaved changes" } else { "Close" }),
+                    )
+                    .size(move || px(font.get().size + 1.0))
+                    .text_color(move || color(if dirty() { "mode-command" } else { "muted-foreground" }))
+                    .test_id(&format!("tab-mark-{i}"))
+                }),
         )
 }

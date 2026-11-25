@@ -93,7 +93,7 @@ fn setup_shows_on_first_launch_and_not_otherwise() -> Result<(), String> {
 fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
-    app.press("label:next →")?;
+    app.press("label:next")?;
     app.wait_for("Use the mouse?")?;
     assert!(app.shows("setup 2/5 · mouse"));
     typ(&mut app, &["tab"]);
@@ -110,8 +110,8 @@ fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     app.press("label:skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("setup 5/5 · ready"));
-    assert!(app.screen().matches("label:open nsvim →")?);
-    assert!(!app.screen().matches("label:next →")?, "the last step has no next");
+    assert!(app.screen().matches("label:open nsvim")?);
+    assert!(!app.screen().matches("label:next")?, "the last step has no next");
     Ok(())
 }
 
@@ -196,7 +196,7 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     app.press("label:skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
-    app.press("label:open nsvim →")?;
+    app.press("label:open nsvim")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
     let cfg =
