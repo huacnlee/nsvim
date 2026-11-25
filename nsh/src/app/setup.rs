@@ -61,9 +61,14 @@ pub enum Choice {
 
 impl Setup {
     pub fn new(omarchy: Option<&Omarchy>) -> Setup {
+        let mut cfg = Config::default();
+        // On Omarchy, the look follows the desktop theme unless the user picks another.
+        if omarchy.is_some() {
+            cfg.theme.mode = "omarchy".into();
+        }
         Setup {
             step: 1,
-            cfg: Config::default(),
+            cfg,
             mac: cfg!(target_os = "macos"),
             focus: 0,
             shadow: false,
@@ -512,6 +517,15 @@ fn desktop_entry(exe: &std::path::Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_look_starts_on_omarchy_when_omarchy_is_found() {
+        assert_eq!(Setup::new(None).cfg.theme.mode, Config::default().theme.mode);
+        let o = Omarchy { name: "adventure".into(), palette: crate::theme::builtin("dark"), dir: "/themes/adventure".into() };
+        let s = Setup::new(Some(&o));
+        assert_eq!(s.cfg.theme.mode, "omarchy");
+        assert_eq!(s.omarchy_name.as_deref(), Some("adventure"));
+    }
 
     #[test]
     fn the_desktop_entry_names_this_binary_and_every_file_type() {

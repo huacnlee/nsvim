@@ -61,6 +61,9 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
         "border"
     };
     let mark = if on { "primary" } else { "text-faint" };
+    // The picked card has a 2 pt border. Its padding and tag move in by the extra point, so
+    // the card keeps its size and its text stays where it was.
+    let inset = if on { 1.0 } else { 0.0 };
     button()
         .role(AccessibilityRole::Radio)
         .selected(on)
@@ -69,19 +72,19 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
         .flex_1()
         .min_w(px(260.0))
         .gap(px(12.0))
-        .pt(px(18.0))
-        .pb(px(14.0))
-        .px(px(18.0))
+        .pt(px(18.0 - inset))
+        .pb(px(14.0 - inset))
+        .px(px(18.0 - inset))
         .rounded(px(6.0))
-        .border(px(if on { 2.0 } else { 1.0 }))
+        .border(px(1.0 + inset))
         .border_color(move || color(border))
         .bg(move || color("background"))
         .hover(|st| st.bg(move || color("surface-raised")))
         .child(
             view()
                 .absolute()
-                .left(px(12.0))
-                .top(px(-9.0))
+                .left(px(12.0 - inset))
+                .top(px(-9.0 - inset))
                 .px(px(5.0))
                 .bg(move || color("background"))
                 .child(text(tag.to_string()).text_xs().text_color(move || color(if on { "primary" } else { "muted-foreground" }))),
@@ -93,7 +96,8 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
                 .child(text(title.to_string()).text_base().font_weight(FontWeight::BOLD).flex_1().text_color(move || color("foreground")))
                 .child(text(if on { "(•)" } else { "( )" }).text_sm().text_color(move || color(mark))),
         )
-        .child(text(desc.to_string()).text_xs().text_color(move || color("muted-foreground")))
+        // The description takes the free height, so the bodies of the cards in a row line up.
+        .child(text(desc.to_string()).text_xs().flex_1().text_color(move || color("muted-foreground")))
         .child(body)
 }
 
@@ -302,7 +306,8 @@ fn step_look(k: Keys, m: &Model) -> View {
     let omarchy_desc = format!("Follows the desktop theme. Found: {oma}.");
     let descs = ["Paper white, dark ink.", "The default. Low glare at night.", "Light or dark with your OS.", omarchy_desc.as_str()];
     let titles = ["Light", "Dark", "System", "Omarchy"];
-    let mut cards = view().flex_row().gap(px(12.0)).flex_wrap().items_start();
+    // The cards in a row have the same height, as tall as the tallest.
+    let mut cards = view().flex_row().gap(px(12.0)).flex_wrap().items_stretch();
     for (i, id) in LOOKS.iter().enumerate() {
         let on = m.cfg.theme.mode == *id;
         let comment = match *id {
