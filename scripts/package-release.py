@@ -34,10 +34,13 @@ MACOS_MINIMUM = "14.0"
 
 
 def interface(nsh_dir, stage):
-    """Copy the output of `nsh build` to `stage`, without the JavaScript source and maps."""
+    """Copy the output of `nsh build` to `stage`, without the source maps. The window reads
+    `bundle.nshc`. The terminal editor (`nsvim --tui`) reads `bundle.js`."""
     if not (nsh_dir / "bundle.nshc").is_file():
         raise SystemExit(f"{nsh_dir} has no bundle.nshc: run `nsh build --release -o {nsh_dir}`")
-    shutil.copytree(nsh_dir, stage, ignore=shutil.ignore_patterns("*.js", "*.js.map"))
+    if not (nsh_dir / "bundle.js").is_file():
+        raise SystemExit(f"{nsh_dir} has no bundle.js, which the terminal editor reads")
+    shutil.copytree(nsh_dir, stage, ignore=shutil.ignore_patterns("*.js.map"))
     # The runner reads the window title from `name`. `nsh build` writes only the id.
     app = json.loads((stage / "app.json").read_text()) if (stage / "app.json").is_file() else {}
     app.setdefault("id", APP_ID)
@@ -150,7 +153,7 @@ def owner(info):
     return info
 
 
-def package(binary, nsh_dir, output, version, target):
+def package(binary, tui_binary, nsh_dir, output, version, target):
     platform = TARGETS[target]
     output.mkdir(parents=True, exist_ok=True)
     extension = "zip" if platform == "windows" else "tar.gz"
@@ -168,12 +171,17 @@ def package(binary, nsh_dir, output, version, target):
             shutil.copy2(ROOT / "assets/editor.svg", stage / "packaging/nsvim.svg")
         else:
             shutil.copy2(binary, stage / "nsvim.exe")
+            # The terminal editor: a console program, because nsvim.exe gets no console.
+            if tui_binary is None:
+                raise SystemExit("Windows needs --tui-binary, the release build of nsvim-tui.exe")
+            shutil.copy2(tui_binary, stage / "nsvim-tui.exe")
             interface(nsh_dir, stage / "nsh")
             # The window, taskbar and Alt+Tab icon: the runner reads nsh\icon.ico.
             shutil.copy2(ROOT / "assets/nsvim.ico", stage / "nsh/icon.ico")
             # The executable's own icon, which Explorer and the Start menu shortcut show.
             if sys.platform == "win32":
                 windows_icon(stage / "nsvim.exe", ROOT / "assets/nsvim.ico")
+                windows_icon(stage / "nsvim-tui.exe", ROOT / "assets/nsvim.ico")
         for name in ("LICENSE", "README.md"):
             shutil.copy2(ROOT / name, stage / name)
         if platform == "windows":
@@ -196,6 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--target", required=True, choices=TARGETS)
     parser.add_argument("--version", required=True)
     parser.add_argument("--binary", type=Path, required=True, help="the release build of nsvim")
+    parser.add_argument("--tui-binary", type=Path, help="the release build of nsvim-tui (Windows only)")
     parser.add_argument("--nsh", type=Path, required=True, help="the output folder of `nsh build --release`")
     parser.add_argument("--output", type=Path, default=Path("dist"))
     args = parser.parse_args()
@@ -203,4 +212,5 @@ if __name__ == "__main__":
         parser.error(f"binary not found: {args.binary}")
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", args.version):
         parser.error("version must be a release version without a leading v, such as 0.4.0")
-    package(args.binary.resolve(), args.nsh.resolve(), args.output.resolve(), args.version, args.target)
+    tui_binary = args.tui_binary.resolve() if args.tui_binary else None
+    package(args.binary.resolve(), tui_binary, args.nsh.resolve(), args.output.resolve(), args.version, args.target)

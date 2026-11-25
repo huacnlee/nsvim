@@ -23,7 +23,7 @@ claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp
 ## Open files and folders
 
 ```text
-nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
 ```
 
 | Form | Does |
@@ -37,6 +37,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 | `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
 | `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
 | `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
+| `nvim --tui src/main.rs` | Edits in this terminal, not in a window. See [The terminal editor](#the-terminal-editor). |
 | `nvim --help`, `nvim -h` | Prints the usage. |
 | `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.1`. |
 
@@ -60,6 +61,24 @@ When nsvim already runs for the project, `nvim PATH` opens the file in that wind
 brings the window forward, and exits at once. On Wayland, the new process passes its
 `XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
+
+### The terminal editor
+
+`--tui` runs nsvim in the terminal you start it from: over SSH, in tmux, or when you do not
+want a window. It is the same editor. It runs the same screens and the same Rust core, so
+the keymaps, the finder, search, the file tree, git signs, the language servers, settings and
+the session all work as in the window. On Linux, nsvim also starts in the terminal when there
+is no display (`DISPLAY` and `WAYLAND_DISPLAY` are not set).
+
+Every release has both editors in one package. On Windows, `nsvim.exe` is a window program
+and gets no console, so the terminal editor is the second program in the package:
+
+```text
+nsvim-tui.exe [PATH[:LINE]]...
+```
+
+The terminal editor always starts a new editor. It does not open files in a running window.
+The terminal draws text only, so icons show as chars and the font settings do not apply.
 
 ### Exit status
 

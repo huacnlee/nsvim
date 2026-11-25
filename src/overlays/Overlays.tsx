@@ -3,7 +3,7 @@
 // keys. These views show the state and send clicks. A press gives the focus back to the view
 // that takes the keys.
 
-import { signal, View } from "nsh";
+import { platform, signal, View } from "nsh";
 import { Overlays as State, Shell, type OverlayKind } from "nsvim-native";
 
 import { ContextMenu } from "./ContextMenu";
@@ -19,7 +19,8 @@ export function Overlays() {
       <View class="absolute inset-0">
         <View
           class="absolute inset-0"
-          accessibilityLabel="Close"
+          // A terminal draws the label of a view with no content as text. The scrim stays blank there.
+          accessibilityLabel={platform.idiom === "terminal" ? undefined : "Close"}
           testID="overlay-scrim"
           onPress={() => {
             Shell.focusKeys();

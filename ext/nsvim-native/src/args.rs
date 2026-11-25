@@ -12,7 +12,7 @@ use editor::buffer::Pos;
 const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
   PROGRAM ctl COMMAND [ARGS]
   PROGRAM mcp
 
@@ -26,6 +26,7 @@ Examples:
   nvim src/main.rs:42         open a file at line 42, in the project around it
   nvim --wait NOTES.md        return when its buffer closes, for $EDITOR and git
   nvim --new                  open a new window, also when one runs for the project
+  nvim --tui src/main.rs      edit in this terminal, for SSH and terminal workflows
   PROGRAM ctl --help          drive the running editor
   PROGRAM mcp                 serve the running editor to AI agents, over stdio
 
@@ -34,6 +35,7 @@ A path opens in the editor already running for its project, when there is one.
 Options:
   --wait          return when the last file's buffer closes
   --new           open a new window
+  --tui           run in this terminal instead of a window
   -h, --help      print this help
   -V, --version   print the version
 
@@ -85,6 +87,8 @@ pub enum Command {
     Open {
         wait: bool,
         new: bool,
+        /// `--tui`: run the editor in this terminal, not in a window.
+        tui: bool,
     },
 }
 
@@ -96,8 +100,19 @@ pub fn command(argv: &[String]) -> Command {
         Some("mcp") => Command::Mcp,
         Some("-h" | "--help") => Command::Help,
         Some("-V" | "--version") => Command::Version,
-        _ => Command::Open { wait: argv.iter().any(|a| a == "--wait"), new: argv.iter().any(|a| a == "--new") },
+        _ => {
+            let has = |flag: &str| argv.iter().skip(1).any(|a| a == flag);
+            Command::Open { wait: has("--wait"), new: has("--new"), tui: has("--tui") }
+        }
     }
+}
+
+/// True when this run edits in the terminal: `--tui`, or a Linux session with no display.
+pub fn wants_tui() -> bool {
+    if std::env::args().skip(1).any(|a| a == "--tui") {
+        return true;
+    }
+    cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none()
 }
 
 /// The project root and the files to open, with a cursor position when one was given.
@@ -237,9 +252,10 @@ mod tests {
         assert_eq!(command(&argv(&["mcp", "--help"])), Command::McpHelp);
         assert_eq!(command(&argv(&["-h"])), Command::Help);
         assert_eq!(command(&argv(&["--version"])), Command::Version);
-        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false });
-        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true });
-        assert_eq!(command(&argv(&[])), Command::Open { wait: false, new: false });
+        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false, tui: false });
+        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true, tui: false });
+        assert_eq!(command(&argv(&[])), Command::Open { wait: false, new: false, tui: false });
+        assert_eq!(command(&argv(&["--tui", "a.rs"])), Command::Open { wait: false, new: false, tui: true });
     }
 
     #[test]

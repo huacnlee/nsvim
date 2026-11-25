@@ -116,3 +116,19 @@ pub fn app_for(l: &Launch) -> app::App {
     a.restore_session();
     a
 }
+
+/// The height of a terminal cell in points, as `nsvim --tui` draws: NSH's terminal host lays one
+/// cell out as 8 by 16 points.
+pub const TERMINAL_CELL_H: f32 = 16.0;
+
+static TERMINAL: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Marks this run as the terminal editor (`nsvim --tui`). Call it before the app starts.
+pub fn set_terminal(on: bool) {
+    TERMINAL.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// True when the editor draws in a terminal: one row of code is one cell.
+pub fn terminal() -> bool {
+    TERMINAL.load(std::sync::atomic::Ordering::Relaxed)
+}

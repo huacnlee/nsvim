@@ -13,6 +13,12 @@ publish = false
 name = "nsvim"
 path = "src/main.rs"
 
+# The terminal editor as its own console program, for Windows (`nsvim-tui.exe`). On macOS and
+# Linux, `nsvim --tui` does the same.
+[[bin]]
+name = "nsvim-tui"
+path = "src/tui_main.rs"
+
 [dependencies]
 editor = { package = "editor-core", path = "../../crates/editor-core" }
 nsh-core = "0.7.0"
@@ -31,6 +37,9 @@ tokio = { version = "1", default-features = false, features = ["sync"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ignore = "0.4"
 notify = "8"
+# `nsvim --tui`: the same bundle and UI sets, drawn in the terminal.
+nsh-tui-host = "0.7.0"
+nsh-platform-tui = { version = "0.7.0", default-features = false, features = ["js", "run-app", "svg"] }
 
 # The program's runner: it runs App.tsx's bundle with the app's Rust components.
 [target.'cfg(target_os = "linux")'.dependencies]
