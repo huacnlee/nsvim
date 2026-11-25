@@ -1,6 +1,6 @@
 [package]
 name = "editor-core"
-version = "0.3.2"
+version = "0.1.0"
 edition = "2024"
 description = "The editing core of editor: buffers, modes, keymaps and code structure. No window code and no I/O."
 license = "MIT"
