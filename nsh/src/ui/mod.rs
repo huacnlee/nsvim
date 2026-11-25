@@ -4,7 +4,7 @@
 
 pub mod chrome;
 pub mod icons;
-pub mod overlays;
+pub mod native_menu;
 pub mod popups;
 pub mod review_view;
 pub mod settings_controls;
@@ -40,7 +40,7 @@ pub fn shell(s: Session, keys: ElementRef) -> impl IntoElement {
 }
 
 /// The editor screen: the buffer line, the tree beside the text area (or Settings), the status
-/// line and the command line, with the overlays over them.
+/// line and the command line. The overlays are in TSX (`ui/overlays`).
 fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
     let on_settings = s.view(|a| a.on_settings);
     let tree_shows = s.view(|a| a.tree.show && !a.on_settings);
@@ -58,5 +58,4 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
         )
         .child(chrome::status_line(s))
         .child(chrome::command_line(s))
-        .child(overlays::overlays(s, keys))
 }

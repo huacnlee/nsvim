@@ -208,7 +208,7 @@ impl Session {
                     me.update(|a, tx| then(a, Clip(text), tx));
                 });
             }
-            Effect::PopupMenu { menu, x, y, then } => crate::ui::overlays::native_menu(me, menu, x, y, then),
+            Effect::PopupMenu { menu, x, y, then } => crate::ui::native_menu::native_menu(me, menu, x, y, then),
             Effect::WakeAfter(delay) => me.wake_after(delay),
         }
     }

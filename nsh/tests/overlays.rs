@@ -7,8 +7,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use common::{CONFIG, scratch, start, start_files, typ, type_text, write};
-use editor::buffer::Buffer;
-use editor::editor::Doc;
 use nsh_app_editor::Session;
 use nsh_app_editor::app::fx::{PopupItem, PopupMenu};
 use nsh_app_editor::app::menu::Menu;
@@ -236,6 +234,30 @@ fn the_list_follows_the_picked_row_past_the_screen() -> Result<(), String> {
     Ok(())
 }
 
+#[test]
+fn the_wheel_scrolls_the_list_and_keeps_the_picked_row() -> Result<(), String> {
+    let dir = scratch();
+    let main = write(dir.path(), "main.rs", "fn main() {}\n");
+    let mut app = start(&main);
+    app.wait_for("text:/fn main/")?;
+    typ(&mut app, &["f1"]);
+    app.wait_for("text:Keys")?;
+    let all = nsh_app_editor::app::key_list::items(true);
+    let row = |i: usize| format!("role:option[{}]", all[i].split('\t').next().unwrap());
+    app.wait_for(&row(0))?;
+    // Ten rows of wheel scroll ten rows. The picked row stays the first one.
+    app.wheel("id:picker-list", nsh_core::geometry::Point::new(Points(0.0), Points(22.0 * 10.0)))?;
+    app.wait_for_gone(&row(0), WAIT)?;
+    app.wait_for(&row(10))?;
+    assert!(!app.screen().matches(&row(9))?, "row 9 scrolled off");
+    // A key brings the picked row back: Down picks row 1, and the list shows it first.
+    typ(&mut app, &["down"]);
+    app.wait_for(&row(1))?;
+    app.wait_until("row 1 is picked", WAIT, |s| s.selected(&row(1)).unwrap_or(false))?;
+    assert!(!app.screen().matches(&row(0))?, "the list moved the least that shows the pick");
+    Ok(())
+}
+
 /// A session on a scratch project, for the views that need one alone.
 fn session(dir: &std::path::Path) -> Session {
     let cfg = toml::from_str(CONFIG).unwrap();
@@ -268,7 +290,7 @@ fn MenuHost(props: MenuHostProps) -> impl IntoElement {
             let then = Box::new(move |_: &mut App, id: Option<String>, _: &mut nsh_app_editor::app::fx::Tx| {
                 answer.set(id.unwrap_or_else(|| "nothing".into()));
             });
-            nsh_app_editor::ui::overlays::native_menu(s, menu, 40.0, 50.0, then);
+            nsh_app_editor::ui::native_menu::native_menu(s, menu, 40.0, 50.0, then);
         }))
     };
     window().id("test").content(content)
@@ -294,36 +316,22 @@ fn the_native_menu_shows_the_items_and_answers_the_pick() -> Result<(), String> 
     Ok(())
 }
 
-#[derive(Clone, PartialEq, Props)]
-struct OverlayHostProps {
-    project: Prop<SharedString>,
-}
-
-/// The overlays alone, on a session that starts with the in-app context menu open.
-#[component]
-fn OverlayHost(props: OverlayHostProps) -> impl IntoElement {
-    let s = session(std::path::Path::new(props.project.get_untracked().as_str()));
-    s.update(|a, _| {
-        a.ed.docs.push(Doc::new(Buffer::from_str("hello world\n")));
-        a.ed.active = 0;
-        a.overlay = Overlay::Menu(Menu { x: 100.0, y: 120.0, sel: 0 });
-    });
-    let keys = element_ref();
-    let content = move || view().flex_1().element_ref(&keys).focusable(true).child(nsh_app_editor::ui::overlays::overlays(s, keys));
-    window().id("test").content(content)
-}
-
 #[test]
 fn the_in_app_menu_shows_its_items_and_runs_the_pressed_one() -> Result<(), String> {
     let dir = scratch();
-    let project = SharedString::from(dir.path().to_string_lossy().into_owned());
-    let mut app = start_root(Root::new::<OverlayHost>(move || OverlayHostProps { project: Prop::from(project.clone()) }));
+    let main = write(dir.path(), "main.rs", "hello world\n");
+    let mut f = common::flow(&main, None);
+    f.update(|a, _| a.overlay = Overlay::Menu(Menu { x: 100.0, y: 120.0, sel: 0 }));
+    let app = &mut f.ui;
     app.wait_for("id:context-menu")?;
     assert!(app.screen().matches("role:menuitem[Go to definition]")?);
     assert!(app.shows("gd"), "the Neovim key hints show");
     assert!(!app.screen().enabled("role:menuitem[Copy]")?, "Copy needs a selection");
     assert!(app.screen().enabled("role:menuitem[Paste]")?);
     assert!(app.screen().accessibility_state("role:menuitem[Cut]")?.selected, "the first item is the picked one");
+    // A disabled item takes no press.
+    assert!(app.press("role:menuitem[Copy]").is_err(), "Copy takes no press");
+    assert!(app.screen().matches("id:context-menu")?);
     // Find in project searches for the word at the cursor.
     app.press("role:menuitem[Find in project]")?;
     app.wait_for("text:Find in Project")?;

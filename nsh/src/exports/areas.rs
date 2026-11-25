@@ -47,13 +47,6 @@ pub fn CommandLine() -> impl IntoElement {
     ui::chrome::command_line(current().0)
 }
 
-/// The leader menu, the pickers, the popups and the dialogs, over the editor.
-#[component]
-pub fn Overlays() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::overlays::overlays(s, keys)
-}
-
 /// First-launch setup, in place of the editor.
 #[component]
 pub fn Setup() -> impl IntoElement {

@@ -7,7 +7,6 @@ import { currentWindow } from "nsh/desktop";
 import {
   BufferLine,
   CommandLine,
-  Overlays,
   Settings,
   Setup,
   Shell,
@@ -17,6 +16,8 @@ import {
   Workspace,
   type ScreenState,
 } from "nsvim/native";
+
+import { Overlays } from "./ui/overlays/Overlays";
 
 /** The editor: the buffer line, the tree beside the text (or Settings), the status line and
  * the command line, with the overlays over them. */

@@ -7,6 +7,7 @@
 
 mod areas;
 mod icon;
+mod overlays;
 mod workspace;
 
 use std::cell::RefCell;
@@ -17,6 +18,7 @@ use crate::store::Session;
 
 pub use areas::*;
 pub use icon::*;
+pub use overlays::*;
 pub use workspace::*;
 
 /// Registers every export in `registry`.
@@ -30,7 +32,7 @@ pub fn register(registry: &mut Registry) {
         .register::<Settings>()
         .register::<StatusLine>()
         .register::<CommandLine>()
-        .register::<Overlays>()
+        .module::<Overlays>()
         .register::<Setup>()
         .module::<Shell>();
 }
