@@ -9,7 +9,10 @@
 //! on a tokio channel that a task on the engine thread awaits, and that task polls the app.
 
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+// `std::time::Instant` has no clock on the web. This one is the same type everywhere else.
+use nsh_core::time::Instant;
 
 use editor::editor::KeyInput;
 use nsh_core::desktop::WindowAttributes;

@@ -17,6 +17,8 @@ pub mod store;
 pub mod theme;
 pub mod timing;
 pub mod ui;
+#[cfg(target_arch = "wasm32")]
+mod web_libc;
 
 use std::path::PathBuf;
 use std::sync::OnceLock;
@@ -125,6 +127,12 @@ fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
 
 /// The app state the props ask for.
 fn make_app(props: &AppProps) -> app::App {
+    // A browser page has no project folder, no config file and no arguments: the web build
+    // opens the demo project.
+    #[cfg(target_arch = "wasm32")]
+    if props.project.get_untracked().is_none() {
+        return services::web::demo_app();
+    }
     let l = Launch {
         project: props.project.get_untracked().map(|p| PathBuf::from(p.as_str())),
         config: props.config.get_untracked().map(|t| t.as_str().to_string()),

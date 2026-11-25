@@ -48,7 +48,7 @@ pub fn lang_for(path: Option<&Path>) -> Option<Lang> {
         "rb" | "rake" | "gemspec" => Lang::Ruby,
         "sh" | "bash" | "zsh" | "ksh" => Lang::Bash,
         "json" | "jsonc" => Lang::Json,
-        "lua" => Lang::Lua,
+        "lua" if cfg!(not(target_arch = "wasm32")) => Lang::Lua,
         _ => return None,
     })
 }
@@ -81,13 +81,21 @@ impl Lang {
             Lang::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
             Lang::Tsx => tree_sitter_typescript::LANGUAGE_TSX.into(),
             Lang::Go => tree_sitter_go::LANGUAGE.into(),
+            #[cfg(not(target_arch = "wasm32"))]
             Lang::C => tree_sitter_c::LANGUAGE.into(),
+            // The web has no C grammar. The C++ grammar reads C too.
+            #[cfg(target_arch = "wasm32")]
+            Lang::C => tree_sitter_cpp::LANGUAGE.into(),
             Lang::Cpp => tree_sitter_cpp::LANGUAGE.into(),
             Lang::Java => tree_sitter_java::LANGUAGE.into(),
             Lang::Ruby => tree_sitter_ruby::LANGUAGE.into(),
             Lang::Bash => tree_sitter_bash::LANGUAGE.into(),
             Lang::Json => tree_sitter_json::LANGUAGE.into(),
+            #[cfg(not(target_arch = "wasm32"))]
             Lang::Lua => tree_sitter_lua::LANGUAGE.into(),
+            // `lang_for` gives no Lua on the web.
+            #[cfg(target_arch = "wasm32")]
+            Lang::Lua => tree_sitter_json::LANGUAGE.into(),
         }
     }
 

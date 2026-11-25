@@ -153,8 +153,8 @@ pub fn signs_for(root: &Path, path: &Path, text: &str) -> Option<Vec<Sign>> {
 }
 
 pub fn diff_signs(base: &str, text: &str) -> Vec<Sign> {
-    use similar::{DiffOp, TextDiff};
-    let diff = TextDiff::configure().timeout(std::time::Duration::from_millis(200)).diff_lines(base, text);
+    use similar::DiffOp;
+    let diff = crate::app::review::configure(200).diff_lines(base, text);
     let mut out = Vec::new();
     for op in diff.ops() {
         match *op {
