@@ -184,12 +184,11 @@ pub fn window(s: Session) -> impl IntoElement {
     });
     s.start();
     let keys = element_ref();
-    let has_focus = stored(false);
     // A view takes the focus only once its window shows, which comes after the first layout on
     // Linux. Ask until it holds the focus, for at most 5 seconds.
     spawn(async move {
         for _ in 0..50 {
-            if has_focus.with(|f| *f) {
+            if s.read(|a| a.key_focus) {
                 break;
             }
             keys.focus();
@@ -209,8 +208,8 @@ pub fn window(s: Session) -> impl IntoElement {
                 .element_ref(&keys)
                 .focusable(true)
                 .capture_keys(KeyCapture::All)
-                .on_focus(move || has_focus.with(|f| *f = true))
-                .on_blur(move || has_focus.with(|f| *f = false))
+                .on_focus(move || s.update(|a, _| a.key_focus = true))
+                .on_blur(move || s.update(|a, _| a.key_focus = false))
                 .on_key_down(move |e: &KeyEvent| {
                     if let Some(k) = keys::convert(e, apple_keys()) {
                         s.key(k);

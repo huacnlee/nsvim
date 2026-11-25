@@ -176,6 +176,8 @@ pub struct App {
     pub close_asked: Option<f64>,
     /// `exit` ran: the session is written.
     pub exited: bool,
+    /// The view that takes every key has the keyboard focus.
+    pub key_focus: bool,
 }
 
 impl App {
@@ -273,6 +275,7 @@ impl App {
             config_file: None,
             close_asked: None,
             exited: false,
+            key_focus: false,
         }
     }
 
