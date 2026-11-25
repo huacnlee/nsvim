@@ -234,7 +234,7 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "prev", "prev goes to the previous buffer", |a| active_ends_with(a, "b.txt"));
     run_check(&mut f, t, "keymap=classic", "the classic keymap", |a| a.ed.keymap == Keymap::Classic);
     run_check(&mut f, t, "keymap=neovim", "the Neovim keymap", |a| a.ed.keymap == Keymap::Vim);
-    for (id, mode) in [("theme=light", "light"), ("theme=system", "system"), ("theme=omarchy", "omarchy"), ("theme=dark", "dark")] {
+    for (id, mode) in [("theme=light", "light"), ("theme=system", "system"), ("theme=dark", "dark")] {
         run_check(&mut f, t, id, id, move |a| a.cfg.theme.mode == mode);
     }
     let wrap = f.read(|a| a.cfg.editor.wrap);

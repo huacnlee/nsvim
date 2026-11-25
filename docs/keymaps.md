@@ -653,7 +653,7 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 | `Open settings` | Open Settings |
 | `Close tab`, `Next tab`, `Previous tab` | Close, go to the next, go to the previous tab |
 | `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
-| `Theme: dark`, `Theme: light`, `Theme: follow the OS`, `Theme: follow Omarchy` | Switch the theme |
+| `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 | `Toggle soft wrap` | Turn soft wrap on or off |
 | `Show every key` | Show every key, with search |
 | `Agent: list outside changes` | List the changes made on disk from outside the editor |

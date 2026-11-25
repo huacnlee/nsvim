@@ -8,7 +8,7 @@ the file. A missing key takes its default, so a file can hold only what you chan
 
 ```toml
 [theme]
-mode = "dark"            # light, dark, system or omarchy
+mode = "dark"            # light, dark or system
 dark = "dark"            # the theme for dark mode, and for system mode on a dark OS
 light = "light"          # the theme for light mode, and for system mode on a light OS
 
@@ -82,11 +82,12 @@ vim_aliases = true       # vi and vim open nsvim (shell aliases)
 | `rose-pine` | `one-light` |
 | `one-dark` | |
 
-`theme.mode = "omarchy"` follows the [Omarchy](https://omarchy.org) desktop theme. editor reads
-`colors.toml` from `~/.local/state/omarchy/current/theme` (or `~/.config/omarchy/current/theme`
-on older releases), and falls back to the theme's `alacritty.toml`. A theme with a `light.mode`
-file, or `mode = "light"`, gets the light variant. When you switch the desktop theme, editor
-changes with it.
+On [Omarchy](https://omarchy.org), `theme.mode = "system"` follows the desktop theme. editor
+reads `colors.toml` from `~/.local/state/omarchy/current/theme` (or
+`~/.config/omarchy/current/theme` on older releases), and falls back to the theme's
+`alacritty.toml`. A theme with a `light.mode` file, or `mode = "light"`, gets the light variant.
+When you switch the desktop theme, editor changes with it. An older config with
+`theme.mode = "omarchy"` still loads and works as `system`.
 
 ## .editorconfig
 

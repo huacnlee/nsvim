@@ -373,3 +373,51 @@ fn closing_settings_returns_to_the_text() -> Result<(), String> {
     app.wait_for("text:/hello/")?;
     Ok(())
 }
+
+// The theme mode keeps light, dark and system. System follows Omarchy where it runs.
+
+#[test]
+fn settings_offers_no_omarchy_theme_mode() -> Result<(), String> {
+    let (app, _dir) = settings_on("hello\n", None)?;
+    for mode in ["light", "dark", "system"] {
+        assert!(app.screen().matches(&format!("id:theme={mode}"))?, "{mode}");
+    }
+    assert!(!app.screen().matches("id:theme=omarchy")?, "{}", texts(&app));
+    assert!(!app.screen().matches("id:row:omarchy.palette")?);
+    Ok(())
+}
+
+#[test]
+fn the_palette_has_no_omarchy_theme_entry() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "a.txt", "hello\n");
+    let mut app = common::start_files(&[&file], Some("[ipc]\nenabled = false\n[keys]\nmap = \"classic\"\n"));
+    app.wait_for("text:/hello/")?;
+    typ(&mut app, &["ctrl+shift+p"]);
+    app.wait_for("Theme: follow the OS")?;
+    assert!(!app.shows("Theme: follow Omarchy"), "{}", texts(&app));
+    Ok(())
+}
+
+#[test]
+fn set_theme_omarchy_turns_into_system_and_says_so() -> Result<(), String> {
+    let dir = scratch();
+    let mut app = start(&write(dir.path(), "a.txt", "hello\n"));
+    app.wait_for("text:/hello/")?;
+    type_text(&mut app, ":set theme=omarchy\n");
+    app.wait_for("theme=omarchy is now theme=system. System follows the Omarchy theme")?;
+    type_text(&mut app, ":Settings\n");
+    app.wait_for("id:settings")?;
+    assert!(app.screen().selected("id:theme=system")?, "{}", texts(&app));
+    Ok(())
+}
+
+#[test]
+fn an_old_config_with_the_omarchy_mode_loads_as_system() -> Result<(), String> {
+    let (app, _dir) = settings_on("hello\n", Some("[ipc]\nenabled = false\n[theme]\nmode = \"omarchy\"\n"))?;
+    assert!(app.screen().selected("id:theme=system")?, "{}", texts(&app));
+    // System's rows show: the OS themes and what the OS asks for now (no Omarchy theme here).
+    assert!(app.screen().matches("id:row:system.now")?);
+    assert!(app.screen().matches("id:row:theme.dark")? && app.screen().matches("id:row:theme.light")?);
+    Ok(())
+}
