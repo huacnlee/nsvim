@@ -370,15 +370,14 @@ pub enum Source {
     #[default]
     Dark,
     System,
-    Omarchy,
 }
 
 impl Source {
     pub fn parse(s: &str) -> Source {
         match s {
             "light" => Source::Light,
-            "system" => Source::System,
-            "omarchy" => Source::Omarchy,
+            // An old config's "omarchy" acts as System, which follows Omarchy where it runs.
+            "system" | "omarchy" => Source::System,
             _ => Source::Dark,
         }
     }
@@ -393,10 +392,6 @@ pub fn resolve(source: Source, dark_id: &str, light_id: &str, system_dark: bool,
         Source::System if let Some(o) = omarchy => (o.palette, o.name.clone()),
         Source::System if system_dark => (builtin(dark_id), dark_id.to_string()),
         Source::System => (builtin(light_id), light_id.to_string()),
-        Source::Omarchy => match omarchy {
-            Some(o) => (o.palette, o.name.clone()),
-            None => (builtin(dark_id), dark_id.to_string()),
-        },
     }
 }
 
@@ -413,6 +408,18 @@ mod tests {
         assert_eq!((p.bg.to_hex(), id.as_str()), ("#123456".to_string(), "adventure"));
         let (_, id) = resolve(Source::System, "dark", "light", true, None);
         assert_eq!(id, "dark", "elsewhere System follows the OS");
+    }
+
+    #[test]
+    fn an_old_omarchy_mode_acts_as_system() {
+        assert_eq!(Source::parse("omarchy"), Source::System);
+        let mut palette = builtin("light");
+        palette.bg = hex("#654321").unwrap();
+        let o = Omarchy { name: "adventure".into(), palette, dir: "/themes/adventure".into() };
+        let (_, id) = resolve(Source::parse("omarchy"), "dark", "light", true, Some(&o));
+        assert_eq!(id, "adventure");
+        let (_, id) = resolve(Source::parse("omarchy"), "dark", "light", false, None);
+        assert_eq!(id, "light", "with no Omarchy theme it follows the OS, as System does");
     }
 
     #[test]

@@ -490,7 +490,7 @@ fn step_ready(k: Keys, m: &Model) -> View {
         ("mouse", if cfg.mouse.enabled { "on".into() } else { "keyboard only".into() }),
         (
             "theme",
-            if let Some(name) = m.omarchy_name.clone().filter(|_| matches!(cfg.theme.mode.as_str(), "system" | "omarchy")) {
+            if let Some(name) = m.omarchy_name.clone().filter(|_| cfg.theme.mode == "system") {
                 format!("Omarchy ({name} right now)")
             } else {
                 cfg.theme.mode.clone()
