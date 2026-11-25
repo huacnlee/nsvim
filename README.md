@@ -30,8 +30,7 @@ back to editor. Report nsvim issues here, not to editor.
 The main change: nsvim draws its UI with [NSH](https://nsh.dev), which uses the native views of
 each platform (GTK 4 on Linux, AppKit on macOS, WinUI on Windows). The NSH app is in
 [`nsh/`](nsh). The editing core (buffer, Vim and classic keymaps, tree-sitter) is the crate
-`editor-core` in [`crates/editor-core`](crates/editor-core). The Rune app from editor is still
-in [`src/`](src) while the port finishes.
+`editor-core` in [`crates/editor-core`](crates/editor-core).
 
 ## What it is
 

@@ -5,7 +5,7 @@
 ## Platform
 
 web (this record covers the promo site). The product itself is a native desktop app for Linux
-and macOS, built with Rune.
+macOS and Windows, built with NSH.
 
 ## Stack
 
