@@ -37,6 +37,7 @@ pub struct Settings {
     pub row: usize,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum Ctl {
     Seg { opts: Vec<(String, String)>, cur: String },
     Font { opts: Vec<String>, cur: String },
@@ -47,6 +48,7 @@ pub enum Ctl {
     Themes { opts: Vec<String>, cur: String },
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum Item {
     Head(&'static str),
     Row { key: &'static str, desc: String, ctl: Ctl },
@@ -294,6 +296,32 @@ fn echo(cfg: &Config, key: &str) -> String {
 }
 
 impl App {
+    /// Shows `section` in Settings, from its first row. The pointer's way to pick a section.
+    pub fn settings_section(&mut self, section: Section) {
+        if let Some(st) = self.settings.as_mut() {
+            st.section = section;
+            st.row = 0;
+        }
+    }
+
+    /// Picks `value` for a segmented, font or theme row, from the pointer.
+    pub fn settings_pick(&mut self, key: &str, value: &str) {
+        pick(&mut self.cfg, key, value);
+        self.settings_changed(key);
+    }
+
+    /// Turns a switch row on or off, from the pointer.
+    pub fn settings_toggle(&mut self, key: &str) {
+        toggle(&mut self.cfg, key);
+        self.settings_changed(key);
+    }
+
+    /// Steps a number row down (`-1`) or up (`1`), from the pointer.
+    pub fn settings_step(&mut self, key: &str, dir: f32) {
+        step_by(&mut self.cfg, key, dir);
+        self.settings_changed(key);
+    }
+
     /// Applies a change made in Settings (by key or pointer).
     pub fn settings_changed(&mut self, key: &str) {
         let line = echo(&self.cfg, key);
