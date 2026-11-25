@@ -1,5 +1,5 @@
-//! Command-line arguments: `editor [path[:line]] [+line] [--wait] [--new]`, `editor ctl` and
-//! `editor mcp`. A folder opens as the project. A file opens in the project around it: its git
+//! Command-line arguments: `edit [path[:line]] [+line] [--wait] [--new]`, `edit ctl` and
+//! `edit mcp`. A folder opens as the project. A file opens in the project around it: its git
 //! work tree, else its folder.
 
 use std::path::{Path, PathBuf};
@@ -9,15 +9,15 @@ use editor::buffer::Pos;
 pub const USAGE: &str = "editor: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  editor [PATH[:LINE]]... [+LINE] [--wait] [--new]
-  editor ctl COMMAND [ARGS]   drive the running editor (editor ctl --help)
-  editor mcp                  serve the running editor to AI agents, over stdio
+  edit [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  edit ctl COMMAND [ARGS]     drive the running editor (edit ctl --help)
+  edit mcp                    serve the running editor to AI agents, over stdio
 
 Examples:
-  editor .                    open this folder as the project
-  editor src/main.rs:42       open a file at line 42, in the project around it
-  editor --wait NOTES.md      return when its buffer closes, for $EDITOR and git
-  editor --new                open a new window, also when one runs for the project
+  edit .                      open this folder as the project
+  edit src/main.rs:42         open a file at line 42, in the project around it
+  edit --wait NOTES.md        return when its buffer closes, for $EDITOR and git
+  edit --new                  open a new window, also when one runs for the project
 
 A path opens in the editor already running for its project, when there is one.
 
@@ -30,10 +30,10 @@ Options:
 Docs: https://github.com/bjarneo/editor/blob/main/docs/cli.md
 ";
 
-pub const MCP_USAGE: &str = "editor mcp: a Model Context Protocol server, over stdio, for the editor
+pub const MCP_USAGE: &str = "edit mcp: a Model Context Protocol server, over stdio, for the editor
 running in the current folder. An agent starts it. You do not run it by hand.
 
-  claude mcp add editor -- editor mcp
+  claude mcp add editor -- edit mcp
 
 Tools and setup for Codex and opencode: https://github.com/bjarneo/editor/blob/main/docs/agents.md
 ";
@@ -41,9 +41,9 @@ Tools and setup for Codex and opencode: https://github.com/bjarneo/editor/blob/m
 /// What the command line asks for. `argv` includes the program name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
-    /// `editor ctl ARGS`: drive a running editor.
+    /// `edit ctl ARGS`: drive a running editor.
     Ctl(Vec<String>),
-    /// `editor mcp`: serve the running editor to an agent over stdio.
+    /// `edit mcp`: serve the running editor to an agent over stdio.
     Mcp,
     McpHelp,
     Help,

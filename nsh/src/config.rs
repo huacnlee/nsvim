@@ -125,7 +125,7 @@ pub struct MouseCfg {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CliCfg {
-    /// The terminal command's name, `editor` by default.
+    /// The terminal command's name, `edit` by default.
     pub name: String,
     pub path: bool,
     pub editor_env: bool,
@@ -197,7 +197,7 @@ impl Default for MouseCfg {
 
 impl Default for CliCfg {
     fn default() -> Self {
-        CliCfg { name: "editor".into(), path: true, editor_env: true, git: true, default_app: false }
+        CliCfg { name: "edit".into(), path: true, editor_env: true, git: true, default_app: false }
     }
 }
 
@@ -209,7 +209,7 @@ fn two_places<S: serde::Serializer>(v: &f32, s: S) -> Result<S::Ok, S::Error> {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct IpcCfg {
-    /// Serve the control socket that `editor ctl`, `editor mcp` and agents use.
+    /// Serve the control socket that `edit ctl`, `edit mcp` and agents use.
     pub enabled: bool,
     /// Let `edit` and `command` requests change buffers. `propose` works either way.
     pub allow_edits: bool,

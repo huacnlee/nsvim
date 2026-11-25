@@ -417,7 +417,7 @@ fn step_shell(k: Keys, m: &Model) -> View {
     if cli.path {
         out = out.child(name_box(k, m));
     }
-    let name = if m.name_valid { cli.name.clone() } else { "editor".into() };
+    let name = if m.name_valid { cli.name.clone() } else { "edit".into() };
     let mut integ = titled("integrations").flex_1().min_w(px(360.0)).pt(px(14.0)).pb(px(8.0)).px(px(8.0));
     for (key, label, sub) in [
         ("path", "Add a terminal command".to_string(), format!("Open anything with {name} . or {name} file.rs")),

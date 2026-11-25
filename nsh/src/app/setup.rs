@@ -200,7 +200,7 @@ impl Setup {
     pub fn check_name(&mut self) -> Vec<String> {
         let mut out = Vec::new();
         let n = self.cfg.cli.name.clone();
-        let names = self.name_valid().then_some(n).into_iter().chain(["edtr", "e", "edx", "ered", "medit"].map(String::from));
+        let names = self.name_valid().then_some(n).into_iter().chain(["editor", "edtr", "e", "edx", "ered", "medit"].map(String::from));
         for name in names {
             if self.asked.insert(name.clone()) {
                 out.push(name);
@@ -211,7 +211,7 @@ impl Setup {
 
     /// Up to three free names.
     pub fn suggestions(&self) -> Vec<&'static str> {
-        ["edtr", "e", "edx", "ered", "medit"]
+        ["editor", "edtr", "e", "edx", "ered", "medit"]
             .into_iter()
             .filter(|n| *n != self.cfg.cli.name && self.on_path.get(*n).is_some_and(|p| p.is_none()))
             .take(3)
@@ -553,11 +553,14 @@ mod tests {
         s.step = 4;
         assert!(!s.choices().contains(&Choice::Toggle("default")), "and no default-app choice");
 
-        // Installed as the README says: the binary is the command already, so no link replaces it.
+        // The README installs the binary as ~/.local/bin/editor. The command `edit` links to it.
         s.exe = dirs::home_dir().map(|h| h.join(".local/bin/editor"));
         let cmds = s.commands().join("\n");
-        assert!(!cmds.contains("ln -sf"), "{cmds}");
-        assert!(cmds.contains("export EDITOR=\"editor --wait\""), "{cmds}");
+        assert!(cmds.contains("ln -sf ") && cmds.contains(" ~/.local/bin/edit\n"), "{cmds}");
+        assert!(cmds.contains("export EDITOR=\"edit --wait\""), "{cmds}");
+        // A binary that is the command already needs no link.
+        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/edit"));
+        assert!(!s.commands().join("\n").contains("ln -sf"));
     }
 
     #[test]
