@@ -78,11 +78,11 @@ function Body(props: { st: () => SetupState }) {
   );
 }
 
-/** The app's icon: four lines in the mode colours, on a 128 unit grid. */
+/** The app's icon (assets/editor.svg), on a 128 unit grid. */
 export function AppIcon(props: { size: number }) {
   const k = props.size / 128;
   // assets/editor.svg on a 128 grid: an N whose bars take the theme's primary colour, with a
-  // light stroke between them, under the bars. The stroke is a round bar turned 45 degrees about
+  // light stroke between them, over the left bar and under the right bar. The stroke is a round bar turned 45 degrees about
   // the middle of the tile.
   const bar = (x: number, fill: string) => (
     <View class={`absolute ${fill}`} style={{ left: x * k, top: 24 * k, width: 24 * k, height: 80 * k, borderRadius: 8 * k }} />
@@ -99,12 +99,12 @@ export function AppIcon(props: { size: number }) {
       role="image"
       accessibilityLabel="nsvim"
     >
+      {bar(24, "bg-primary")}
       <View
         class="absolute"
         classList={{ "bg-border": !dark(), "bg-foreground": dark() }}
         style={{ left: (64 - stroke / 2) * k, top: 56 * k, width: stroke * k, height: 16 * k, borderRadius: 8 * k, rotate: "45deg" }}
       />
-      {bar(24, "bg-primary")}
       {bar(80, "bg-primary")}
     </View>
   );
