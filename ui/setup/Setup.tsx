@@ -81,9 +81,13 @@ function Body(props: { st: () => SetupState }) {
 /** The app's icon: four lines in the mode colours, on a 128 unit grid. */
 export function AppIcon(props: { size: number }) {
   const k = props.size / 128;
-  const bar = (x: number, y: number, w: number, fill: string) => (
-    <View class={`absolute ${fill}`} style={{ left: x * k, top: y * k, width: w * k, height: 12 * k, borderRadius: 6 * k }} />
+  // assets/editor.svg on a 128 grid: two bars of an N, the right one a block cursor, and the
+  // stroke between them under the bars. The stroke is a round bar turned 45 degrees about the
+  // middle of the tile.
+  const bar = (x: number, radius: number, fill: string) => (
+    <View class={`absolute ${fill}`} style={{ left: x * k, top: 24 * k, width: 24 * k, height: 80 * k, borderRadius: radius * k }} />
   );
+  const stroke = 56 * Math.SQRT2 + 16;
   return (
     <View
       class="bg-muted border border-border"
@@ -92,10 +96,12 @@ export function AppIcon(props: { size: number }) {
       role="image"
       accessibilityLabel="nsvim"
     >
-      {bar(28, 32, 72, "bg-primary")}
-      {bar(28, 52, 50, "bg-mode-insert")}
-      {bar(40, 72, 60, "bg-mode-visual")}
-      {bar(28, 92, 34, "bg-mode-command")}
+      <View
+        class="absolute bg-muted-foreground"
+        style={{ left: (64 - stroke / 2) * k, top: 56 * k, width: stroke * k, height: 16 * k, borderRadius: 8 * k, rotate: "45deg" }}
+      />
+      {bar(24, 8, "bg-foreground")}
+      {bar(80, 4, "bg-mode-command")}
     </View>
   );
 }

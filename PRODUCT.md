@@ -56,9 +56,9 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 
 - Name: `editor`, lowercase.
 - Tagline: "Read fast. Edit quick."
-- Icon: three lines of code and a block cursor, over a status line. The code takes the mode
-  colours: Visual violet, Normal blue and Insert green. The cursor is Command orange. It takes
-  nothing from the Neovim logo.
+- Icon: a letter N on a dark tile. The left bar is light, a grey stroke joins the bars, and the
+  right bar is an orange block cursor, the Command mode colour. The website lets the cursor
+  cycle through the mode colours. It takes nothing from the Neovim logo.
   `assets/editor.svg`, and `assets/editor-light.svg` for light backgrounds.
 - Voice: plain, short, technical, no hype (ASD-STE100 style).
 
