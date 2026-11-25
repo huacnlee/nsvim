@@ -2,14 +2,25 @@
 // systems show their own menu (`native_menu` in Rust).
 
 import { signal, Text, View, windowSize } from "nsh";
+import { TERM } from "./Titled";
 import { Overlays, Shell, type MenuState } from "nsvim-native";
 
-/** The menu's width, in points. */
-const WIDTH = 260;
+/** The menu's width, in points: whole cells in a terminal. */
+const WIDTH = TERM ? 256 : 260;
+/** A row's height, and a separator's: one cell each in a terminal. */
+const ROW = TERM ? 16 : 24;
+const SEPARATOR = TERM ? 16 : 9;
+/** The padding above and below the rows: the border's cell in a terminal. */
+const PAD = TERM ? 32 : 8;
 
-/** The menu's height: rows of 24 points, separators of 9, and 8 of padding. */
+/** The menu's height: its rows, separators and padding. */
 function height(m: MenuState) {
-  return 8 + m.items.reduce((h, i) => h + (i.separator ? 9 : 24), 0);
+  return PAD + m.items.reduce((h, i) => h + (i.separator ? SEPARATOR : ROW), 0);
+}
+
+/** `n` down to whole cells of `cell` points, in a terminal. */
+function snap(n: number, cell: number) {
+  return TERM ? Math.floor(n / cell) * cell : n;
 }
 
 /** The menu, once Rust sent it. */
@@ -21,16 +32,16 @@ export function ContextMenu() {
 
 function Menu(props: { part: () => MenuState }) {
   const part = props.part;
-  const left = () => Math.max(Math.min(part().x, windowSize().width - WIDTH - 8), 4);
+  const left = () => snap(Math.max(Math.min(part().x, windowSize().width - WIDTH - 8), 4), 8);
   const top = () => {
     const h = height(part());
     const y = part().y;
-    return y + h > windowSize().height ? Math.max(y - h, 4) : y;
+    return snap(y + h > windowSize().height ? Math.max(y - h, 4) : y, 16);
   };
   return (
     <View class="absolute" style={{ left: left(), top: top() }} onPress={() => Shell.focusKeys()}>
       <View
-        class="py-[4px] rounded-(--radius) bg-muted border border-border shadow-lg"
+        class={TERM ? "bg-background border border-border" : "py-[4px] rounded-(--radius) bg-muted border border-border shadow-lg"}
         style={{ width: WIDTH }}
         role="menu"
         testID="context-menu"
@@ -39,10 +50,10 @@ function Menu(props: { part: () => MenuState }) {
           {(item, index) => (
             <If
               when={!item().separator}
-              else={<View class="h-px w-full my-[4px] bg-border" />}
+              else={<View class={TERM ? "h-[16px] w-full" : "h-px w-full my-[4px] bg-border"} />}
             >
               <View
-                class="flex-row h-[24px] px-[12px] items-center"
+                class={TERM ? "flex-row h-[16px] px-[8px] items-center" : "flex-row h-[24px] px-[12px] items-center"}
                 classList={{
                   "bg-surface-raised": part().sel === index(),
                   "hover:bg-surface-raised": part().sel !== index() && item().enabled,

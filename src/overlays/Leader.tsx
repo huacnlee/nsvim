@@ -3,7 +3,7 @@
 import { signal, Text, View } from "nsh";
 import { Icon, Overlays, Shell, type LeaderState } from "nsvim-native";
 
-import { SIZE, Titled } from "./Titled";
+import { SIZE, TERM, Titled } from "./Titled";
 
 /** The menu, once Rust sent it. */
 export function Leader() {
@@ -15,13 +15,13 @@ export function Leader() {
 function Menu(props: { part: () => LeaderState }) {
   const part = props.part;
   return (
-    <View class="absolute left-[12px] right-[12px]" style={{ bottom: part().bottom }} onPress={() => Shell.focusKeys()}>
-      <Titled title={part().title} class="w-full pt-[14px] pb-[10px] px-[8px] shadow-lg" role="menu" testID="leader">
-        <View class="flex-row flex-wrap w-full">
+    <View class={TERM ? "absolute left-0 right-0" : "absolute left-[12px] right-[12px]"} style={{ bottom: TERM ? Math.ceil(part().bottom / 16) * 16 : part().bottom }} onPress={() => Shell.focusKeys()}>
+      <Titled title={part().title} class={TERM ? "w-full" : "w-full pt-[14px] pb-[10px] px-[8px] shadow-lg"} role="menu" testID="leader">
+        <View class={TERM ? "flex-row flex-wrap w-full px-[8px]" : "flex-row flex-wrap w-full"}>
           <Each of={part().items} key="index">
             {(item) => (
               <View
-                class="flex-row w-[250px] h-[22px] px-[8px] gap-[8px] items-center cursor-pointer hover:bg-surface-raised"
+                class={`flex-row ${TERM ? "w-[248px] h-[16px]" : "w-[250px] h-[22px]"} px-[8px] gap-[8px] items-center cursor-pointer hover:bg-surface-raised`}
                 role="menuitem"
                 accessibilityLabel={item().label}
                 testID={`leader-${item().key}`}
