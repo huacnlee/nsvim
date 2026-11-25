@@ -56,8 +56,9 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 
 - Name: `editor`, lowercase.
 - Tagline: "Read fast. Edit quick."
-- Icon: "Modes", four rounded lines in the mode colours (Normal blue, Insert green, Visual
-  violet, Command orange), `assets/editor.svg`.
+- Icon: an N for nsvim in the mode colours: the left stem Normal blue, the diagonal Visual
+  violet, the right stem Insert green, and a Command orange bar below it as a command line.
+  `assets/editor.svg`, and `assets/editor-light.svg` for light backgrounds.
 - Voice: plain, short, technical, no hype (ASD-STE100 style).
 
 ## Evidence on Hand
