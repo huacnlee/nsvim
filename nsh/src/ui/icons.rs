@@ -1,16 +1,68 @@
 //! The Lucide icons of the interface, drawn as vectors in the text colour around them.
 //!
-//! The icons are the `Lucide` constants of `nsh-icon-lucide`. `nsh-icon` 0.1.0 is built on
-//! nsh-core 0.6, so its `icon` and `labeled_icon` make elements that the 0.7 views cannot take.
-//! The two functions here do the same thing with nsh-core 0.7's `svg`. Replace them with the
-//! crate's functions when `nsh-icon` moves to nsh-core 0.7.
+//! The app carries the few icons it draws as `data:` URIs. They come from
+//! [Lucide](https://lucide.dev) 1.43.0, under the ISC License. Copy a new icon from Lucide's
+//! SVG, with its `<` and `>` written as `%3C` and `%3E`.
 
 use nsh_core::element::{ImageSrc, Svg};
 use nsh_core::prelude::*;
-pub use nsh_icon_lucide::{Icon, Lucide};
 
-/// The size of an icon that sets none, in points, as in `nsh-icon`.
+/// The size of an icon that sets none, in points.
 pub const DEFAULT_SIZE: f32 = 16.0;
+
+/// One icon: an SVG with lines 2 units wide on a 24-unit grid, in `currentColor`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Icon(&'static str);
+
+impl Icon {
+    /// The icon as a `data:image/svg+xml` URI.
+    pub const fn data_uri(self) -> &'static str {
+        self.0
+    }
+}
+
+/// The Lucide icons that the app draws. Names are Lucide's names in PascalCase.
+pub struct Lucide;
+
+#[allow(non_upper_case_globals)]
+impl Lucide {
+    pub const ArrowRight: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E",
+    );
+    pub const ChevronDown: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E",
+    );
+    pub const ChevronRight: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E",
+    );
+    pub const Circle: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+    );
+    pub const CircleDot: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E",
+    );
+    pub const Diff: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v14'/%3E%3Cpath d='M5 10h14'/%3E%3Cpath d='M5 21h14'/%3E%3C/svg%3E",
+    );
+    pub const Dot: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3C/svg%3E",
+    );
+    pub const GitBranch: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6a9 9 0 0 0-9 9V3'/%3E%3Ccircle cx='18' cy='6' r='3'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3C/svg%3E",
+    );
+    pub const GitCompareArrows: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5' cy='6' r='3'/%3E%3Cpath d='M12 6h5a2 2 0 0 1 2 2v7'/%3E%3Cpath d='m15 9-3-3 3-3'/%3E%3Ccircle cx='19' cy='18' r='3'/%3E%3Cpath d='M12 18H7a2 2 0 0 1-2-2V9'/%3E%3Cpath d='m9 15 3 3-3 3'/%3E%3C/svg%3E",
+    );
+    pub const Minus: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E",
+    );
+    pub const Plus: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='M12 5v14'/%3E%3C/svg%3E",
+    );
+    pub const X: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E",
+    );
+}
 
 /// The image source of `icon`. It borrows the icon's `data:` URI and does not copy it.
 pub fn src(icon: Icon) -> ImageSrc {

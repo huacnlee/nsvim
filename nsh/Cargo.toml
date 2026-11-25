@@ -12,8 +12,6 @@ name = "nsvim"
 path = "src/main.rs"
 
 [dependencies]
-nsh-icon-lucide = "0.1.0"
-nsh-icon = "0.1.0"
 editor = { package = "editor-core", path = "../crates/editor-core" }
 nsh-core = "0.7.0"
 nsh-base = "0.7.0"

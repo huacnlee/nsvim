@@ -2072,10 +2072,8 @@ dependencies = [
  "ignore",
  "notify",
  "nsh-base",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
- "nsh-icon",
- "nsh-icon-lucide",
  "nsh-platform-linux",
  "nsh-platform-macos",
  "nsh-platform-windows",
@@ -2101,7 +2099,7 @@ dependencies = [
  "log",
  "markdown",
  "markup5ever_rcdom",
- "nsh-core 0.7.0",
+ "nsh-core",
  "regex",
  "ropey",
  "rustc-hash 2.1.3",
@@ -2112,37 +2110,6 @@ dependencies = [
  "unicode-segmentation",
  "unicode-width",
  "vte",
-]
-
-[[package]]
-name = "nsh-core"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b45a8b194c6879bcb26c6e430b804e49e97ec0fea5fad8c78d7710fd41f74a6"
-dependencies = [
- "cap-std",
- "chrono",
- "crc32fast",
- "httpdate",
- "imagesize",
- "libc",
- "log",
- "nsh-macros 0.6.1",
- "ordered-float",
- "rust-i18n",
- "rustc-hash 2.1.3",
- "serde",
- "serde_json",
- "sha2",
- "slab",
- "taffy 0.15.1",
- "tokio",
- "ttf-parser",
- "unicode-linebreak",
- "unicode-properties",
- "url",
- "windows-sys 0.61.2",
- "wuff",
 ]
 
 [[package]]
@@ -2163,7 +2130,7 @@ dependencies = [
  "libc",
  "log",
  "naga",
- "nsh-macros 0.7.0",
+ "nsh-macros",
  "nsh-updater",
  "ordered-float",
  "percent-encoding",
@@ -2177,7 +2144,7 @@ dependencies = [
  "sha2",
  "simplecss",
  "slab",
- "taffy 0.16.0",
+ "taffy",
  "tokio",
  "tokio-tungstenite",
  "ttf-parser",
@@ -2199,7 +2166,7 @@ dependencies = [
  "env_filter",
  "libc",
  "log",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-updater",
  "objc2-io-surface",
  "rustc-hash 2.1.3",
@@ -2207,39 +2174,6 @@ dependencies = [
  "tokio",
  "ureq",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "nsh-icon"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f388a5925a04efeb43e6dbbb3b7f11cc6d37fef345ce92bb7d53352d70e9c259"
-dependencies = [
- "nsh-core 0.6.1",
-]
-
-[[package]]
-name = "nsh-icon-lucide"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a0666d92eb75442a7f957bb2dc9ba47695bc3f106361458d34f79bc10cd79c2"
-dependencies = [
- "nsh-core 0.6.1",
- "nsh-icon",
-]
-
-[[package]]
-name = "nsh-macros"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f1b3ce01247cac072395d42177725e7972de498eb148d37443196d870cdaf2b"
-dependencies = [
- "imagesize",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
- "ttf-parser",
- "wuff",
 ]
 
 [[package]]
@@ -2267,7 +2201,7 @@ dependencies = [
  "dispatch2",
  "libc",
  "log",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
  "objc2",
  "objc2-app-kit",
@@ -2292,7 +2226,7 @@ dependencies = [
  "image",
  "log",
  "nsh-base",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
  "pango",
  "pangocairo",
@@ -2313,7 +2247,7 @@ dependencies = [
  "libc",
  "log",
  "nsh-base",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
  "nsh-platform-apple",
  "objc2",
@@ -2341,7 +2275,7 @@ dependencies = [
  "image",
  "log",
  "nsh-base",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
  "rustc-hash 2.1.3",
  "serde_json",
@@ -2360,7 +2294,7 @@ checksum = "a1faf90707afa2d440c9851940bcd799457635998dee87fc6df4af14fd39ac00"
 dependencies = [
  "crossbeam-channel",
  "log",
- "nsh-core 0.7.0",
+ "nsh-core",
  "nsh-engine",
  "regex",
  "url",
@@ -3591,17 +3525,6 @@ dependencies = [
  "pkg-config",
  "toml 1.2.2+spec-1.1.0",
  "version-compare",
-]
-
-[[package]]
-name = "taffy"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31f7bd2d97198df05186f93a3a3c306845f40e8b3c22bf9279cdd7e5cf5fea7d"
-dependencies = [
- "serde",
- "slotmap",
- "smallvec",
 ]
 
 [[package]]
