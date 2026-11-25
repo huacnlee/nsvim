@@ -25,8 +25,8 @@ pub enum SettingsControl {
     Font,
     /// A number with a step down and a step up.
     Stepper,
-    /// An on / off switch.
-    Switch,
+    /// An on / off checkbox.
+    Check,
     /// A value that the user cannot change here.
     Info,
     /// A row of colour chips.
@@ -235,7 +235,7 @@ fn item(i: Item) -> SettingsItem {
             ..base
         },
         Ctl::Step { shown } => SettingsItem { control: SettingsControl::Stepper, value: shown, ..base },
-        Ctl::Toggle(on) => SettingsItem { control: SettingsControl::Switch, on, ..base },
+        Ctl::Toggle(on) => SettingsItem { control: SettingsControl::Check, on, ..base },
         Ctl::Info(shown) => SettingsItem { control: SettingsControl::Info, value: shown, ..base },
         Ctl::Chips(colors) => SettingsItem { control: SettingsControl::Chips, colors: colors.into_iter().map(hex).collect(), ..base },
         Ctl::Themes { opts, cur } => SettingsItem {

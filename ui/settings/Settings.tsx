@@ -7,7 +7,7 @@
 import { signal, Text, View, Scroll } from "nsh";
 import { Button } from "nsh/base";
 import { Icon, type SettingsItem, type SettingsState, SettingsPage, Shell } from "nsvim/native";
-import { act, Chips, Choice, ChoiceGroup, FontSelect, Stepper, Toggle } from "../controls";
+import { act, Check, Chips, Choice, ChoiceGroup, FontSelect, Stepper } from "../controls";
 import { Preview } from "./Preview";
 
 /** Wider than this, the page shows the preview. */
@@ -64,7 +64,7 @@ function Header(props: { state: () => SettingsState }) {
         accessibilityLabel="Close settings"
         testID="settings-close"
         onPress={act(() => SettingsPage.close())}
-        class="size-7 items-center justify-center rounded-md hover:bg-surface-raised active:bg-muted"
+        class="size-7 items-center justify-center rounded-(--radius) hover:bg-surface-raised active:bg-muted"
       >
         <Icon name="x" size={16} class="text-muted-foreground" />
       </Button>
@@ -126,6 +126,21 @@ function Row(props: { item: () => SettingsItem; index: () => number; state: () =
       <Text class="text-xs text-muted-foreground">{props.item().desc}</Text>
     </View>
   );
+  // An on / off option is one checkbox: the box, then the name and the description. The whole
+  // row takes the press.
+  if (kind === "check") {
+    return (
+      <View
+        class="w-full py-1 border-b border-border"
+        classList={{ "bg-surface-raised": kb(), "bg-background": !kb() }}
+        testID={`row:${key}`}
+      >
+        <Check label={key} on={props.item().on} onPress={() => SettingsPage.toggle(key)} class="w-full min-h-10 py-1">
+          {label}
+        </Check>
+      </View>
+    );
+  }
   if (kind === "themes") {
     return (
       <View
@@ -182,8 +197,6 @@ function Control(props: { kind: string; item: () => SettingsItem }) {
       );
     case "stepper":
       return <Stepper name={key} shown={props.item().value} onStep={(dir) => SettingsPage.step(key, dir)} />;
-    case "switch":
-      return <Toggle label={key} on={props.item().on} onPress={() => SettingsPage.toggle(key)} />;
     case "chips":
       return <Chips colors={props.item().colors} width={11} height={22} />;
     default:
@@ -209,7 +222,7 @@ function Themes(props: { item: () => SettingsItem }) {
               accessibilityLabel={o().label}
               testID={`${key}=${o().value}`}
               onPress={act(() => SettingsPage.pick(key, o().value))}
-              class="flex-row w-49 h-8.5 px-2 gap-2.5 items-center rounded-md hover:opacity-85"
+              class="flex-row w-49 h-8.5 px-2 gap-2.5 items-center rounded-(--radius) hover:opacity-85"
               classList={{ "border-2": on(), "border-primary": on(), border: !on(), "border-border": !on() }}
             >
               <Chips colors={o().swatches} width={7} height={18} />

@@ -6,7 +6,7 @@ import { RadioGroup } from "nsh/base";
 import { type SetupLook, type SetupState } from "nsvim/native";
 import { SetupFlow } from "nsvim/native";
 import { Choice, ChoiceGroup, Pill, Titled } from "../controls";
-import { Card, Heading, KeyRow, SwitchBox, SwitchRow } from "./parts";
+import { Card, Heading, KeyRow, OptionBox, CheckRow } from "./parts";
 
 type Step = { st: () => SetupState };
 
@@ -91,20 +91,20 @@ export function KeysStep(props: Step) {
           </View>
         </Card>
       </RadioGroup>
-      <SwitchBox title="Options">
+      <OptionBox title="Options">
         <If
           when={st().vim}
           else={
             <>
-              <SwitchRow st={st} choice="toggle:multi" label="Add cursors with Alt-click" sub="Every cursor types at once." />
-              <SwitchRow st={st} choice="toggle:autoclose" label="Auto-close brackets and quotes" sub="Typing ( also types )." />
+              <CheckRow st={st} choice="toggle:multi" label="Add cursors with Alt-click" sub="Every cursor types at once." />
+              <CheckRow st={st} choice="toggle:autoclose" label="Auto-close brackets and quotes" sub="Typing ( also types )." />
             </>
           }
         >
-          <SwitchRow st={st} choice="toggle:leader" label="Use Space as the leader key" sub="Otherwise backslash, as in stock Neovim." />
-          <SwitchRow st={st} choice="toggle:import" label="Import keymaps from ~/.config/nvim" sub="Reads your leader. Plugins are skipped." />
+          <CheckRow st={st} choice="toggle:leader" label="Use Space as the leader key" sub="Otherwise backslash, as in stock Neovim." />
+          <CheckRow st={st} choice="toggle:import" label="Import keymaps from ~/.config/nvim" sub="Reads your leader. Plugins are skipped." />
         </If>
-      </SwitchBox>
+      </OptionBox>
     </View>
   );
 }
@@ -124,7 +124,7 @@ export function MouseStep(props: Step) {
           desc="Click to place the cursor, drag to select, scroll, resize the file tree."
           on={st().mouse}
         >
-          <View class="rounded-md border border-border p-2">
+          <View class="rounded-(--radius) border border-border p-2">
             <Text class="text-xs text-foreground">{"let mut pos = from;\nfor _ in 0..count.max(1) {\n    pos = buf.next(pos);"}</Text>
           </View>
         </Card>
@@ -143,14 +143,14 @@ export function MouseStep(props: Step) {
         </Card>
       </RadioGroup>
       <If when={st().mouse}>
-        <SwitchBox title="The mouse can">
-          <SwitchRow st={st} choice="toggle:click" label="Click places the cursor" />
-          <If when={vim()} else={<SwitchRow st={st} choice="toggle:drag" label="Drag selects text" />}>
-            <SwitchRow st={st} choice="toggle:drag" label="Drag selects and enters Visual mode" />
+        <OptionBox title="The mouse can">
+          <CheckRow st={st} choice="toggle:click" label="Click places the cursor" />
+          <If when={vim()} else={<CheckRow st={st} choice="toggle:drag" label="Drag selects text" />}>
+            <CheckRow st={st} choice="toggle:drag" label="Drag selects and enters Visual mode" />
           </If>
-          <SwitchRow st={st} choice="toggle:double" label="Double-click selects a word, triple-click a line" />
-          <SwitchRow st={st} choice="toggle:right" label="Right-click opens a context menu" />
-        </SwitchBox>
+          <CheckRow st={st} choice="toggle:double" label="Double-click selects a word, triple-click a line" />
+          <CheckRow st={st} choice="toggle:right" label="Right-click opens a context menu" />
+        </OptionBox>
       </If>
     </View>
   );
@@ -228,7 +228,7 @@ export function LookStep(props: Step) {
             </Each>
           </ChoiceGroup>
         </View>
-        <View class="rounded-md p-2 border border-border">
+        <View class="rounded-(--radius) p-2 border border-border">
           {font("/// The quick brown fox -> jumps != over", "text-code-comment")}
           {font("pub fn word_forward(buf: &Buffer, from: Pos) -> Target {", "text-foreground")}
         </View>
@@ -245,7 +245,7 @@ function Label(props: { children: string }) {
  * the theme that shows now, so no token has them. */
 function Sample(props: { look: () => SetupLook }) {
   return (
-    <View class="rounded-md p-2 border" style={{ backgroundColor: props.look().background, borderColor: props.look().border }}>
+    <View class="rounded-(--radius) p-2 border" style={{ backgroundColor: props.look().background, borderColor: props.look().border }}>
       <Each of={props.look().lines} key="index">
         {(line) => (
           <Text class="text-xs line-clamp-1">

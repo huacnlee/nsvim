@@ -1,4 +1,4 @@
-// First-launch setup: keys, mouse, look, terminal, ready. Each step is cards and switches. The
+// First-launch setup: keys, mouse, look, terminal, ready. Each step is cards and checkboxes. The
 // status line shows where you are and moves on. The keys work as the hint line says: Rust owns
 // them and the state (`SetupFlow`).
 

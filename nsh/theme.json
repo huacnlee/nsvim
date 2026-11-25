@@ -2,7 +2,7 @@
   "name": "editor",
   "cssVars": {
     "theme": {
-      "radius": "4px"
+      "radius": "2px"
     },
     "light": {
       "background": "#FAFAF7",

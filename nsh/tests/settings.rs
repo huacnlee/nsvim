@@ -134,7 +134,7 @@ fn setup_keys_step_picks_a_keymap_by_press_and_by_key() -> Result<(), String> {
     assert!(!app.screen().selected("label:Neovim motions")?);
     app.wait_for("Add cursors with Alt-click")?;
     assert!(app.shows("Arrows move   Enter picks   Tab next"));
-    // A press picks Neovim again, and a switch changes its option.
+    // A press picks Neovim again, and a checkbox changes its option.
     app.press("label:Neovim motions")?;
     app.wait_for("Use Space as the leader key")?;
     assert!(app.shows("SPC f"), "Space is the leader: {:?}", app.screen().texts());
@@ -258,7 +258,7 @@ fn settings_opens_with_each_section() -> Result<(), String> {
 }
 
 #[test]
-fn a_switch_changes_the_app_and_config_toml_at_once() -> Result<(), String> {
+fn a_checkbox_changes_the_app_and_config_toml_at_once() -> Result<(), String> {
     let (mut app, _dir) = settings_on("hello\n", None)?;
     app.press("id:section:editor")?;
     app.wait_for("id:row:editor.wrap")?;
@@ -271,8 +271,10 @@ fn a_switch_changes_the_app_and_config_toml_at_once() -> Result<(), String> {
     // The change is on disk with no `:w`.
     let cfg = written(&mut app, "config.toml with wrap on", |t| get(t, "editor", "wrap").and_then(|v| v.as_bool()) == Some(true))?;
     assert_eq!(get(&cfg, "editor", "wrap").and_then(|v| v.as_bool()), Some(true));
-    // Pressed again, it turns off, on disk too.
-    app.press("label:editor.wrap")?;
+    // It is a checkbox, and its description takes the press too: pressed again, it turns off,
+    // on disk too.
+    assert!(app.screen().matches("role:checkbox[editor.wrap]")?, "{}", texts(&app));
+    app.press("text:Soft-wrap long lines")?;
     app.wait_for("editor.wrap = false")?;
     written(&mut app, "config.toml with wrap off", |t| get(t, "editor", "wrap").and_then(|v| v.as_bool()) == Some(false))?;
     // The keys still reach the app after a press: Esc closes Settings.
@@ -519,7 +521,7 @@ fn a_press_in_setup_gives_the_keys_back_to_the_editor() -> Result<(), String> {
     app.wait_until("classic picked", Duration::from_secs(2), |s| s.selected("label:Classic shortcuts").unwrap_or(false))?;
     typ(&mut app, &["tab"]);
     app.wait_for("Use the mouse?")?;
-    // The same after a switch: Shift+Tab goes back a step.
+    // The same after a checkbox: Shift+Tab goes back a step.
     app.press("label:Click places the cursor")?;
     app.wait_until("click off", Duration::from_secs(2), |s| {
         s.accessibility_state("label:Click places the cursor").is_ok_and(|a| a.checked == Some(nsh_core::Checked::False))

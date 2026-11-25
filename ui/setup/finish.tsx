@@ -4,7 +4,7 @@ import { Text, View } from "nsh";
 import { Button } from "nsh/base";
 import { type SetupState, SetupFlow } from "nsvim/native";
 import { act, Kbd, Titled } from "../controls";
-import { Heading, SwitchBox, SwitchRow } from "./parts";
+import { Heading, OptionBox, CheckRow } from "./parts";
 
 type Step = { st: () => SetupState };
 
@@ -19,19 +19,19 @@ export function ShellStep(props: Step) {
     <View class="gap-5.5" testID="setup-step-4">
       <Heading title="Use nsvim from the terminal" sub="Optional. Everything here can be undone by hand later." />
       <View class="flex-row gap-4 flex-wrap items-start">
-        <SwitchBox title="Integrations" class="flex-1 min-w-90">
-          <SwitchRow
+        <OptionBox title="Integrations" class="flex-1 min-w-90">
+          <CheckRow
             st={st}
             choice="toggle:vim"
             label="Open nsvim with vi and vim"
             sub={`Shell aliases. \\vim still runs Vim. Off: type ${name()}`}
           />
-          <SwitchRow st={st} choice="toggle:path" label={`Add the ${name()} command`} sub={`Open anything with ${cmd()} . or ${cmd()} file.rs`} />
+          <CheckRow st={st} choice="toggle:path" label={`Add the ${name()} command`} sub={`Open anything with ${cmd()} . or ${cmd()} file.rs`} />
           <If when={taken()}>
             {(t) => (
               <View class="pl-2 gap-1" testID="command-taken">
                 <Text class="text-xs text-warning">{`${name()} is already ${t().split(",")[0]}.`}</Text>
-                <SwitchRow
+                <CheckRow
                   st={st}
                   choice="shadow"
                   label={`Put nsvim's ${name()} first on $PATH`}
@@ -41,17 +41,17 @@ export function ShellStep(props: Step) {
               </View>
             )}
           </If>
-          <SwitchRow st={st} choice="toggle:env" label="Set as $EDITOR and $VISUAL" sub="For tools that open an editor, like crontab -e" />
-          <SwitchRow st={st} choice="toggle:git" label="Use for git commit messages" sub="git waits until you close the buffer" />
+          <CheckRow st={st} choice="toggle:env" label="Set as $EDITOR and $VISUAL" sub="For tools that open an editor, like crontab -e" />
+          <CheckRow st={st} choice="toggle:git" label="Use for git commit messages" sub="git waits until you close the buffer" />
           <If when={!st().mac}>
-            <SwitchRow
+            <CheckRow
               st={st}
               choice="toggle:default"
               label="Make nsvim the default for text files"
               sub="A double-click opens code and text files"
             />
           </If>
-        </SwitchBox>
+        </OptionBox>
         <Titled title="What runs" class="flex-1 min-w-90" bodyClass="pt-4 pb-3.5 px-4 gap-1" testID="setup-commands">
           <If when={st().commands.length === 0}>
             <Text class="text-xs text-muted-foreground">Nothing. nsvim stays inside its window.</Text>
@@ -79,7 +79,7 @@ export function ShellStep(props: Step) {
   );
 }
 
-/** The names of the terminal switches, as the summary says them. */
+/** The names of the terminal options, as the summary says them. */
 const SHELL: [string, string][] = [
   ["path", "Command"],
   ["vim", "vi and vim"],
@@ -136,7 +136,7 @@ export function ReadyStep(props: Step) {
                   <Button
                     accessibilityLabel={`Change ${row()[0].toLowerCase()}`}
                     onPress={act(() => SetupFlow.choose(`change:${i()}`))}
-                    class="px-1 rounded-[3px] hover:opacity-80"
+                    class="px-1 rounded-(--radius) hover:opacity-80"
                     classList={{ "bg-surface-raised": focus(), "bg-background": !focus() }}
                   >
                     <Text class="text-xs text-primary">Change</Text>
