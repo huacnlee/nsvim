@@ -126,3 +126,27 @@ fn setup_asks_each_name_once_and_takes_the_workers_answers() {
     assert_eq!(s.taken().as_deref(), Some("/usr/bin/editor"));
     assert_eq!((s.exe.clone(), s.bin_on_path, s.nvim_leader), (Some(PathBuf::from("/opt/editor")), false, Some('\\')));
 }
+
+#[test]
+fn the_file_worker_copies_the_old_folders_and_says_so() {
+    let dir = tempfile::tempdir().unwrap();
+    let (old, new) = (dir.path().join("editor"), dir.path().join("nsvim"));
+    std::fs::create_dir_all(old.join("undo")).unwrap();
+    std::fs::write(old.join("undo/1.json"), "{}").unwrap();
+    let project = dir.path().join("project");
+    std::fs::create_dir_all(&project).unwrap();
+    let mut cfg = Config::default();
+    cfg.ipc.enabled = false;
+    let mut a = App::new(cfg, project, false, None);
+    a.exited = true;
+    a.migration = crate::migrate::plan_for(&[(old.clone(), new.clone())]);
+    a.setup(std::sync::Arc::new(|| {}));
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !message(&a).contains("copied") && std::time::Instant::now() < deadline {
+        a.poll(0.0, &mut Tx::new());
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(message(&a).contains("The old folders stay"), "{}", message(&a));
+    assert!(new.join("undo/1.json").is_file());
+    assert!(old.join("undo/1.json").is_file());
+}

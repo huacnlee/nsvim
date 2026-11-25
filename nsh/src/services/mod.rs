@@ -92,6 +92,8 @@ pub enum Event {
     Config(Result<crate::config::Config, String>),
     /// What the first-launch setup asked about this machine.
     Setup(probe::Answer),
+    /// The old folders were copied to the new names: the line to show.
+    Migrated(String),
     /// The start of a file, for the finder's preview.
     Preview {
         path: PathBuf,
@@ -263,6 +265,14 @@ impl Services {
     }
 
     /// Watches `path` (an open file outside the project) for outside changes.
+    /// Copies the folders of the old name to the new one. The file worker runs it before any
+    /// later job, so files open after the copy.
+    pub fn migrate(&self, m: crate::migrate::Migration) {
+        if !m.is_empty() {
+            let _ = self.io.send(io::Job::Migrate(m));
+        }
+    }
+
     /// Finds what the setup screen needs about this machine. Sends `Event::Setup`.
     pub fn probe_setup(&self) {
         let _ = self.probe.send(probe::Job::Facts);

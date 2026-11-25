@@ -45,6 +45,8 @@ fn key(path: &Path) -> u64 {
 const MAX_HISTORY_BYTES: usize = 16 * 1024 * 1024;
 
 pub enum Job {
+    /// Copy the old folders to the new names (`crate::migrate`).
+    Migrate(crate::migrate::Migration),
     Open {
         path: PathBuf,
         at: Option<Pos>,
@@ -98,6 +100,11 @@ pub fn start(out: Out) -> Sender<Job> {
         .spawn(move || {
             for job in rx {
                 match job {
+                    Job::Migrate(m) => {
+                        if let Some(line) = m.run() {
+                            out.send(Event::Migrated(line));
+                        }
+                    }
                     Job::Open { path, at } => {
                         let mut recovered = None;
                         let buf = Buffer::open(&path).map(|mut b| {

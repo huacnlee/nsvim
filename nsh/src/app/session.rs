@@ -32,9 +32,14 @@ fn window_path() -> PathBuf {
     crate::config::state_dir().join("window.toml")
 }
 
+/// The state folder to read at startup: the old one until the copy to the new one ran.
+fn read_dir() -> PathBuf {
+    crate::config::readable(crate::config::state_dir(), crate::config::old_state_dir())
+}
+
 /// The frame the window had when it last closed. Read once, before the window opens.
 pub fn load_window() -> Option<WindowFrame> {
-    let f: WindowFrame = toml::from_str(&std::fs::read_to_string(window_path()).ok()?).ok()?;
+    let f: WindowFrame = toml::from_str(&std::fs::read_to_string(read_dir().join("window.toml")).ok()?).ok()?;
     (f.w >= 200.0 && f.h >= 200.0).then_some(f)
 }
 
@@ -45,16 +50,21 @@ pub struct SessionFile {
     pub col: usize,
 }
 
-fn path_for(root: &Path) -> PathBuf {
+/// The session file of `root` in the state folder `state`.
+fn path_in(state: &Path, root: &Path) -> PathBuf {
     let mut h = DefaultHasher::new();
     root.hash(&mut h);
     let name = root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "root".into());
-    crate::config::state_dir().join("sessions").join(format!("{name}-{:016x}.toml", h.finish()))
+    state.join("sessions").join(format!("{name}-{:016x}.toml", h.finish()))
+}
+
+fn path_for(root: &Path) -> PathBuf {
+    path_in(&crate::config::state_dir(), root)
 }
 
 /// The session saved for `root`, without files that no longer exist.
 pub fn load(root: &Path) -> Option<Session> {
-    let src = std::fs::read_to_string(path_for(root)).ok()?;
+    let src = std::fs::read_to_string(path_in(&read_dir(), root)).ok()?;
     let mut s: Session = toml::from_str(&src).ok()?;
     if s.root != root {
         return None;
