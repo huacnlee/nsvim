@@ -35,37 +35,11 @@ impl App {
     }
 
     /// The buffer position under a point in the text area's own coordinates. Clicks past a
-    /// line's end land on its last char (or after it in Insert mode).
+    /// line's end land on its last char (or after it in Insert mode). Wrapped lines take
+    /// several rows.
     pub fn pos_at(&self, x: f32, y: f32) -> Option<Pos> {
-        if !self.ed.has_doc() {
-            return None;
-        }
-        let doc = self.ed.doc();
         let row = (y / self.m.row_h).floor().max(0.0) as usize;
-        let line = (doc.view.top + row).min(doc.buf.last_line());
-        let text_x = (x - self.m.gutter).max(0.0);
-        let left = if self.cfg.editor.wrap { 0 } else { doc.view.left };
-        // Walk the line's display columns, so tabs and wide chars land right.
-        let full = doc.buf.line(line);
-        let tab = self.ed.opts.tab_width.max(1);
-        let mut c = 0usize;
-        let mut col = 0usize;
-        let insert = self.ed.mode == Mode::Insert;
-        for (i, ch) in full.chars().enumerate().skip(left) {
-            let w = if ch == '\t' { tab - c % tab } else { unicode_width::UnicodeWidthChar::width(ch).unwrap_or(1).max(1) };
-            let x0 = c as f32 * self.m.cw;
-            let x1 = (c + w) as f32 * self.m.cw;
-            col = i;
-            if text_x < x1 {
-                if insert && text_x > (x0 + x1) / 2.0 {
-                    col = i + 1;
-                }
-                return Some(doc.buf.clamp(Pos::new(line, col), insert));
-            }
-            c += w;
-            col = i + 1;
-        }
-        Some(doc.buf.clamp(Pos::new(line, col.max(left)), insert))
+        crate::model::pos_at(&self.ed, row, (x - self.m.gutter).max(0.0) / self.m.cw)
     }
 
     pub fn text_drag(&mut self, d: &mut Drag, tx: &mut Tx) {
@@ -209,7 +183,7 @@ impl App {
         if e.mods.shift || e.dx.abs() > e.dy.abs() {
             let d = if e.mods.shift { e.dy } else { e.dx };
             let cols = (-d / self.m.cw).round() as isize;
-            if cols != 0 && !self.cfg.editor.wrap {
+            if cols != 0 && !self.ed.opts.wrap {
                 let doc = self.ed.doc_mut();
                 doc.view.left = (doc.view.left as isize + cols).max(0) as usize;
             }

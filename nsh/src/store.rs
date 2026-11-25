@@ -64,7 +64,7 @@ impl Session {
         let frame = computed(move || {
             rev.get();
             let rows = grid.with(|g| g.rows);
-            app.with(|a| model::frame(&a.ed, rows))
+            app.with(|a| model::app_frame(a, rows))
         });
         Session { app, rev, grid, started: stored(Instant::now()), drag_data: stored(0.0), frame, font }
     }

@@ -96,6 +96,62 @@ impl App {
         }
     }
 
+    /// A language server's answer that an embedding host sends (the host event `editor.lsp`),
+    /// for the active file at the cursor. It goes the same way as a server's own answer.
+    /// Positions are zero-based.
+    ///
+    /// - `{"kind": "completion", "items": [{"label": "len", "kind": "Method", "insert": "len"}]}`
+    /// - `{"kind": "hover", "text": "fn len(&self) -> usize"}`
+    /// - `{"kind": "diagnostics", "diags": [{"line": 0, "col": 3, "end_line": 0, "end_col": 7,
+    ///   "severity": 1, "message": "..."}]}`
+    pub fn host_lsp(&mut self, v: &serde_json::Value) {
+        let Some((path, at)) = self.here() else { return };
+        let text = |v: &serde_json::Value, k: &str| v[k].as_str().unwrap_or("").to_string();
+        let num = |v: &serde_json::Value, k: &str| v[k].as_u64().unwrap_or(0) as usize;
+        let list = |k: &str| v[k].as_array().cloned().unwrap_or_default();
+        let e = match v["kind"].as_str() {
+            Some("completion") => Event::Completion {
+                path,
+                at,
+                items: list("items")
+                    .iter()
+                    .map(|i| {
+                        let label = text(i, "label");
+                        let insert = i["insert"].as_str().map_or_else(|| label.clone(), str::to_string);
+                        Item { label, detail: text(i, "detail"), kind: item_kind(i["kind"].as_str().unwrap_or("")), insert }
+                    })
+                    .collect(),
+            },
+            Some("hover") => Event::Hover { path, text: text(v, "text") },
+            Some("diagnostics") => Event::Diagnostics {
+                path,
+                diags: list("diags")
+                    .iter()
+                    .map(|d| crate::services::lsp::Diag {
+                        line: num(d, "line"),
+                        col: num(d, "col"),
+                        end_line: d["end_line"].as_u64().map_or(num(d, "line"), |n| n as usize),
+                        end_col: num(d, "end_col"),
+                        severity: d["severity"].as_u64().unwrap_or(1) as u8,
+                        message: text(d, "message"),
+                    })
+                    .collect(),
+            },
+            _ => return,
+        };
+        self.lsp_event(e);
+    }
+
+    /// Picks item `j` of the completion list, as a click on it does.
+    pub fn pick_completion(&mut self, j: usize) {
+        if let Some(c) = &mut self.completion
+            && j < c.shown.len()
+        {
+            c.sel = j;
+            self.accept_completion();
+        }
+    }
+
     /// Lists places in the picker: references, several definitions, diagnostics.
     pub fn show_locations(&mut self, kind: &'static str, locs: Vec<Loc>) {
         self.locations = locs;
@@ -362,6 +418,29 @@ impl App {
         }
         false
     }
+}
+
+/// The kind of a completion item by its LSP name, as the server's answers name them.
+fn item_kind(name: &str) -> &'static str {
+    const KINDS: &[&str] = &[
+        "Method",
+        "Function",
+        "Constructor",
+        "Field",
+        "Variable",
+        "Class",
+        "Interface",
+        "Module",
+        "Property",
+        "Enum",
+        "Keyword",
+        "Snippet",
+        "EnumMember",
+        "Constant",
+        "Struct",
+        "TypeParam",
+    ];
+    KINDS.iter().find(|k| **k == name).copied().unwrap_or("Text")
 }
 
 fn refilter(c: &mut Completion, word: &str) {
