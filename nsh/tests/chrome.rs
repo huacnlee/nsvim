@@ -307,25 +307,6 @@ fn a_drag_on_the_tree_edge_changes_its_width() -> Result<(), String> {
 }
 
 #[test]
-fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
-    let dir = scratch();
-    let a = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start(&a);
-    app.wait_for("text:/alpha/")?;
-    type_text(&mut app, ":Settings\n");
-    app.wait_for("role:tab[Settings]")?;
-    assert!(app.screen().selected("role:tab[Settings]")?);
-    assert!(!app.screen().selected("role:tab[a.txt]")?);
-    wait_text(&mut app, "id:mode", "Settings")?;
-    app.wait_for("text:config.toml")?;
-    assert!(has(&app, "label:Write config.toml"));
-    app.press("role:tab[a.txt]")?;
-    wait_text(&mut app, "id:mode", "NORMAL")?;
-    assert!(app.screen().selected("role:tab[a.txt]")?);
-    Ok(())
-}
-
-#[test]
 fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");

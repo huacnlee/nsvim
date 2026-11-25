@@ -89,7 +89,7 @@ fn every_leader_menu_key_does_what_it_says() {
     f.settle("Esc leaves the tree", |a| !a.tree.focus);
     f.keys(" ,");
     f.settle("SPC , opens settings", |a| a.on_settings);
-    f.update(|a, _| a.on_settings = false);
+    f.update(|a, _| a.close_settings());
     f.keys(" ?");
     f.settle("SPC ? shows every key", |a| picking(a, PickKind::Keys));
     f.keys("\x1b");
@@ -225,11 +225,8 @@ fn every_palette_command_does_what_it_says() {
     let shown = f.read(|a| a.tree.show);
     run_check(&mut f, t, "tree", "tree toggles the file tree", move |a| a.tree.show != shown);
     run_check(&mut f, t, "settings", "settings opens settings", |a| a.on_settings);
-    // Close the Settings tab, so next and prev cycle the two files only.
-    f.update(|a, _| {
-        a.on_settings = false;
-        a.settings = None;
-    });
+    // Close Settings, so the keys go to the files again.
+    f.update(|a, _| a.close_settings());
     run_check(&mut f, t, "next", "next goes to the next buffer", |a| active_ends_with(a, "a.txt"));
     run_check(&mut f, t, "prev", "prev goes to the previous buffer", |a| active_ends_with(a, "b.txt"));
     run_check(&mut f, t, "keymap=classic", "the classic keymap", |a| a.ed.keymap == Keymap::Classic);

@@ -1,5 +1,7 @@
-//! Settings as a buffer: sections on the left, options in the middle, a live preview and the
-//! config.toml it writes on the right. `:w` writes, `:q` closes. Changes apply at once.
+//! Settings: a layer over the whole window. Sections are on the left, options in the middle,
+//! and a live preview and the config.toml it writes are on the right. Each change applies at
+//! once and goes to config.toml at once. Esc, Ctrl+W (⌘W on macOS) and the close button close
+//! it.
 
 use super::fx::Tx;
 use crate::color::Color;
@@ -20,11 +22,11 @@ pub enum Section {
 }
 
 pub const SECTIONS: &[(Section, &str)] = &[
-    (Section::Appearance, "appearance"),
-    (Section::Font, "font"),
-    (Section::Editor, "editor"),
-    (Section::Formatting, "formatting"),
-    (Section::Keys, "keys & mouse"),
+    (Section::Appearance, "Appearance"),
+    (Section::Font, "Font"),
+    (Section::Editor, "Editor"),
+    (Section::Formatting, "Formatting"),
+    (Section::Keys, "Keys & mouse"),
 ];
 
 /// The fonts Settings offers. Any installed monospace font works in config.toml.
@@ -35,6 +37,8 @@ pub struct Settings {
     pub section: Section,
     /// The row the keyboard is on, an index into the section's items.
     pub row: usize,
+    /// Why the last write of config.toml failed. A good write clears it.
+    pub error: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -85,14 +89,14 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
     let mut out = Vec::new();
     match section {
         Section::Appearance => {
-            out.push(Item::Head("-- theme"));
+            out.push(Item::Head("Theme"));
             // An old config's "omarchy" is System now.
             let mode = if cfg.theme.mode == "omarchy" { "system" } else { cfg.theme.mode.as_str() };
             out.push(seg(
                 "theme",
                 "System follows your OS, or the desktop theme on Omarchy.",
                 mode,
-                &[("light", "light"), ("dark", "dark"), ("system", "system")],
+                &[("system", "System"), ("light", "Light"), ("dark", "Dark")],
             ));
             let themes = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             // On Omarchy, System uses the desktop theme, so its dark and light themes do not apply.
@@ -119,11 +123,11 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
                     None => out.push(info(
                         "system.now",
                         "What the OS asks for right now",
-                        if system_dark { "dark".into() } else { "light".into() },
+                        if system_dark { "Dark".into() } else { "Light".into() },
                     )),
                 }
             }
-            out.push(Item::Head("-- window"));
+            out.push(Item::Head("Window"));
             out.push(step(
                 "window.opacity",
                 "Below 100% lets a compositor blur show through (next launch)",
@@ -131,7 +135,7 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
             ));
         }
         Section::Font => {
-            out.push(Item::Head("-- editor font"));
+            out.push(Item::Head("Editor font"));
             out.push(Item::Row {
                 key: "font.family",
                 desc: "Any installed monospace font works".into(),
@@ -148,69 +152,69 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
                 "font.weight",
                 "Regular reads lighter on light themes",
                 &cfg.font.weight.to_string(),
-                &[("400", "regular"), ("500", "medium"), ("700", "bold")],
+                &[("400", "Regular"), ("500", "Medium"), ("700", "Bold")],
             ));
             out.push(tog("font.ligatures", "Joins -> != => into single glyphs", cfg.font.ligatures));
-            out.push(Item::Head("-- interface"));
+            out.push(Item::Head("Interface"));
             out.push(seg(
                 "ui.font",
                 "Tree, tabs and status line",
                 &cfg.ui.font,
-                &[("editor", "same as editor"), ("system", "system sans")],
+                &[("editor", "Same as editor"), ("system", "System sans")],
             ));
             out.push(step("ui.size", "Interface text size", format!("{} pt", fmt_num(cfg.ui.size))));
         }
         Section::Editor => {
-            out.push(Item::Head("-- display"));
+            out.push(Item::Head("Display"));
             out.push(seg(
                 "editor.numbers",
                 "Hybrid shows the cursor line as absolute",
                 &cfg.editor.numbers,
-                &[("hybrid", "hybrid"), ("relative", "relative"), ("absolute", "absolute"), ("off", "off")],
+                &[("hybrid", "Hybrid"), ("relative", "Relative"), ("absolute", "Absolute"), ("off", "Off")],
             ));
             out.push(seg(
                 "editor.cursor",
                 "Insert mode always uses a bar",
                 &cfg.editor.cursor,
-                &[("block", "block"), ("bar", "bar"), ("underline", "underline")],
+                &[("block", "Block"), ("bar", "Bar"), ("underline", "Underline")],
             ));
             out.push(tog("editor.cursorline", "Highlight the line the cursor is on", cfg.editor.cursorline));
             out.push(seg(
                 "editor.ruler",
                 "A thin guide at this column",
                 &cfg.editor.ruler.to_string(),
-                &[("0", "off"), ("80", "80"), ("100", "100"), ("120", "120")],
+                &[("0", "Off"), ("80", "80"), ("100", "100"), ("120", "120")],
             ));
             out.push(tog("editor.whitespace", "Show leading spaces as dots", cfg.editor.whitespace));
             out.push(tog("editor.wrap", "Soft-wrap long lines", cfg.editor.wrap));
             out.push(step("editor.scrolloff", "Lines kept visible above and below the cursor", cfg.editor.scrolloff.to_string()));
-            out.push(Item::Head("-- indentation"));
+            out.push(Item::Head("Indentation"));
             out.push(seg(
                 "indent.width",
-                "Columns per indent level. .editorconfig wins per file",
+                "Columns per indent level. .editorconfig wins per file.",
                 &cfg.indent.width.to_string(),
                 &[("2", "2"), ("4", "4"), ("8", "8")],
             ));
             out.push(tog("indent.spaces", "Insert spaces when Tab is pressed", cfg.indent.spaces));
         }
         Section::Formatting => {
-            out.push(Item::Head("-- on save"));
+            out.push(Item::Head("On save"));
             out.push(tog("format.trim_whitespace", "Remove trailing spaces", cfg.format.trim_whitespace));
             out.push(tog("format.final_newline", "End every file with a newline", cfg.format.final_newline));
             out.push(seg("format.line_endings", "Line endings for new files", &cfg.format.line_endings, &[("lf", "LF"), ("crlf", "CRLF")]));
         }
         Section::Keys => {
-            out.push(Item::Head("-- keys"));
-            out.push(seg("keys.map", "Change any time with :set keymap", &cfg.keys.map, &[("neovim", "neovim"), ("classic", "classic")]));
-            out.push(seg("keys.leader", "Neovim keymap only", &cfg.keys.leader, &[("space", "space"), ("backslash", "\\")]));
+            out.push(Item::Head("Keys"));
+            out.push(seg("keys.map", "Change any time with :set keymap", &cfg.keys.map, &[("neovim", "Neovim"), ("classic", "Classic")]));
+            out.push(seg("keys.leader", "Neovim keymap only", &cfg.keys.leader, &[("space", "Space"), ("backslash", "\\")]));
             out.push(tog("keys.auto_close", "Typing ( also types )", cfg.keys.auto_close));
-            out.push(Item::Head("-- mouse"));
+            out.push(Item::Head("Mouse"));
             out.push(tog("mouse.enabled", "Click, drag to select, resize the file tree", cfg.mouse.enabled));
             out.push(tog("mouse.scroll", "The wheel scrolls", cfg.mouse.scroll));
             out.push(tog("mouse.right_click", "Right-click opens a context menu", cfg.mouse.right_click));
-            out.push(Item::Head("-- agents"));
+            out.push(Item::Head("Agents"));
             out.push(tog("ipc.enabled", "Serve nsvim ctl and nsvim mcp for agents and scripts (next launch)", cfg.ipc.enabled));
-            out.push(tog("ipc.allow_edits", "Agents may edit buffers and run commands. Proposals work either way", cfg.ipc.allow_edits));
+            out.push(tog("ipc.allow_edits", "Agents may edit buffers and run commands. Proposals work either way.", cfg.ipc.allow_edits));
         }
     }
     out
@@ -311,10 +315,32 @@ impl App {
         self.settings_changed(key);
     }
 
-    /// Applies a change made in Settings (by key or pointer).
+    /// The io worker wrote config.toml, or failed to. Settings shows a failure in its header.
+    /// In Settings, the message line keeps the echo of the change.
+    pub fn config_written(&mut self, result: Result<(), String>, tx: &mut Tx) {
+        match result {
+            Ok(()) => {
+                match self.settings.as_mut() {
+                    Some(st) => st.error = None,
+                    None => self.ed.message(format!("\"{}\" written", super::tilde(&crate::config::config_path()))),
+                }
+                self.saved_one(tx);
+            }
+            Err(e) => {
+                if let Some(st) = self.settings.as_mut() {
+                    st.error = Some(e.clone());
+                }
+                self.ed.error(e);
+                self.quit_after_saves = None;
+            }
+        }
+    }
+
+    /// Applies a change made in Settings (by key or pointer), and writes config.toml.
     pub fn settings_changed(&mut self, key: &str) {
         let line = echo(&self.cfg, key);
         self.config_changed();
+        self.write_config();
         self.ed.message(line);
     }
 
@@ -341,15 +367,18 @@ impl App {
         };
         let vim = self.is_vim();
         match k.code {
-            KeyCode::Char(':') if vim => editor::vim::open_cmdline(&mut self.ed, ':', ""),
-            KeyCode::Char('s') if k.cmd && !vim => self.write_config(),
-            KeyCode::Char('w') if k.cmd && !vim => self.close_settings(),
-            _ if !vim && super::keys::classic_window_key(&k).is_some() => {
-                let actions = super::keys::classic_window_key(&k).into_iter().collect();
-                self.run_actions(actions, tx);
+            KeyCode::Esc => self.close_settings(),
+            KeyCode::Char('w' | 'W') if k.cmd => self.close_settings(),
+            // Settings covers the window, so no key opens a panel under it. Ctrl+Q (⌘Q) still
+            // quits in the classic keymap.
+            _ if k.cmd => {
+                if let Some(quit @ Action::QuitAll { .. }) = super::keys::classic_window_key(&k).filter(|_| !vim) {
+                    self.run_actions(vec![quit], tx);
+                }
             }
-            // The leader opens its menu here too, so Space never changes an option.
-            KeyCode::Char(c) if c == self.ed.vim.leader && vim => self.run_actions(vec![Action::LeaderMenu], tx),
+            // `:` and the leader do nothing here. Space never changes an option in Vim.
+            KeyCode::Char(':') => {}
+            KeyCode::Char(c) if c == self.ed.vim.leader && vim => {}
             KeyCode::Char('j') | KeyCode::Down if !k.ctrl => set_row(self, cur + 1),
             KeyCode::Char('k') | KeyCode::Up if !k.ctrl => set_row(self, cur.saturating_sub(1)),
             KeyCode::Tab if k.shift => set_section(self, sec_i + SECTIONS.len() - 1),
@@ -370,7 +399,6 @@ impl App {
                 }
                 self.settings_changed(key);
             }
-            KeyCode::Esc => {}
             _ => {
                 let _ = row_key;
             }

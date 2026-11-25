@@ -378,16 +378,16 @@ A command takes a range when the table shows one. The next section explains rang
 
 | Command | Does |
 | --- | --- |
-| `:w`, `:write` | Write the buffer. In Settings, write `config.toml` |
+| `:w`, `:write` | Write the buffer |
 | `:w path`, `:sav path`, `:saveas path` | Write to `path`. The buffer takes the new path |
 | `:wa`, `:wall` | Write every modified buffer |
-| `:q`, `:quit`, `:clo`, `:close` | Close the buffer. After the last buffer, quit. In Settings, close Settings |
+| `:q`, `:quit`, `:clo`, `:close` | Close the buffer. After the last buffer, quit |
 | `:q!` | Close the buffer and drop its changes |
 | `:wq`, `:wq path` | Write the buffer, then close it |
 | `:x`, `:xit`, `:exi`, `:exit` | Write the buffer if it changed, then close it |
-| `:qa`, `:qall`, `:quita`, `:quitall` | Quit. A modified buffer or an unwritten Settings change stops it |
+| `:qa`, `:qall`, `:quita`, `:quitall` | Quit. A modified buffer stops it |
 | `:qa!` | Quit and drop every change |
-| `:wqa`, `:wqall`, `:xa`, `:xall` | Write every modified buffer and Settings, then quit when the writes are done |
+| `:wqa`, `:wqall`, `:xa`, `:xall` | Write every modified buffer, then quit when the writes are done |
 | `:e path`, `:edit path` | Open a file. A relative path starts at the project root. `~/` is your home folder |
 | `:e` | Read the buffer again from disk. With unsaved changes, it stops with `E37` |
 | `:e!` | Read the buffer again from disk and drop its changes |
@@ -483,7 +483,7 @@ All the changes of one `:s` undo as one step.
 `:set name` turns an option on, `:set noname` turns it off, `:set name!` flips it and
 `:set name=value` gives it a value. `:set name?` shows the value. One `:set` takes several
 options: `:set ts=2 noet wrap`. A change applies at once and
-shows in Settings. To keep it in `config.toml`, open Settings and run `:w`.
+shows in Settings. To keep it in `config.toml`, change it in Settings.
 
 | Option | Short | Values |
 | --- | --- | --- |
@@ -675,7 +675,9 @@ in its section name. Case counts only when you type an uppercase letter, as with
 ### Settings
 
 `:Settings` or `SPC ,` in the Neovim keymap, and `Ctrl ,` in the classic keymap, open
-Settings as a tab. A change applies at once.
+Settings over the whole window. A change applies at once and goes to `config.toml` at once.
+Settings takes every key while it shows. `:`, the leader and the window shortcuts do nothing
+there.
 
 | Keys | Does |
 | --- | --- |
@@ -683,13 +685,10 @@ Settings as a tab. A change applies at once.
 | `h` `←`, `l` `→` | Change the option back, forward |
 | `Enter` | Change the option forward |
 | `Space` | Change the option forward. Classic keymap |
-| `SPC` | Open the leader menu. Neovim keymap |
 | `Tab` `J`, `⇧ Tab` `K` | Go to the next, previous section |
-| `1` to `5` | Go to a section: `appearance`, `font`, `editor`, `formatting`, `keys & mouse` |
-| `:w`, `:q`, `:wq` | Write `config.toml`, close Settings, do both. Neovim keymap |
-| `Ctrl S`, `Ctrl W` | Write `config.toml`, close Settings. Classic keymap |
-| `Ctrl P`, `Ctrl ⇧ P`, `Ctrl ⇧ F`, `Ctrl B`, `Ctrl Tab`, `Ctrl Q` | Work as in the text. Classic keymap |
-| `\` | Open the leader menu, with the backslash leader |
+| `1` to `5` | Go to a section: Appearance, Font, Editor, Formatting, Keys & mouse |
+| `Esc`, `Ctrl W` (`⌘ W` on macOS) | Close Settings |
+| `Ctrl Q` | Quit. Classic keymap |
 
 ### Setup
 

@@ -9,6 +9,8 @@ use crate::ui::icons::{self, Lucide};
 pub enum IconName {
     /// An arrow to the right: go on.
     ArrowRight,
+    /// A check mark: an option that is on.
+    Check,
     /// A chevron down: an open folder, a menu.
     ChevronDown,
     /// A chevron right: a closed folder, a step on.
@@ -38,6 +40,7 @@ impl IconName {
     fn icon(self) -> icons::Icon {
         match self {
             IconName::ArrowRight => Lucide::ArrowRight,
+            IconName::Check => Lucide::Check,
             IconName::ChevronDown => Lucide::ChevronDown,
             IconName::ChevronRight => Lucide::ChevronRight,
             IconName::Circle => Lucide::Circle,

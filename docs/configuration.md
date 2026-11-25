@@ -2,8 +2,8 @@
 
 nsvim reads `~/.config/nsvim/config.toml` at startup. On the first start, nsvim copies an older
 `~/.config/editor` folder there once. The first launch writes it, at the
-end of setup. Settings (`:Settings`) edits it as a tab: changes apply at once, and `:w` writes
-the file. A missing key takes its default, so a file can hold only what you change.
+end of setup. Settings (`:Settings`) edits it over the whole window. A change applies at once and
+goes to the file at once. A missing key takes its default, so a file can hold only what you change.
 
 ## Every option
 
@@ -107,4 +107,4 @@ Nearer files win, and they win over config.toml.
 
 `:set` changes an option until you quit: `:set wrap`, `:set nonumber`, `:set tabstop=2`,
 `:set keymap=classic`, `:set theme=light`, `:set theme=gruvbox`. `theme` takes a mode or a theme id
-from the list above. Settings and `:w` keep a change.
+from the list above. A change in Settings goes to `config.toml`.

@@ -114,7 +114,7 @@ pub struct Grep {
 
 pub struct App {
     pub cfg: Config,
-    /// The config as config.toml holds it, so Settings can show `[+]`.
+    /// The config as config.toml holds it.
     pub disk_cfg: Config,
     pub screen: Screen,
     pub ed: Editor,
@@ -123,7 +123,7 @@ pub struct App {
     pub overlay: Overlay,
     /// The Settings buffer, while its tab is open.
     pub settings: Option<Settings>,
-    /// The Settings tab is the one showing.
+    /// Settings shows, over the whole window.
     pub on_settings: bool,
     pub files: Vec<String>,
     pub git: GitInfo,
@@ -331,7 +331,7 @@ impl App {
         self.refresh_proposals();
         let title = match (&self.screen, self.on_settings, self.ed.has_doc()) {
             (Screen::Setup(_), _, _) => "setup — nsvim".to_string(),
-            (_, true, _) => "settings — nsvim".into(),
+            (_, true, _) => "Settings — nsvim".into(),
             (_, _, true) => format!("{}{} — nsvim", self.ed.buf().name(), if self.ed.buf().is_dirty() { " [+]" } else { "" }),
             _ => "nsvim".into(),
         };
@@ -414,17 +414,7 @@ impl App {
             },
             Event::Saved { path, version, mtime, result, then } => self.saved(path, version, mtime, result, then, tx),
             Event::DiskText { path, text, mtime } => self.disk_text(path, text, mtime),
-            Event::Wrote { what, result } => match (what, result) {
-                (WriteKind::Config, Ok(())) => {
-                    let path = config::config_path();
-                    self.ed.message(format!("\"{}\" written", tilde(&path)));
-                    self.saved_one(tx);
-                }
-                (_, Err(e)) => {
-                    self.ed.error(e);
-                    self.quit_after_saves = None;
-                }
-            },
+            Event::Wrote { what: WriteKind::Config, result } => self.config_written(result, tx),
             Event::Files(files, index) => {
                 self.tree.index = index;
                 self.files = files;
@@ -496,7 +486,6 @@ impl App {
         let restore = self.restore_active.as_deref() == Some(path.as_path());
         if self.restore_active.is_none() || restore {
             self.ed.active = idx;
-            self.on_settings = false;
             if restore {
                 self.restore_active = None;
             }
@@ -682,7 +671,7 @@ impl App {
     /// Opens `path` (relative to the root, or absolute), or switches to it when it is open.
     pub fn open_path(&mut self, path: PathBuf, at: Option<Pos>) {
         let path = if path.is_absolute() { path } else { self.ed.root.join(path) };
-        self.on_settings = false;
+        self.close_settings();
         if let Some(i) = self.doc_index(&path) {
             self.ed.active = i;
             self.apply_doc_opts();

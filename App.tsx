@@ -6,8 +6,6 @@ import { mount, signal, View } from "nsh";
 import { currentWindow } from "nsh/desktop";
 import {
   Overlays,
-  Settings,
-  Setup,
   Shell,
   TextArea,
   Workspace,
@@ -17,9 +15,11 @@ import { Tree } from "./ui/tree";
 import { BufferLine } from "./ui/buffer-line";
 import { CommandLine } from "./ui/command-line";
 import { StatusLine } from "./ui/status-line";
+import { Settings } from "./ui/settings/Settings";
+import { Setup } from "./ui/setup/Setup";
 
-/** The editor: the buffer line, the tree beside the text (or Settings), the status line and
- * the command line, with the overlays over them. */
+/** The editor: the buffer line, the tree beside the text, the status line and the command
+ * line, with the overlays over them. Settings covers all of it, the overlays too. */
 function Editor(props: { screen: () => ScreenState }) {
   return (
     <View class="flex-1 bg-background">
@@ -28,13 +28,14 @@ function Editor(props: { screen: () => ScreenState }) {
         <If when={props.screen().tree}>
           <Tree />
         </If>
-        <If when={props.screen().settings} else={<TextArea />}>
-          <Settings />
-        </If>
+        <TextArea />
       </View>
       <StatusLine />
       <CommandLine />
       <Overlays />
+      <If when={props.screen().settings}>
+        <Settings />
+      </If>
     </View>
   );
 }
