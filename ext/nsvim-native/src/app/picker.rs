@@ -29,6 +29,8 @@ pub enum PickKind {
     Actions,
     /// Every key of the keymap, from `docs/keymaps.md`.
     Keys,
+    /// Projects to open: a folder from the system's dialog, then the recent projects.
+    Projects,
 }
 
 impl PickKind {
@@ -41,6 +43,7 @@ impl PickKind {
             PickKind::Locations => "Locations",
             PickKind::Actions => "Code actions",
             PickKind::Keys => "Keys",
+            PickKind::Projects => "Open project",
         }
     }
 }
@@ -56,6 +59,8 @@ pub struct Picker {
     pub items: Vec<String>,
     /// What each Buffers item opens: a document index.
     pub targets: Vec<usize>,
+    /// What each Projects item opens: a folder, or None for the folder dialog.
+    pub folders: Vec<Option<PathBuf>>,
     /// The file the preview shows and its text, once the file worker read it.
     pub preview: Option<(PathBuf, String)>,
     /// The first row on screen, as the last key or wheel left it.
@@ -72,6 +77,7 @@ pub struct Picker {
 pub const COMMANDS: &[(&str, &str)] = &[
     ("Find file…", "find"),
     ("Find in project…", "grep"),
+    ("Open project…", "project"),
     ("Save", "save"),
     ("Save all", "save-all"),
     ("Toggle file tree", "tree"),
@@ -102,6 +108,7 @@ impl Picker {
             total: 0,
             items: Vec::new(),
             targets: Vec::new(),
+            folders: Vec::new(),
             preview: None,
             top: 0,
             fit: 0,
@@ -163,12 +170,12 @@ impl Picker {
                 (m, n)
             }
             // With nothing typed, buffers, commands and code actions keep their own order.
-            PickKind::Buffers | PickKind::Commands | PickKind::Actions if self.query.is_empty() => {
+            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects if self.query.is_empty() => {
                 let all: Vec<Match> = (0..self.items.len().min(LIMIT)).map(|index| Match { index, score: 0, hits: Vec::new() }).collect();
                 let n = self.items.len();
                 (all, n)
             }
-            PickKind::Buffers | PickKind::Commands | PickKind::Actions => fuzzy::rank(&self.query, &self.items, LIMIT),
+            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects => fuzzy::rank(&self.query, &self.items, LIMIT),
             PickKind::Grep | PickKind::Locations => (Vec::new(), 0),
         };
         self.matches = matches;
@@ -214,6 +221,14 @@ impl App {
                 self.grep.error = None;
             }
             PickKind::Keys => p.items = super::key_list::items(self.is_vim()),
+            PickKind::Projects => {
+                p.items.push("Open folder…".into());
+                p.folders.push(None);
+                for root in super::session::recent(&self.ed.root) {
+                    p.items.push(super::project::shown(&root));
+                    p.folders.push(Some(root));
+                }
+            }
             PickKind::Files | PickKind::Locations | PickKind::Actions => {}
         }
         p.refilter(&self.files);
@@ -323,7 +338,7 @@ impl App {
                 let l = self.locations.get(p.sel)?;
                 Some((l.path.clone(), Some(l.pos)))
             }
-            PickKind::Commands | PickKind::Actions | PickKind::Keys => None,
+            PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects => None,
         }
     }
 
@@ -366,6 +381,16 @@ impl App {
             }
             return;
         }
+        if kind == PickKind::Projects {
+            let picked = p.matches.get(p.sel).and_then(|m| p.folders.get(m.index)).cloned();
+            self.overlay = Overlay::None;
+            match picked {
+                Some(Some(root)) => self.open_project(root, tx),
+                Some(None) => self.choose_folder(tx),
+                None => {}
+            }
+            return;
+        }
         if kind == PickKind::Buffers
             && let Some(i) = p.matches.get(p.sel).and_then(|m| p.targets.get(m.index)).copied()
         {
@@ -386,6 +411,7 @@ impl App {
         let action = match id {
             "find" => Action::FindFile,
             "grep" => Action::GrepProject,
+            "project" => Action::OpenProject,
             "save" => Action::Save(None),
             "save-all" => Action::SaveAll,
             "tree" => Action::ToggleTree,

@@ -210,6 +210,22 @@ impl Session {
             }
             Effect::PopupMenu { menu, x, y, then } => crate::ui::native_menu::native_menu(me, menu, x, y, then),
             Effect::WakeAfter(delay) => me.wake_after(delay),
+            Effect::OpenProject(root) => {
+                // The same as `nvim <folder>`: an editor already running for the project
+                // takes it, else a new one opens.
+                let started = std::env::current_exe().and_then(|exe| std::process::Command::new(exe).arg(&root).spawn());
+                if let Err(e) = started {
+                    me.update(|a, _| a.ed.error(format!("could not open {}: {e}", root.display())));
+                }
+            }
+            Effect::ChooseFolder(start, then) => {
+                let dialog = nsh_core::file_dialog::OpenDialog::folders().title("Open project").button_label("Open").directory(start);
+                let answer = nsh_core::element::pick_paths(dialog);
+                spawn(async move {
+                    let picked = answer.await.map(|p| p.and_then(|v| v.into_iter().next()));
+                    me.update(|a, tx| then(a, picked, tx));
+                });
+            }
         }
     }
 

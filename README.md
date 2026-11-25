@@ -127,6 +127,7 @@ command before it runs, and it runs only the ones you leave on.
 | --- | --- | --- |
 | Save | `:w` | `Ctrl S` |
 | Go to file | `SPC f` | `Ctrl P` |
+| Open a project | `SPC p` | `Ctrl O` |
 | Find in project | `SPC /` | `Ctrl ⇧ F` |
 | Command line | `:` | |
 | Command palette | | `Ctrl ⇧ P` |

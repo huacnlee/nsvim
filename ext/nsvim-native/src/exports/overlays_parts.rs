@@ -206,7 +206,7 @@ pub(super) fn menu(a: &App) -> MenuState {
 }
 
 fn wide(kind: PickKind) -> bool {
-    matches!(kind, PickKind::Commands | PickKind::Actions | PickKind::Keys)
+    matches!(kind, PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects)
 }
 
 pub(super) fn pick(a: &App) -> Option<&Picker> {

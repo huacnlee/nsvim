@@ -146,6 +146,8 @@ pub enum Action {
     /// Reload the active buffer from disk (`:e!`).
     Reload,
     FindFile,
+    /// Pick a project to open: a recent one, or a folder from the system's dialog.
+    OpenProject,
     ToggleTree,
     FocusTree,
     GrepProject,

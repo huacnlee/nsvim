@@ -94,6 +94,11 @@ pub enum Effect {
     },
     /// Run `App::poll` again after this delay.
     WakeAfter(Duration),
+    /// Open this folder as a project, in a window of its own.
+    OpenProject(std::path::PathBuf),
+    /// Show the system's folder dialog, starting in this folder. The callback gets the folder
+    /// picked, None when cancelled, or why the dialog could not show.
+    ChooseFolder(std::path::PathBuf, Then<Result<Option<std::path::PathBuf>, String>>),
 }
 
 /// The effects of one update, and the state of the input event that caused it.
@@ -144,6 +149,18 @@ impl Tx {
     pub fn popup_menu(&mut self, menu: PopupMenu, at: (f32, f32), then: impl FnOnce(&mut App, Option<&str>, &mut Tx) + 'static) {
         let then: Then<Option<String>> = Box::new(move |app, picked: Option<String>, tx| then(app, picked.as_deref(), tx));
         self.effects.push(Effect::PopupMenu { menu, x: at.0, y: at.1, then });
+    }
+
+    pub fn open_project(&mut self, root: std::path::PathBuf) {
+        self.effects.push(Effect::OpenProject(root));
+    }
+
+    pub fn choose_folder(
+        &mut self,
+        start: std::path::PathBuf,
+        then: impl FnOnce(&mut App, Result<Option<std::path::PathBuf>, String>, &mut Tx) + 'static,
+    ) {
+        self.effects.push(Effect::ChooseFolder(start, Box::new(then)));
     }
 
     pub fn wake_after(&mut self, delay: Duration) {

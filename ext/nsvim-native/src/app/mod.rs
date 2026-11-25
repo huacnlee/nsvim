@@ -13,6 +13,7 @@ pub mod lsp;
 pub mod menu;
 pub mod mouse;
 pub mod picker;
+pub mod project;
 pub mod review;
 pub mod session;
 pub mod settings;

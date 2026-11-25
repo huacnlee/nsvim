@@ -73,6 +73,37 @@ pub fn load(root: &Path) -> Option<Session> {
     Some(s)
 }
 
+/// The projects that have a session, newest first, without `current`, the home folder and
+/// folders that no longer exist: the recent projects that `Open project` lists.
+pub fn recent(current: &Path) -> Vec<PathBuf> {
+    recent_in(&read_dir(), current, dirs::home_dir().as_deref())
+}
+
+/// How many recent projects `recent` gives at most.
+const RECENT: usize = 30;
+
+fn recent_in(state: &Path, current: &Path, home: Option<&Path>) -> Vec<PathBuf> {
+    let Ok(entries) = std::fs::read_dir(state.join("sessions")) else { return Vec::new() };
+    let mut found: Vec<(std::time::SystemTime, PathBuf)> = entries
+        .flatten()
+        .filter_map(|e| {
+            let when = e.metadata().and_then(|m| m.modified()).ok()?;
+            let s: Session = toml::from_str(&std::fs::read_to_string(e.path()).ok()?).ok()?;
+            Some((when, s.root))
+        })
+        .filter(|(_, root)| root != current && Some(root.as_path()) != home && root.is_dir())
+        .collect();
+    found.sort_by_key(|e| std::cmp::Reverse(e.0));
+    let mut out: Vec<PathBuf> = Vec::new();
+    for (_, root) in found {
+        if !out.contains(&root) {
+            out.push(root);
+        }
+    }
+    out.truncate(RECENT);
+    out
+}
+
 /// Writes the session. Runs once, on the way out.
 pub fn save(app: &App) {
     // A unit test that quits must not write into the user's state folder.
@@ -98,5 +129,26 @@ pub fn save(app: &App) {
         && let Ok(text) = toml::to_string(&app.window)
     {
         let _ = std::fs::write(window_path(), text);
+    }
+}
+
+#[cfg(test)]
+mod recent_tests {
+    use super::*;
+
+    #[test]
+    fn recent_projects_skip_the_current_one_home_and_missing_folders() {
+        let state = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let (a, b, gone) = (dir.path().join("a"), dir.path().join("b"), dir.path().join("gone"));
+        std::fs::create_dir_all(&a).unwrap();
+        std::fs::create_dir_all(&b).unwrap();
+        std::fs::create_dir_all(state.path().join("sessions")).unwrap();
+        for root in [&a, &b, &gone, &dir.path().to_path_buf()] {
+            let s = Session { root: root.clone(), ..Default::default() };
+            std::fs::write(path_in(state.path(), root), toml::to_string(&s).unwrap()).unwrap();
+        }
+        let got = recent_in(state.path(), &a, Some(dir.path()));
+        assert_eq!(got, vec![b]);
     }
 }
