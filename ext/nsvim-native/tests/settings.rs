@@ -423,6 +423,8 @@ fn a_press_on_the_empty_area_keeps_settings_open() -> Result<(), String> {
     Ok(())
 }
 
+// Read-only files and folders use Unix permissions.
+#[cfg(unix)]
 #[test]
 fn a_failed_write_shows_in_the_header() -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
