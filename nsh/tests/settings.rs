@@ -181,6 +181,7 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.press("label:Add a terminal command")?;
     app.wait_for_gone("command name", Duration::from_secs(2))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
+    app.press("label:Open nsvim with vi and vim")?;
     app.wait_for("nothing. nsvim stays inside its window")?;
     Ok(())
 }

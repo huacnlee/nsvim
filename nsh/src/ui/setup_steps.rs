@@ -417,6 +417,7 @@ fn step_shell(k: Keys, m: &Model) -> View {
     let mut integ = titled("integrations").flex_1().min_w(px(360.0)).pt(px(14.0)).pb(px(8.0)).px(px(8.0));
     for (key, label, sub) in [
         ("path", "Add a terminal command".to_string(), format!("Open anything with {name} . or {name} file.rs")),
+        ("vim", "Open nsvim with vi and vim".into(), "Shell aliases. \\vim still runs Vim".into()),
         ("env", "Set as $EDITOR and $VISUAL".into(), "For tools that open an editor, like crontab -e".into()),
         ("git", "Use for git commit messages".into(), "git waits until you close the buffer".into()),
         ("default", "Make nsvim the default for text files".into(), "A double-click opens code and text files".into()),
@@ -535,11 +536,12 @@ fn step_ready(k: Keys, m: &Model) -> View {
     let md = m.mod_key();
     let cfg = &m.cfg;
     let leader = if cfg.keys.leader == "space" { "Space" } else { "backslash" };
-    let shell: Vec<&str> = [("path", "command"), ("env", "$EDITOR"), ("git", "git editor"), ("default", "default app")]
-        .iter()
-        .filter(|(key, _)| m.on(key) && (*key != "path" || m.installable))
-        .map(|(_, v)| *v)
-        .collect();
+    let shell: Vec<&str> =
+        [("path", "command"), ("vim", "vi and vim"), ("env", "$EDITOR"), ("git", "git editor"), ("default", "default app")]
+            .iter()
+            .filter(|(key, _)| m.on(key) && (*key != "path" || m.installable))
+            .map(|(_, v)| *v)
+            .collect();
     let rows = [
         ("keys", if vim { format!("Neovim motions, {leader} leader") } else { format!("Classic shortcuts ({md})") }),
         ("mouse", if cfg.mouse.enabled { "on".into() } else { "keyboard only".into() }),

@@ -33,7 +33,8 @@ pub struct Model {
 }
 
 /// Every key `Setup::toggle_on` knows.
-const TOGGLES: &[&str] = &["leader", "import", "multi", "autoclose", "click", "drag", "double", "right", "path", "env", "git", "default"];
+const TOGGLES: &[&str] =
+    &["leader", "import", "multi", "autoclose", "click", "drag", "double", "right", "path", "vim", "env", "git", "default"];
 
 impl Model {
     fn of(s: &Setup, app: &App, system_dark: bool) -> Model {

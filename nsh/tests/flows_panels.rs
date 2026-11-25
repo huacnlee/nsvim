@@ -280,3 +280,49 @@ fn the_look_cards_in_a_row_have_one_height() {
         assert!(cards.iter().all(|c| *c == cards[0]), "{pick} picked: {cards:?}");
     }
 }
+
+/// The terminal step offers `vi` and `vim` aliases, shows the line it adds, and drops it when
+/// the switch goes off.
+#[test]
+fn the_terminal_step_offers_vi_and_vim_aliases() {
+    let dir = scratch();
+    let mut f = common::flow_with(nsh_app_editor::Launch {
+        project: Some(dir.path().to_path_buf()),
+        config: Some(common::CONFIG.into()),
+        files: Vec::new(),
+        first_launch: true,
+    });
+    f.update(|a, _| a.setup_go(3));
+    f.ui.wait_for("text:Use nsvim from the terminal").unwrap();
+    f.ui.wait_for("label:Open nsvim with vi and vim").unwrap();
+    // The step builds again as each $PATH lookup answers. Press after the last one.
+    f.settle("the $PATH lookups answer", |a| match &a.screen {
+        Screen::Setup(s) => {
+            s.exe.is_some()
+                && [s.cfg.cli.name.as_str(), "nsvim", "edtr", "e", "edx", "ered", "medit"].iter().all(|n| s.on_path.contains_key(*n))
+        }
+        _ => false,
+    });
+    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias vi=") && t.contains("vim="));
+    assert!(alias(f.ui.screen()), "the alias line shows: {:?}", f.ui.screen().texts());
+    let on = |f: &common::Flow| {
+        f.read(|a| match &a.screen {
+            Screen::Setup(s) => s.cfg.cli.vim_aliases,
+            _ => true,
+        })
+    };
+    // Under load, a press can reach the row while the step builds again. Press again only
+    // while the switch is still on, so a second press never turns it back on.
+    for _ in 0..3 {
+        f.ui.press("label:Open nsvim with vi and vim").unwrap();
+        let t = std::time::Instant::now();
+        while on(&f) && t.elapsed() < std::time::Duration::from_secs(1) {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        if !on(&f) {
+            break;
+        }
+    }
+    assert!(!on(&f), "the press turns the aliases off");
+    f.ui.wait_until("no alias line", std::time::Duration::from_secs(2), |s| !alias(s)).unwrap();
+}
