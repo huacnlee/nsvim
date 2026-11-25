@@ -9,7 +9,7 @@ and macOS, built with Rune.
 
 ## Stack
 
-Promo site: Astro, static output, deployed to GitHub Pages from `site/` by a GitHub Actions
+Website: Astro, static output, deployed to GitHub Pages from `website/` by a GitHub Actions
 workflow (confirmed by the user).
 
 ## Users
@@ -49,7 +49,7 @@ messages. Used alongside git checkouts and AI agents that change files underneat
   inside the editor.
 - 16 themes; follows the Omarchy desktop theme live.
 - Release binaries: Linux x86-64 and ARM64, macOS Apple silicon and Intel (unsigned on
-  macOS). The promo site is at https://bjarneo.github.io/editor/. Install also through `cargo install --git`.
+  macOS). The website is at https://huacnlee.github.io/nsvim/. Install also through `cargo install --git`.
 - Not built: tree-sitter highlighting, `gr`, `gF`.
 
 ## Brand Commitments

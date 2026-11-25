@@ -1,0 +1,85 @@
+---
+// A model of the nsvim window in HTML: the tab line, the file tree, code and the status line.
+// The page script sets `data-mode` on it. CSS then shows each mode as the app does: the
+// cursor, the Visual selection, the command line and the colour of the mode pill.
+const code = [
+  "use std::path::PathBuf;",
+  "",
+  "/// One open file: its text and where it lives.",
+  "pub struct Doc {",
+  "    pub path: PathBuf,",
+  "    pub text: String,",
+  "    pub dirty: bool,",
+  "}",
+  "",
+  "impl Doc {",
+  "    pub fn open(path: PathBuf) -> std::io::Result<Doc> {",
+  "        let text = std::fs::read_to_string(&path)?;",
+  "        Ok(Doc { path, text, dirty: false })",
+  "    }",
+  "",
+  "    pub fn save(&mut self) -> std::io::Result<()> {",
+  "        std::fs::write(&self.path, &self.text)?;",
+  "        self.dirty = false;",
+  "        Ok(())",
+  "    }",
+  "}",
+];
+// The cursor: line 5 (index 4), on the `p` of `path`.
+const cursor = { line: 4, col: 8 };
+// Lines in the Visual selection.
+const selected = [4, 5, 6];
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const paint = (s: string) => {
+  if (s.trim().startsWith("///")) return `<span class="c">${esc(s)}</span>`;
+  return esc(s)
+    .replace(/\b([A-Z][A-Za-z]*)\b/g, '<span class="t">$1</span>')
+    .replace(/\b(use|pub|struct|impl|fn|let|mut|self|false)\b/g, '<span class="k">$1</span>')
+    .replace(/\b([a-z_][a-z0-9_]*)(?=\()/g, '<span class="f">$1</span>');
+};
+const line = (s: string, i: number) => {
+  if (i !== cursor.line) return paint(s);
+  const at = s[cursor.col];
+  return `${paint(s.slice(0, cursor.col))}<span class="cur">${esc(at)}</span>${paint(s.slice(cursor.col + 1))}`;
+};
+const tree = [
+  { name: "src", dir: true, depth: 0 },
+  { name: "buffer.rs", depth: 1, git: "m" },
+  { name: "doc.rs", depth: 1, on: true },
+  { name: "main.rs", depth: 1 },
+  { name: "tests", dir: true, depth: 0 },
+  { name: "Cargo.toml", depth: 0 },
+  { name: "README.md", depth: 0, git: "a" },
+];
+---
+
+<div class="mock" data-mode="normal" aria-hidden="true">
+  <div class="m-tabs">
+    <span class="m-project">notes</span>
+    <span class="m-tab on">doc.rs</span>
+    <span class="m-tab">buffer.rs [+]</span>
+    <span class="m-tab">Cargo.toml</span>
+  </div>
+  <div class="m-body">
+    <ul class="m-tree">
+      {
+        tree.map((t) => (
+          <li class:list={[{ on: t.on, dir: t.dir }, t.git && `git-${t.git}`]} style={`--d:${t.depth}`}>
+            {t.dir ? "▾ " : ""}
+            {t.name}
+          </li>
+        ))
+      }
+    </ul>
+    <ol class="m-code">
+      {code.map((s, i) => <li class:list={[{ sel: selected.includes(i), here: i === cursor.line }]} set:html={line(s, i) || " "} />)}
+    </ol>
+  </div>
+  <div class="m-status">
+    <b class="m-pill" id="mock-pill">NORMAL</b>
+    <span>src/doc.rs</span>
+    <span class="m-pos">5:9</span>
+  </div>
+  <div class="m-cmd">:%s/Doc/Buffer/g<span class="cur"> </span></div>
+</div>
