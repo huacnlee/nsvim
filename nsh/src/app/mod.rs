@@ -176,6 +176,8 @@ pub struct App {
     pub close_asked: Option<f64>,
     /// `exit` ran: the session is written.
     pub exited: bool,
+    /// The view that takes every key has the keyboard focus.
+    pub key_focus: bool,
 }
 
 impl App {
@@ -273,6 +275,7 @@ impl App {
             config_file: None,
             close_asked: None,
             exited: false,
+            key_focus: false,
         }
     }
 
@@ -286,6 +289,9 @@ impl App {
         }
         if let Some(f) = &self.config_file {
             svc.watch_config(f.clone());
+        }
+        if matches!(self.screen, Screen::Setup(_)) {
+            svc.probe_setup();
         }
         self.svc = Some(svc);
     }
@@ -420,6 +426,7 @@ impl App {
                 {
                     p.refilter(&self.files);
                 }
+                self.ask_preview();
             }
             Event::Git(info) => self.git = info,
             Event::Signs { path, version, signs } => {
@@ -440,6 +447,7 @@ impl App {
                     {
                         p.sel = p.sel.min(self.grep.hits.len().saturating_sub(1));
                     }
+                    self.ask_preview();
                 }
             }
             Event::FsChanged(paths) => self.fs_changed(paths),
@@ -459,6 +467,7 @@ impl App {
                 }
             }
             Event::Config(loaded) => self.config_reloaded(loaded),
+            Event::Setup(answer) => self.setup_answer(answer),
             Event::Omarchy(o) => {
                 if o.is_some() {
                     self.omarchy = o;

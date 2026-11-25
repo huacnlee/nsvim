@@ -65,6 +65,10 @@ pub fn load(root: &Path) -> Option<Session> {
 
 /// Writes the session. Runs once, on the way out.
 pub fn save(app: &App) {
+    // A unit test that quits must not write into the user's state folder.
+    if cfg!(test) && std::env::var_os("XDG_STATE_HOME").is_none() {
+        return;
+    }
     let files = app
         .ed
         .docs

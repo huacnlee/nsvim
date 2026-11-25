@@ -19,6 +19,9 @@ fn a_click_places_the_cursor_and_a_drag_selects_in_visual_mode() {
     let from = f.read(move |a| a.pos_at(w / 2.0, h / 2.0)).unwrap();
     let by = point(-3.0 * cw, 2.0 * rh);
     let to = f.read(move |a| a.pos_at(w / 2.0 - 3.0 * cw, h / 2.0 + 2.0 * rh)).unwrap();
+    // Headless counts a press within 500 ms of the last one on the same view as a double click,
+    // and a double click selects a word. A user who clicks and then drags pauses longer.
+    f.ui.wait(std::time::Duration::from_millis(600)).unwrap();
     f.ui.drag("id:text-area", by, DragOptions::default()).unwrap();
     assert!(matches!(f.read(|a| a.ed.mode), Mode::Visual(_)), "{:?}", f.read(|a| a.ed.mode));
     assert_eq!(f.read(|a| a.ed.doc().view.anchor), Some(from));
@@ -73,14 +76,22 @@ fn a_middle_click_closes_a_clean_tab() {
 /// and leaves the keyboard row alone. Keys bring the keyboard row back on screen.
 #[test]
 fn the_wheel_scrolls_the_tree_and_keys_bring_the_row_back() {
+    // The open file is outside the project, as in the Rune test, so `SPC e` reveals no row and
+    // the keyboard row starts at the first one.
     let dir = common::scratch();
-    for i in 1..200 {
-        common::write(dir.path(), &format!("f{i:03}.txt"), "x\n");
+    let project = dir.path().join("project");
+    for i in 0..200 {
+        common::write(&project, &format!("f{i:03}.txt"), "x\n");
     }
-    let file = common::write(dir.path(), "f000.txt", "x\n");
-    let mut f = common::flow(&file, None);
+    let file = common::write(dir.path(), "outside.txt", "x\n");
+    let mut f = common::flow_with(nsh_app_editor::Launch {
+        project: Some(project.clone()),
+        config: Some(common::CONFIG.into()),
+        files: vec![file.clone()],
+        first_launch: false,
+    });
+    f.wait_open(&file);
     f.settle("the project index", |a| a.files.len() == 200);
-    f.update(|a, _| a.tree.sel = None);
     let top = |f: &common::Flow| f.read(|a| a.tree_top(&a.tree.index.rows(&a.tree.open)));
     let sel = |f: &common::Flow| f.read(|a| a.tree.sel.clone().unwrap_or_default());
     let visible = f.read(|a| a.tree_visible());
@@ -99,7 +110,6 @@ fn the_wheel_scrolls_the_tree_and_keys_bring_the_row_back() {
     wheel(&mut f, 22.0 * 500.0);
     assert_eq!(top(&f), max, "it stops with the last row at the bottom");
 
-    f.update(|a, _| a.tree.sel = Some("f000.txt".into()));
     f.keys(" e");
     assert!(f.read(|a| a.tree.focus));
     f.keys("j");

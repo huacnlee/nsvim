@@ -94,7 +94,8 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
                 .child(text(title.to_string()).text_base().font_weight(FontWeight::BOLD).flex_1().text_color(move || color("foreground")))
                 .child(text(if on { "(•)" } else { "( )" }).text_sm().text_color(move || color(mark))),
         )
-        .child(text(desc.to_string()).text_xs().text_color(move || color("muted-foreground")))
+        // The description takes the free height, so the bodies of the cards in a row line up.
+        .child(text(desc.to_string()).text_xs().flex_1().text_color(move || color("muted-foreground")))
         .child(body)
 }
 
@@ -303,7 +304,8 @@ fn step_look(k: Keys, m: &Model) -> View {
     let omarchy_desc = format!("Follows the desktop theme. Found: {oma}.");
     let descs = ["Paper white, dark ink.", "The default. Low glare at night.", "Light or dark with your OS.", omarchy_desc.as_str()];
     let titles = ["Light", "Dark", "System", "Omarchy"];
-    let mut cards = view().flex_row().gap(px(12.0)).flex_wrap().items_start();
+    // The cards in a row have the same height, as tall as the tallest.
+    let mut cards = view().flex_row().gap(px(12.0)).flex_wrap().items_stretch();
     for (i, id) in LOOKS.iter().enumerate() {
         let on = m.cfg.theme.mode == *id;
         let comment = match *id {

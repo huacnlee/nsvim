@@ -9,6 +9,7 @@ pub mod index;
 pub mod io;
 pub mod ipc;
 pub mod lsp;
+pub mod probe;
 pub mod watch;
 
 use std::path::PathBuf;
@@ -89,6 +90,8 @@ pub enum Event {
     Omarchy(Option<Omarchy>),
     /// The config file changed on disk, read again: the config, or why it does not parse.
     Config(Result<crate::config::Config, String>),
+    /// What the first-launch setup asked about this machine.
+    Setup(probe::Answer),
     /// The start of a file, for the finder's preview.
     Preview {
         path: PathBuf,
@@ -154,6 +157,7 @@ pub struct Services {
     index: Sender<Vec<PathBuf>>,
     watch: Sender<watch::Job>,
     lsp: Sender<lsp::Job>,
+    probe: Sender<probe::Job>,
     out: Out,
     root: PathBuf,
     /// The control socket this editor serves, when it serves one.
@@ -174,6 +178,7 @@ impl Services {
             index: index::start(root.clone(), out.clone()),
             watch: watch::start(root.clone(), out.clone()),
             lsp: lsp::start(root.clone(), out.clone()),
+            probe: probe::start(out.clone()),
             out,
             root,
             socket,
@@ -258,6 +263,18 @@ impl Services {
     }
 
     /// Watches `path` (an open file outside the project) for outside changes.
+    /// Finds what the setup screen needs about this machine. Sends `Event::Setup`.
+    pub fn probe_setup(&self) {
+        let _ = self.probe.send(probe::Job::Facts);
+    }
+
+    /// Looks command names up on `$PATH`. Sends `Event::Setup`.
+    pub fn look_up(&self, names: Vec<String>) {
+        if !names.is_empty() {
+            let _ = self.probe.send(probe::Job::LookUp(names));
+        }
+    }
+
     /// Reads `file` again each time it changes and sends `Event::Config`.
     pub fn watch_config(&self, file: PathBuf) {
         let _ = self.watch.send(watch::Job::Config(file));

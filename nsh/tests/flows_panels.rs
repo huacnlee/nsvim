@@ -254,3 +254,29 @@ fn setup_shows_its_steps() {
     f.keys("\n");
     f.ui.wait_for("text:/classic|Neovim/").unwrap();
 }
+
+/// The look step: the four cards in a row have one height, whichever is picked and however
+/// long a description is.
+#[test]
+fn the_look_cards_in_a_row_have_one_height() {
+    let dir = scratch();
+    let mut f = common::flow_with(nsh_app_editor::Launch {
+        project: Some(dir.path().to_path_buf()),
+        config: Some(common::CONFIG.into()),
+        files: Vec::new(),
+        first_launch: true,
+    });
+    f.update(|a, _| a.setup_go(2));
+    f.ui.wait_for("text:Pick a look").unwrap();
+    let height = |f: &Flow, name: &str| {
+        let l = f.ui.screen().layout(&format!("role:radio[{name}]")).unwrap().expect("the card is laid out");
+        (l.bounds.origin.y.0, l.bounds.size.height.0)
+    };
+    // Pick each look in turn: the picked card has a thicker border, and Omarchy's
+    // description is the longest.
+    for pick in ["Omarchy", "Light", "Dark"] {
+        f.ui.press(&format!("role:radio[{pick}]")).unwrap();
+        let cards: Vec<_> = ["Light", "Dark", "System", "Omarchy"].iter().map(|n| height(&f, n)).collect();
+        assert!(cards.iter().all(|c| *c == cards[0]), "{pick} picked: {cards:?}");
+    }
+}
