@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="nsvim">
   <rect width="128" height="128" rx="28" fill="#F4F2EC"/>
   <rect x="0.5" y="0.5" width="127" height="127" rx="27.5" fill="none" stroke="#DDD9CE"/>
-  <path d="M33 30h17l45 60H78z" fill="#7A3FC8"/>
-  <rect x="30" y="30" width="18" height="60" rx="5" fill="#2F5FD0"/>
-  <rect x="80" y="30" width="18" height="60" rx="5" fill="#39761D"/>
-  <rect x="30" y="98" width="68" height="8" rx="4" fill="#B4541A"/>
+  <rect x="26" y="30" width="22" height="10" rx="5" fill="#7A3FC8"/>
+  <rect x="54" y="30" width="44" height="10" rx="5" fill="#C9C5B9"/>
+  <rect x="38" y="52" width="34" height="10" rx="5" fill="#2F5FD0"/>
+  <rect x="78" y="45" width="13" height="24" rx="3" fill="#B4541A"/>
+  <rect x="38" y="74" width="24" height="10" rx="5" fill="#39761D"/>
+  <rect x="68" y="74" width="20" height="10" rx="5" fill="#C9C5B9"/>
+  <rect x="26" y="96" width="76" height="6" rx="3" fill="#C9C5B9" opacity="0.55"/>
 </svg>
