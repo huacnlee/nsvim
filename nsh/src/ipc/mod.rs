@@ -1,5 +1,5 @@
 //! Talking to a running editor from outside it: a Unix socket per project, one JSON request
-//! and one JSON reply per line. `edit ctl` and `edit mcp` are its clients, and AI agents,
+//! and one JSON reply per line. `nsvim ctl` and `nsvim mcp` are its clients, and AI agents,
 //! scripts and shells use those. See `docs/agents.md`.
 //!
 //! Windows has no Unix sockets in the standard library. There the editor serves no socket, and

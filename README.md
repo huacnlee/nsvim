@@ -46,7 +46,7 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 - **Find anything.** A fuzzy file finder, project search through ripgrep, a file tree with git
   status, and a list of every key with search: `F1`.
 - **Works with your AI agent.** No AI inside. Claude Code, Codex or any CLI agent sees what you
-  look at and drives nsvim over `edit mcp` or `edit ctl`. It reads your selection and unsaved
+  look at and drives nsvim over `nsvim mcp` or `nsvim ctl`. It reads your selection and unsaved
   text, points you at code, and proposes changes that you accept with `y`.
 - **Safe.** Crash recovery, undo that survives a restart, changed lines marked when a git
   checkout or an agent changes a file, and atomic saves.
@@ -69,9 +69,10 @@ nsvim src/main.rs:42    # a file, at line 42
 ```
 
 The first launch runs a five-step setup: keys, mouse, look, terminal and ready. The terminal
-step can add the command `edit`, make `vi` and `vim` open nsvim, set `$EDITOR` and set git's
-editor. On Linux, it can also make nsvim the default app for text files. It shows every command
-before it runs, and it runs only the ones you leave on. After setup, `edit .` opens nsvim.
+step makes `vi` and `vim` open nsvim (on by default, `\vim` still runs Vim), adds the command
+`nsvim`, sets `$EDITOR` and sets git's editor. On Linux, it can also make nsvim the default app
+for text files. It shows every command before it runs, and it runs only the ones you leave on.
+After setup, `vim .` opens nsvim. Turn the aliases off to keep Vim, and use `nsvim .`.
 
 ## Keys
 
@@ -104,9 +105,9 @@ once. [docs/configuration.md](docs/configuration.md) lists every option.
 ## AI agents
 
 ```sh
-claude mcp add nsvim -- edit mcp     # Claude Code: nsvim as tools
-edit ctl state                       # any agent or script: what you look at
-edit ctl reveal src/main.rs:10-14 --note "this is the bug"
+claude mcp add nsvim -- nsvim mcp     # Claude Code: nsvim as tools
+nsvim ctl state                       # any agent or script: what you look at
+nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
 ```
 
 [docs/agents.md](docs/agents.md) has the setup for Claude Code, Codex and opencode.

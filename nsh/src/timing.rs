@@ -1,4 +1,4 @@
-//! Startup timing for performance work: `EDITOR_TIMING=1 edit .` prints how long each step
+//! Startup timing for performance work: `EDITOR_TIMING=1 nsvim .` prints how long each step
 //! of startup took, measured from the start of `main`.
 
 use std::sync::OnceLock;

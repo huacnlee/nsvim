@@ -62,7 +62,7 @@ double_click = true
 right_click = false      # right-click opens a context menu
 
 [cli]                    # what setup's terminal step did
-name = "edit"
+name = "nsvim"
 path = true
 editor_env = true
 git = true

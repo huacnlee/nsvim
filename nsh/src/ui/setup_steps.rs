@@ -407,17 +407,14 @@ fn kind_color(p: &Palette, k: Kind) -> Color {
 }
 
 fn step_shell(k: Keys, m: &Model) -> View {
-    let mut out =
-        view().gap(px(22.0)).child(heading("Use nsvim from the terminal", "Optional. Everything here can be undone by hand later."));
+    let out = view().gap(px(22.0)).child(heading("Use nsvim from the terminal", "Optional. Everything here can be undone by hand later."));
     let cli = &m.cfg.cli;
-    if cli.path {
-        out = out.child(name_box(k, m));
-    }
-    let name = if m.name_valid { cli.name.clone() } else { "edit".into() };
+    // The command the shell runs: vi and vim with the aliases, else nsvim.
+    let cmd = if m.on("vim") { "vi" } else { cli.name.as_str() };
     let mut integ = titled("integrations").flex_1().min_w(px(360.0)).pt(px(14.0)).pb(px(8.0)).px(px(8.0));
     for (key, label, sub) in [
-        ("path", "Add a terminal command".to_string(), format!("Open anything with {name} . or {name} file.rs")),
-        ("vim", "Open nsvim with vi and vim".into(), "Shell aliases. \\vim still runs Vim".into()),
+        ("vim", "Open nsvim with vi and vim".to_string(), format!("Shell aliases. \\vim still runs Vim. Off: type {}", cli.name)),
+        ("path", format!("Add the {} command", cli.name), format!("Open anything with {cmd} . or {cmd} file.rs")),
         ("env", "Set as $EDITOR and $VISUAL".into(), "For tools that open an editor, like crontab -e".into()),
         ("git", "Use for git commit messages".into(), "git waits until you close the buffer".into()),
         ("default", "Make nsvim the default for text files".into(), "A double-click opens code and text files".into()),
@@ -427,6 +424,9 @@ fn step_shell(k: Keys, m: &Model) -> View {
         }
         let c = Choice::Toggle(key);
         integ = integ.child(switch_row(k, c, &label, &sub, m.on(key), m.focused(c)));
+        if let Some(t) = m.taken.as_ref().filter(|_| key == "path" && cli.path) {
+            integ = integ.child(taken_row(k, m, t));
+        }
     }
     let mut runs =
         titled("what runs").flex_1().min_w(px(360.0)).pt(px(16.0)).pb(px(14.0)).px(px(16.0)).gap(px(4.0)).test_id("setup-commands");
@@ -454,81 +454,24 @@ fn step_shell(k: Keys, m: &Model) -> View {
     out.child(view().flex_row().gap(px(16.0)).flex_wrap().items_start().child(integ).child(runs))
 }
 
-/// The terminal command's name: typed while it has the keyboard, checked against `$PATH`.
-fn name_box(k: Keys, m: &Model) -> impl IntoElement {
-    let cli = &m.cfg.cli;
-    let (status, token) = if !m.name_valid {
-        ("✗ use a–z, 0–9, . _ - (no spaces)".to_string(), "destructive")
-    } else if m.taken.is_none() {
-        ("✓ free".into(), "mode-insert")
-    } else if m.shadow {
-        (format!("! will shadow {}", m.taken.clone().unwrap_or_default().split(',').next().unwrap_or("")), "warning")
-    } else {
-        ("✗ taken".into(), "destructive")
-    };
-    let focus = m.focused(Choice::Name);
-    let input = button()
-        .role(AccessibilityRole::Textbox)
-        .accessibility_label("command name")
-        .on_press(k.pick(Choice::Name))
-        .flex_row()
-        .h(px(34.0))
-        .w(px(200.0))
-        .px(px(8.0))
-        .items_center()
-        .rounded_md()
-        .border_1()
-        .border_color(move || color(if focus { "primary" } else { "border" }))
-        .bg(move || color("muted"))
-        .child(text(cli.name.clone()).text_sm().text_color(move || color("foreground")).test_id("command-name"))
-        .child(view().w(px(1.5)).h(px(16.0)).bg(move || color(if focus { "primary" } else { "muted" })));
-    let checked = if !m.name_valid {
-        "—".to_string()
-    } else {
-        match &m.taken {
-            Some(t) => format!("command -v {} → {}", cli.name, t.split(',').next().unwrap_or("")),
-            None => format!("command -v {} → nothing found", cli.name),
-        }
-    };
-    let mut b = titled("command name")
-        .w_full()
-        .pt(px(18.0))
-        .pb(px(14.0))
-        .px(px(16.0))
-        .gap(px(12.0))
-        .child(
-            view()
-                .flex_row()
-                .gap(px(16.0))
-                .items_center()
-                .child(text("name").text_xs().text_color(move || color("muted-foreground")))
-                .child(input)
-                .child(text(status).text_xs().text_color(move || color(token))),
-        )
-        .child(text(format!("checked $PATH: {checked}")).text_xs().text_color(move || color("muted-foreground")));
-    if let Some(t) = &m.taken {
-        let mut sug = view()
-            .flex_row()
-            .gap(px(6.0))
-            .items_center()
-            .flex_wrap()
-            .child(text("free").text_xs().text_color(move || color("muted-foreground")));
-        for (i, n) in m.suggestions.iter().enumerate() {
-            let c = Choice::Suggest(i);
-            let focus = m.focused(c);
-            sug = sug.child(choice(&format!("suggest:{n}"), *n, || false, move || focus, k.pick(c)));
-        }
-        let shadow = format!("keep {}, mine first", cli.name);
-        sug = sug.child(view().w(px(260.0)).child(switch_row(k, Choice::Shadow, &shadow, "", m.shadow, m.focused(Choice::Shadow))));
-        b = b
-            .child(
-                text(format!("{} is already {t}. Pick a free name, or keep this one and put nsvim's copy first on $PATH.", cli.name))
-                    .text_xs()
-                    .text_color(move || color("muted-foreground")),
-            )
-            .child(sug);
-    }
-    b
+/// Another program has the command's name on `$PATH`. The user can put nsvim's link first.
+fn taken_row(k: Keys, m: &Model, taken: &str) -> impl IntoElement {
+    let name = &m.cfg.cli.name;
+    let other = taken.split(',').next().unwrap_or("").to_string();
+    let shadow = format!("Put nsvim's {name} first on $PATH");
+    view()
+        .pl(px(8.0))
+        .gap(px(4.0))
+        .test_id("command-taken")
+        .child(text(format!("{name} is already {other}.")).text_xs().text_color(move || color("warning")))
+        .child(switch_row(
+            k,
+            Choice::Shadow,
+            &shadow,
+            "Without it, the aliases and $EDITOR use the full path",
+            m.shadow,
+            m.focused(Choice::Shadow),
+        ))
 }
 
 fn step_ready(k: Keys, m: &Model) -> View {

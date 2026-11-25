@@ -23,7 +23,7 @@ flowchart LR
         RG[ripgrep]
         FW[File watcher]
         L[LSP manager]
-        S[Control socket<br/>editor ctl, editor mcp]
+        S[Control socket<br/>nsvim ctl, nsvim mcp]
     end
     A -->|job| IO & IX & G & RG & L
     IO & IX & G & RG & FW & L & S -->|Event| P
@@ -113,7 +113,7 @@ covered, or minimized. An agent's request or a file reload never waits for you t
 | `editor-grep` | Runs `rg --vimgrep`, or a plain walk when ripgrep is missing. |
 | `editor-watch` | Watches the project, open files outside it, and Omarchy's theme folder. |
 | `editor-lsp` | Starts language servers, keeps documents in step, and turns answers into events. |
-| `editor-ipc` | Serves the project's control socket for `editor ctl`, `editor mcp` and agents. See [agents.md](agents.md). |
+| `editor-ipc` | Serves the project's control socket for `nsvim ctl`, `nsvim mcp` and agents. See [agents.md](agents.md). |
 
 A save shows the pattern. The UI thread trims the text as one undo step and takes its bytes.
 The file worker writes them to a temporary file and renames it over the old one. The `Saved`

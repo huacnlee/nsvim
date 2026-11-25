@@ -53,8 +53,6 @@ pub enum Choice {
     Look(usize),
     Font(usize),
     Size(usize),
-    Name,
-    Suggest(usize),
     Shadow,
     Change(usize),
     Open,
@@ -115,14 +113,11 @@ impl Setup {
                 c.extend((0..SIZES.len()).map(Choice::Size));
             }
             4 => {
-                if self.cfg.cli.path {
-                    c.push(Choice::Name);
-                    if self.taken().is_some() {
-                        c.extend((0..self.suggestions().len()).map(Choice::Suggest));
-                        c.push(Choice::Shadow);
-                    }
+                c.extend([Choice::Toggle("vim"), Choice::Toggle("path")]);
+                if self.cfg.cli.path && self.taken().is_some() {
+                    c.push(Choice::Shadow);
                 }
-                c.extend([Choice::Toggle("path"), Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git")]);
+                c.extend([Choice::Toggle("env"), Choice::Toggle("git")]);
                 // The release ships no macOS app bundle, so only Linux can be the default app.
                 if !self.mac {
                     c.push(Choice::Toggle("default"));
@@ -197,27 +192,11 @@ impl Setup {
         self.on_path.get(&self.cfg.cli.name).cloned().flatten()
     }
 
-    /// The names to look up on `$PATH`: the current name and the suggestions, each once. The
-    /// probe worker looks them up off the UI thread.
+    /// The command's name to look up on `$PATH`, once. The probe worker looks it up off the UI
+    /// thread.
     pub fn check_name(&mut self) -> Vec<String> {
-        let mut out = Vec::new();
         let n = self.cfg.cli.name.clone();
-        let names = self.name_valid().then_some(n).into_iter().chain(["nsvim", "edtr", "e", "edx", "ered", "medit"].map(String::from));
-        for name in names {
-            if self.asked.insert(name.clone()) {
-                out.push(name);
-            }
-        }
-        out
-    }
-
-    /// Up to three free names.
-    pub fn suggestions(&self) -> Vec<&'static str> {
-        ["nsvim", "edtr", "e", "edx", "ered", "medit"]
-            .into_iter()
-            .filter(|n| *n != self.cfg.cli.name && self.on_path.get(*n).is_some_and(|p| p.is_none()))
-            .take(3)
-            .collect()
+        if self.name_valid() && self.asked.insert(n.clone()) { vec![n] } else { Vec::new() }
     }
 
     /// Whether the terminal command can be installed under its name.
@@ -297,20 +276,7 @@ impl App {
         let Screen::Setup(s) = &mut self.screen else { return };
         let choices = s.choices();
         let focus = s.focus.min(choices.len().saturating_sub(1));
-        let on_name = choices.get(focus) == Some(&Choice::Name);
         match k.code {
-            KeyCode::Char(c) if on_name && !k.ctrl && !k.cmd && c != ' ' => {
-                s.cfg.cli.name.push(c);
-                s.shadow = false;
-                let names = s.check_name();
-                self.look_up(names);
-            }
-            KeyCode::Backspace if on_name => {
-                s.cfg.cli.name.pop();
-                s.shadow = false;
-                let names = s.check_name();
-                self.look_up(names);
-            }
             KeyCode::Tab if k.shift => self.setup_go(-1),
             KeyCode::Tab => self.setup_go(1),
             KeyCode::Char('j') | KeyCode::Down | KeyCode::Char('l') | KeyCode::Right => {
@@ -372,13 +338,6 @@ impl App {
             Choice::Look(i) => s.cfg.theme.mode = LOOKS[i].into(),
             Choice::Font(i) => s.cfg.font.family = FONTS[i].into(),
             Choice::Size(i) => s.cfg.font.size = SIZES[i],
-            Choice::Name => {}
-            Choice::Suggest(i) => {
-                if let Some(n) = s.suggestions().get(i) {
-                    s.cfg.cli.name = n.to_string();
-                    s.shadow = false;
-                }
-            }
             Choice::Shadow => s.shadow = !s.shadow,
             Choice::Change(i) => {
                 s.step = [1, 2, 3, 3, 4][i.min(4)];
@@ -545,9 +504,9 @@ mod tests {
         let mut s = Setup::new(None);
         s.step = 4;
         s.bin_on_path = true;
-        let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with("echo 'alias vi=\"edit\" vim=\"edit\"' >> "));
+        let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with("echo 'alias vi=\"nsvim\" vim=\"nsvim\"' >> "));
         assert!(s.cfg.cli.vim_aliases && alias(&s), "on by default: {:?}", s.commands());
-        assert!(s.choices().contains(&Choice::Toggle("vim")));
+        assert_eq!(s.choices().first(), Some(&Choice::Toggle("vim")), "the aliases come first");
         s.flip("vim");
         assert!(!s.cfg.cli.vim_aliases && !alias(&s), "{:?}", s.commands());
     }
@@ -586,13 +545,13 @@ mod tests {
         s.step = 4;
         assert!(!s.choices().contains(&Choice::Toggle("default")), "and no default-app choice");
 
-        // The README installs the binary as ~/.local/bin/editor. The command `edit` links to it.
-        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/editor"));
+        // `cargo install` puts the binary in ~/.cargo/bin. The command `nsvim` links to it.
+        s.exe = dirs::home_dir().map(|h| h.join(".cargo/bin/nsvim"));
         let cmds = s.commands().join("\n");
-        assert!(cmds.contains("ln -sf ") && cmds.contains(" ~/.local/bin/edit\n"), "{cmds}");
-        assert!(cmds.contains("export EDITOR=\"edit --wait\""), "{cmds}");
+        assert!(cmds.contains("ln -sf ") && cmds.contains(" ~/.local/bin/nsvim\n"), "{cmds}");
+        assert!(cmds.contains("export EDITOR=\"nsvim --wait\""), "{cmds}");
         // A binary that is the command already needs no link.
-        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/edit"));
+        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/nsvim"));
         assert!(!s.commands().join("\n").contains("ln -sf"));
     }
 

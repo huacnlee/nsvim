@@ -210,12 +210,12 @@ const keys = [
           <li><strong>Marks</strong> lines changed on disk. <kbd>SPC</kbd> <kbd>a</kbd> <kbd>l</kbd> lists them.</li>
         </ul>
         <pre class="term" style="margin-top: var(--space-4)"><code><span class="c"># Claude Code: nsvim as tools over MCP</span>
-<span class="p">$ </span>claude mcp add nsvim -- edit mcp
+<span class="p">$ </span>claude mcp add nsvim -- nsvim mcp
 
 <span class="c"># Any agent or script, from the project folder</span>
-<span class="p">$ </span>edit ctl state
-<span class="p">$ </span>edit ctl reveal src/main.rs:10-14 --note "this is the bug"
-<span class="p">$ </span>sed 's/foo/bar/' src/main.rs | edit ctl propose src/main.rs --label "rename foo"</code></pre>
+<span class="p">$ </span>nsvim ctl state
+<span class="p">$ </span>nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
+<span class="p">$ </span>sed 's/foo/bar/' src/main.rs | nsvim ctl propose src/main.rs --label "rename foo"</code></pre>
         <p class="note">The socket is readable by your user only. Set <code>ipc.allow_edits = false</code> to keep agents to proposals. Setup for Codex and opencode is in <a href={`${repo}/blob/main/docs/agents.md`}>docs/agents.md</a>.</p>
       </section>
 
@@ -264,7 +264,7 @@ nsvim src/main.rs:42</code></pre>
           </div>
           <div>
             <h3>3. Set up</h3>
-            <p>The first launch runs five steps: keys, mouse, look, terminal and ready. The terminal step can add the command <code>edit</code>, make <code>vi</code> and <code>vim</code> open nsvim, and set <code>$EDITOR</code> and git's editor. It shows every command before it runs.</p>
+            <p>The first launch runs five steps: keys, mouse, look, terminal and ready. The terminal step makes <code>vi</code> and <code>vim</code> open nsvim, on by default. Turn it off to keep Vim and type <code>nsvim</code>. It also sets <code>$EDITOR</code> and git's editor, and shows every command before it runs.</p>
           </div>
         </div>
       </section>
