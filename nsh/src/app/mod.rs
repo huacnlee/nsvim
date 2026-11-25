@@ -287,6 +287,9 @@ impl App {
         if let Some(f) = &self.config_file {
             svc.watch_config(f.clone());
         }
+        if matches!(self.screen, Screen::Setup(_)) {
+            svc.probe_setup();
+        }
         self.svc = Some(svc);
     }
 
@@ -461,6 +464,7 @@ impl App {
                 }
             }
             Event::Config(loaded) => self.config_reloaded(loaded),
+            Event::Setup(answer) => self.setup_answer(answer),
             Event::Omarchy(o) => {
                 if o.is_some() {
                     self.omarchy = o;

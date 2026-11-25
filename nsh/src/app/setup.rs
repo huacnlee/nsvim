@@ -2,7 +2,7 @@
 //! The choices land in config.toml. Terminal integration runs only what the user leaves on,
 //! and shows each command before it runs.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use super::fx::Tx;
@@ -35,6 +35,10 @@ pub struct Setup {
     pub exe: Option<PathBuf>,
     /// `command -v` answers by name, so each name is looked up once.
     pub on_path: HashMap<String, Option<String>>,
+    /// The names sent to the probe worker, so each is asked once.
+    pub asked: HashSet<String>,
+    /// The leader key `~/.config/nvim` sets, as the probe worker found it.
+    pub nvim_leader: Option<char>,
     pub omarchy_name: Option<String>,
 }
 
@@ -63,9 +67,12 @@ impl Setup {
             mac: cfg!(target_os = "macos"),
             focus: 0,
             shadow: false,
-            bin_on_path: bin_on_path(),
-            exe: std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()),
+            // The probe worker answers these from the disk (`App::setup_answer`).
+            bin_on_path: true,
+            exe: None,
             on_path: HashMap::new(),
+            asked: HashSet::new(),
+            nvim_leader: None,
             omarchy_name: omarchy.map(|o| o.name.clone()),
         }
     }
@@ -182,17 +189,18 @@ impl Setup {
         self.on_path.get(&self.cfg.cli.name).cloned().flatten()
     }
 
-    /// Looks the current name up on `$PATH`, once per name.
-    pub fn check_name(&mut self) {
+    /// The names to look up on `$PATH`: the current name and the suggestions, each once. The
+    /// probe worker looks them up off the UI thread.
+    pub fn check_name(&mut self) -> Vec<String> {
+        let mut out = Vec::new();
         let n = self.cfg.cli.name.clone();
-        if self.name_valid() && !self.on_path.contains_key(&n) {
-            self.on_path.insert(n.clone(), command_v(&n));
-        }
-        for s in ["edtr", "e", "edx", "ered", "medit"] {
-            if !self.on_path.contains_key(s) {
-                self.on_path.insert(s.to_string(), command_v(s));
+        let names = self.name_valid().then_some(n).into_iter().chain(["edtr", "e", "edx", "ered", "medit"].map(String::from));
+        for name in names {
+            if self.asked.insert(name.clone()) {
+                out.push(name);
             }
         }
+        out
     }
 
     /// Up to three free names.
@@ -262,32 +270,9 @@ impl Setup {
     }
 }
 
-/// Whether `~/.local/bin` is a folder on `$PATH`.
-fn bin_on_path() -> bool {
-    let (Some(path), Some(home)) = (std::env::var_os("PATH"), dirs::home_dir()) else { return false };
-    let bin = home.join(".local/bin");
-    std::env::split_paths(&path).any(|d| d == bin)
-}
-
 /// The file types the desktop entry opens: its `MimeType=` line.
 fn mime_types() -> Vec<&'static str> {
     DESKTOP.lines().find_map(|l| l.strip_prefix("MimeType=")).map(|m| m.split(';').filter(|t| !t.is_empty()).collect()).unwrap_or_default()
-}
-
-/// `command -v name`: the first executable `name` on `$PATH`.
-fn command_v(name: &str) -> Option<String> {
-    let path = std::env::var_os("PATH")?;
-    let found = std::env::split_paths(&path).map(|d| d.join(name)).find(|p| p.is_file())?;
-    // This editor, installed under that name (`cargo install`, an earlier setup): not taken.
-    let me = std::env::current_exe().ok().and_then(|e| e.canonicalize().ok());
-    if me.is_some() && found.canonicalize().ok() == me {
-        return None;
-    }
-    let shown = crate::app::tilde(&found);
-    Some(match std::fs::read_link(&found) {
-        Ok(target) => format!("{shown}, a link to {}", crate::app::tilde(&target)),
-        Err(_) => shown,
-    })
 }
 
 impl App {
@@ -300,12 +285,14 @@ impl App {
             KeyCode::Char(c) if on_name && !k.ctrl && !k.cmd && c != ' ' => {
                 s.cfg.cli.name.push(c);
                 s.shadow = false;
-                s.check_name();
+                let names = s.check_name();
+                self.look_up(names);
             }
             KeyCode::Backspace if on_name => {
                 s.cfg.cli.name.pop();
                 s.shadow = false;
-                s.check_name();
+                let names = s.check_name();
+                self.look_up(names);
             }
             KeyCode::Tab if k.shift => self.setup_go(-1),
             KeyCode::Tab => self.setup_go(1),
@@ -330,7 +317,28 @@ impl App {
         s.step = next;
         s.focus = 0;
         if next == 4 {
-            s.check_name();
+            let names = s.check_name();
+            self.look_up(names);
+        }
+    }
+
+    /// Asks the probe worker where `names` are on `$PATH`.
+    fn look_up(&self, names: Vec<String>) {
+        if let Some(svc) = &self.svc {
+            svc.look_up(names);
+        }
+    }
+
+    /// The probe worker answered: keep what it found for the setup screen.
+    pub fn setup_answer(&mut self, answer: crate::services::probe::Answer) {
+        let Screen::Setup(s) = &mut self.screen else { return };
+        match answer {
+            crate::services::probe::Answer::Facts { exe, bin_on_path, nvim_leader } => {
+                s.exe = exe;
+                s.bin_on_path = bin_on_path;
+                s.nvim_leader = nvim_leader;
+            }
+            crate::services::probe::Answer::OnPath(found) => s.on_path.extend(found),
         }
     }
 
@@ -387,10 +395,11 @@ impl App {
             rc: s.rc_file(),
         };
         let mac = s.mac;
+        let nvim = s.nvim_leader;
         self.cfg = s.cfg;
         let mut note = String::new();
         if self.cfg.keys.map == "neovim" && self.cfg.keys.import_nvim {
-            match nvim_leader() {
+            match nvim {
                 Some(' ') => self.cfg.keys.leader = "space".into(),
                 Some('\\') => self.cfg.keys.leader = "backslash".into(),
                 Some(c) => {
@@ -415,27 +424,8 @@ impl App {
     }
 }
 
-/// The leader key `~/.config/nvim` sets (`vim.g.mapleader` or `let mapleader`), if any. Reads
-/// `init.lua`, `init.vim` and the Lua files under `lua/`, once, when setup finishes.
-fn nvim_leader() -> Option<char> {
-    let dir = dirs::config_dir()?.join("nvim");
-    let mut files = vec![dir.join("init.lua"), dir.join("init.vim")];
-    let mut stack = vec![dir.join("lua")];
-    while let Some(d) = stack.pop() {
-        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
-            let p = e.path();
-            if p.is_dir() && stack.len() < 64 {
-                stack.push(p);
-            } else if p.extension().is_some_and(|x| x == "lua") && files.len() < 400 {
-                files.push(p);
-            }
-        }
-    }
-    files.iter().filter_map(|f| std::fs::read_to_string(f).ok()).find_map(|src| leader_in(&src))
-}
-
 /// The leader a Lua or Vimscript source sets.
-fn leader_in(src: &str) -> Option<char> {
+pub fn leader_in(src: &str) -> Option<char> {
     for line in src.lines() {
         let l = line.trim();
         if l.starts_with("--") || l.starts_with('"') || !l.contains("mapleader") || l.contains("maplocalleader") {

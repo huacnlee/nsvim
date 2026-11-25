@@ -318,3 +318,20 @@ fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
     assert!(!app.quit());
     Ok(())
 }
+
+#[test]
+fn search_results_show_the_preview_without_a_key() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let main = write(dir.path(), "main.rs", "fn main() {}\n");
+    write(dir.path(), "lib.rs", "// one\n// two\nconst NEEDLE: u8 = 1;\n");
+    let mut app = start(&main);
+    app.wait_for("text:/fn main/")?;
+    typ(&mut app, &["space", "/"]);
+    app.wait_for("text:Find in Project")?;
+    common::type_text(&mut app, "NEEDLE");
+    app.wait_for("id:picker-list >> label:lib.rs:3")?;
+    // No key after the results: their arrival asks for the preview.
+    app.wait_for("id:picker-preview >> text:/const/")?;
+    Ok(())
+}
