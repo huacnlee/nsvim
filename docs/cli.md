@@ -38,7 +38,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 | `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
 | `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
 | `nvim --help`, `nvim -h` | Prints the usage. |
-| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.2.0`. |
+| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.1`. |
 
 A file that does not exist opens as a new, empty buffer. `:w` creates it.
 
