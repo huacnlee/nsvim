@@ -76,7 +76,7 @@ fn a_middle_click_closes_a_clean_tab() {
 /// and leaves the keyboard row alone. Keys bring the keyboard row back on screen.
 #[test]
 fn the_wheel_scrolls_the_tree_and_keys_bring_the_row_back() {
-    // The open file is outside the project, as in the Rune test, so `SPC e` reveals no row and
+    // The open file is outside the project, so `SPC e` reveals no row and
     // the keyboard row starts at the first one.
     let dir = common::scratch();
     let project = dir.path().join("project");

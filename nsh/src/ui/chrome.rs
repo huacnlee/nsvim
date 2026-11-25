@@ -74,7 +74,7 @@ pub struct StatusInfo {
     pub pos: String,
 }
 
-/// The status line's data, as the Rune app drew it.
+/// The status line's data.
 pub fn status_of(app: &App) -> StatusInfo {
     let vim = app.is_vim();
     let mode = app.ed.mode;
@@ -302,7 +302,7 @@ pub struct CommandInfo {
     pub hint: Hint,
 }
 
-/// The command line's data, as the Rune app drew it.
+/// The command line's data.
 pub fn command_of(app: &App) -> CommandInfo {
     let shows = app.is_vim() || app.ed.mode == Mode::Command || app.ed.msg.is_some();
     let mut info = CommandInfo { shows, ..CommandInfo::default() };

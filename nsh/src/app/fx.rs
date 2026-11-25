@@ -122,7 +122,7 @@ impl Tx {
         self.button
     }
 
-    /// Rune eased some changes. NSH changes in the next frame, so this does nothing.
+    /// Asks for no easing. NSH changes in the next frame, so this does nothing.
     pub fn instant(&mut self) {}
 
     pub fn quit(&mut self) {
@@ -175,7 +175,7 @@ pub struct Drag {
     pub data: f32,
 }
 
-/// A wheel turn. Positive `dy` moves the content down (scrolls up), as Rune reported it.
+/// A wheel turn. Positive `dy` moves the content down (scrolls up).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct WheelEvent {
     pub dx: f32,
