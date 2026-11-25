@@ -1,14 +1,15 @@
 # Configuration
 
-editor reads `~/.config/editor/config.toml` at startup. The first launch writes it, at the
-end of setup. Settings (`:Settings`) edits it as a tab: changes apply at once, and `:w` writes
-the file. A missing key takes its default, so a file can hold only what you change.
+nsvim reads `~/.config/nsvim/config.toml` at startup. On the first start, nsvim copies an older
+`~/.config/editor` folder there once. The first launch writes it, at the
+end of setup. Settings (`:Settings`) edits it over the whole window. A change applies at once and
+goes to the file at once. A missing key takes its default, so a file can hold only what you change.
 
 ## Every option
 
 ```toml
 [theme]
-mode = "dark"            # light, dark, system or omarchy
+mode = "dark"            # light, dark or system
 dark = "dark"            # the theme for dark mode, and for system mode on a dark OS
 light = "light"          # the theme for light mode, and for system mode on a light OS
 
@@ -62,19 +63,17 @@ double_click = true
 right_click = false      # right-click opens a context menu
 
 [cli]                    # what setup's terminal step did
-name = "nsvim"
-path = true
-editor_env = true
-git = true
+editor_env = true        # $EDITOR and $VISUAL name the program by its full path
+git = true               # git's editor, by the full path too
 default_app = false      # Linux: the default app for the file types in editor.desktop
-vim_aliases = true       # vi and vim open nsvim (shell aliases)
+vim_aliases = true       # nvim, vim and vi open nsvim (shell aliases), \nvim runs Neovim
 ```
 
 ## Themes
 
 | Dark | Light |
 | --- | --- |
-| `dark` (editor dark) | `light` (editor light) |
+| `dark` (nsvim dark) | `light` (nsvim light) |
 | `catppuccin` (Catppuccin Mocha) | `catppuccin-latte` |
 | `tokyo-night` | `tokyo-night-day` |
 | `gruvbox` | `gruvbox-light` |
@@ -82,15 +81,16 @@ vim_aliases = true       # vi and vim open nsvim (shell aliases)
 | `rose-pine` | `one-light` |
 | `one-dark` | |
 
-`theme.mode = "omarchy"` follows the [Omarchy](https://omarchy.org) desktop theme. editor reads
-`colors.toml` from `~/.local/state/omarchy/current/theme` (or `~/.config/omarchy/current/theme`
-on older releases), and falls back to the theme's `alacritty.toml`. A theme with a `light.mode`
-file, or `mode = "light"`, gets the light variant. When you switch the desktop theme, editor
-changes with it.
+On [Omarchy](https://omarchy.org), `theme.mode = "system"` follows the desktop theme. nsvim
+reads `colors.toml` from `~/.local/state/omarchy/current/theme` (or
+`~/.config/omarchy/current/theme` on older releases), and falls back to the theme's
+`alacritty.toml`. A theme with a `light.mode` file, or `mode = "light"`, gets the light variant.
+When you switch the desktop theme, nsvim changes with it. An older config with
+`theme.mode = "omarchy"` still loads and works as `system`.
 
 ## .editorconfig
 
-editor reads every `.editorconfig` from a file's folder up to the first one with `root = true`.
+nsvim reads every `.editorconfig` from a file's folder up to the first one with `root = true`.
 Nearer files win, and they win over config.toml.
 
 | Key | Sets |
@@ -105,4 +105,4 @@ Nearer files win, and they win over config.toml.
 
 `:set` changes an option until you quit: `:set wrap`, `:set nonumber`, `:set tabstop=2`,
 `:set keymap=classic`, `:set theme=light`, `:set theme=gruvbox`. `theme` takes a mode or a theme id
-from the list above. Settings and `:w` keep a change.
+from the list above. A change in Settings goes to `config.toml`.

@@ -1,41 +1,49 @@
 # Command line
 
-`editor` opens files and folders. `nsvim ctl` drives an editor that is already running, from
-a shell, a script or an AI agent. `nsvim mcp` serves that same editor to agents that speak the
-Model Context Protocol.
+You type `nvim`. It is a shell alias that the first-run setup makes, with `vim` and `vi`. Each
+one runs the nsvim program by its full path. `\nvim` still runs Neovim. The installer puts
+nothing on `PATH`.
+
+Scripts and AI agents do not see aliases, so they run the program by its full path. This page
+calls it PROGRAM. `nvim --help` prints it. The installer puts it at `~/.local/share/nsvim/nsvim`
+on Linux, and at `~/Applications/nsvim.app/Contents/MacOS/nsvim` on macOS.
+
+The program opens files and folders. `ctl` drives an nsvim that is already running, from a
+shell, a script or an AI agent. `mcp` serves that same nsvim to agents that speak the Model
+Context Protocol.
 
 ```sh
-nsvim .                          # open this folder as the project
-nsvim src/main.rs:42             # open a file at line 42
-nsvim ctl state                  # what the running editor shows, as JSON
-claude mcp add nsvim -- nsvim mcp
+nvim .                           # open this folder as the project
+nvim src/main.rs:42              # open a file at line 42
+nvim ctl state                   # what the running editor shows, as JSON
+claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp
 ```
 
 ## Open files and folders
 
 ```text
-nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 ```
 
 | Form | Does |
 | --- | --- |
-| `editor` | Opens the current folder as the project, with the files of the last session. |
-| `nsvim .` | The same, for the folder you name. |
-| `nsvim src/main.rs` | Opens the file, in the project around it. |
-| `nsvim src/main.rs:42` | Opens the file with the cursor on line 42. |
-| `nsvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
-| `editor a.rs b.rs` | Opens both files. The last one is active. |
-| `nsvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
-| `nsvim --wait NOTES.md` | Returns when you close that buffer. See [Use editor as `$EDITOR`](#use-editor-as-editor). |
-| `nsvim --new` | Opens a new window, also when an editor runs for the project already. |
-| `editor --help`, `editor -h` | Prints the usage. |
-| `editor --version`, `editor -V` | Prints the version: `editor 0.3.2`. |
+| `nvim` | Opens the current folder as the project, with the files of the last session. |
+| `nvim .` | The same, for the folder you name. |
+| `nvim src/main.rs` | Opens the file, in the project around it. |
+| `nvim src/main.rs:42` | Opens the file with the cursor on line 42. |
+| `nvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
+| `nvim a.rs b.rs` | Opens both files. The last one is active. |
+| `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
+| `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
+| `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
+| `nvim --help`, `nvim -h` | Prints the usage. |
+| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.3.2`. |
 
 A file that does not exist opens as a new, empty buffer. `:w` creates it.
 
 ### The project folder
 
-The project is the folder the file tree, the finder and project search use. editor picks it
+The project is the folder the file tree, the finder and project search use. nsvim picks it
 this way:
 
 1. A folder you name is the project.
@@ -47,9 +55,9 @@ this way:
 
 ### One window per project
 
-When an editor already runs for the project, `editor PATH` opens the file in that window,
+When nsvim already runs for the project, `nvim PATH` opens the file in that window,
 brings the window forward, and exits at once. On Wayland, the new process passes its
-`XDG_ACTIVATION_TOKEN`, so the window takes focus. `editor` with no file only brings the
+`XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
 
 ### Exit status
@@ -59,28 +67,30 @@ window forward. `--new` skips this and always opens a new window.
 | `0` | The window closed, the file opened in the running editor, or `--wait` returned. |
 | `1` | The running editor did not answer, or could not open the file. The reason is on stderr. |
 
-## Use editor as `$EDITOR`
+## Use nsvim as `$EDITOR`
 
-`--wait` makes editor a blocking editor, for git, `crontab -e` and agents that open a prompt
+`--wait` makes nsvim a blocking editor, for git, `crontab -e` and agents that open a prompt
 in your editor:
 
 ```sh
-export EDITOR="nsvim --wait" VISUAL="nsvim --wait"
-git config --global core.editor "nsvim --wait"
+export EDITOR="PROGRAM --wait" VISUAL="PROGRAM --wait"
+git config --global core.editor "PROGRAM --wait"
 ```
 
-With an editor running for the project, the file opens there, and the command returns when
-you close that buffer: `:q`, `:wq`, `ZZ`, `SPC q` or `Ctrl W`. Without one, editor opens a
+Git and other tools do not see aliases, so these lines name PROGRAM, the full path.
+
+With nsvim running for the project, the file opens there, and the command returns when
+you close that buffer: `:q`, `:wq`, `ZZ`, `SPC q` or `Ctrl W`. Without one, nsvim opens a
 window and returns when you close the window. Setup's terminal step can add these lines for
 you.
 
-## `nsvim ctl`
+## `ctl`
 
 ```text
-nsvim ctl [--socket PATH] [--json] COMMAND [ARGS]
+PROGRAM ctl [--socket PATH] [--json] COMMAND [ARGS]
 ```
 
-`nsvim ctl` sends one request to the running editor of the current folder and prints the
+In your own terminal, `nvim ctl` is the same command. `ctl` sends one request to the running editor of the current folder and prints the
 reply. Lines and columns are 1-based. Paths are absolute or relative to the project folder.
 
 | Flag | Does |
@@ -146,21 +156,21 @@ When text is selected, `selection` holds `{"start": {"line", "column"}, "end": {
 not open yet. A file that does not exist starts empty. Nothing is written until you save.
 
 ```sh
-nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
-sed 's/foo/bar/' src/main.rs | nsvim ctl propose src/main.rs --label "rename foo"
-nsvim ctl read --lines 1-20
-nsvim ctl state | jq '.active | {relative, line, dirty}'
+nvim ctl reveal src/main.rs:10-14 --note "this is the bug"
+sed 's/foo/bar/' src/main.rs | nvim ctl propose src/main.rs --label "rename foo"
+nvim ctl read --lines 1-20
+nvim ctl state | jq '.active | {relative, line, dirty}'
 ```
 
 ### Which editor answers
 
-`nsvim ctl` and `nsvim mcp` find the editor in this order:
+`ctl` and `mcp` find the editor in this order:
 
 1. The socket in `$EDITOR_SOCKET`, when an editor answers there.
 2. The editor whose project is the current folder, or a folder above it.
 3. The only running editor, when exactly one runs.
 
-Each editor serves one socket for its project, at `$XDG_RUNTIME_DIR/editor/<hash>.sock`.
+Each editor serves one socket for its project, at `$XDG_RUNTIME_DIR/nsvim/<hash>.sock`.
 Without `XDG_RUNTIME_DIR`, the socket is in a folder of your own under the temp folder. Only
 your user can read it, and there is no network listener. `ipc.enabled = false` turns the
 socket off.
@@ -173,64 +183,38 @@ socket off.
 | `1` | The editor refused the request. The reason is on stderr, such as a file that is not open, or `edit` when `ipc.allow_edits` is off. |
 | `2` | No editor runs for this folder, the editor did not answer in 10 seconds, or the command is wrong. |
 
-## `nsvim mcp`
+## `mcp`
 
-`nsvim mcp` is a Model Context Protocol server over stdio, for the editor running in the
+`PROGRAM mcp` is a Model Context Protocol server over stdio, for the editor running in the
 current folder. An agent starts it. Add it once:
 
 ```sh
-claude mcp add nsvim -- nsvim mcp       # Claude Code
+claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp       # Claude Code
 ```
 
 The server gives the agent 12 tools: `editor_state`, `editor_selection`, `editor_read`,
 `editor_diagnostics`, `editor_changes`, `editor_open`, `editor_reveal`, `editor_message`,
-`editor_propose`, `editor_edit`, `editor_save` and `editor_command`. Each one is the `editor
-ctl` command of the same name. Setup for Codex and opencode, and what each tool does, is in
+`editor_propose`, `editor_edit`, `editor_save` and `editor_command`. Each one is the `ctl`
+command of the same name. Setup for Codex and opencode, and what each tool does, is in
 [agents.md](agents.md).
 
 ## Environment
 
 | Variable | Does |
 | --- | --- |
-| `EDITOR_SOCKET` | The socket `nsvim ctl` and `nsvim mcp` use first. |
+| `EDITOR_SOCKET` | The socket `ctl` and `mcp` use first. |
 | `XDG_RUNTIME_DIR` | The folder for the control sockets. |
 | `XDG_CONFIG_HOME`, `XDG_STATE_HOME` | Move the config and state folders on Linux. |
-| `XDG_ACTIVATION_TOKEN` | Lets a second `editor` command give the running window focus on Wayland. |
+| `XDG_ACTIVATION_TOKEN` | Lets a second `nvim` command give the running window focus on Wayland. |
 | `SHELL` | Setup's terminal step writes to `~/.zshrc` for zsh, else `~/.bashrc`. |
-| `EDITOR_TIMING` | `EDITOR_TIMING=1 nsvim .` prints how long each step of startup takes. |
+| `EDITOR_TIMING` | `EDITOR_TIMING=1 nvim .` prints how long each step of startup takes. |
 
 ## Files
 
 | Linux | macOS | Holds |
 | --- | --- | --- |
-| `~/.config/editor/config.toml` | `~/Library/Application Support/editor/config.toml` | Settings. See [configuration.md](configuration.md). |
-| `~/.local/state/editor/sessions/` | `~/Library/Application Support/editor/sessions/` | Open files and cursor positions, per project. |
-| `~/.local/state/editor/undo/` | `~/Library/Application Support/editor/undo/` | Undo histories of saved files. |
-| `~/.local/state/editor/swap/` | `~/Library/Application Support/editor/swap/` | Unsaved text, for crash recovery. |
-| `~/.local/state/editor/window.toml` | `~/Library/Application Support/editor/window.toml` | The window's last size and place. |
-
-## Render without a window
-
-editor renders headless, for screenshots, videos and tests. These flags come from Rune.
-[development.md](development.md) has more.
-
-```sh
-editor --list-scenes                                           # the named scenes
-editor --scene finder --snap out.png --size 1440x900 --at 0.5  # one frame as PNG
-editor --scene editor --script keys.json --video out.mp4 --keys bottom-right --pointer
-editor --scene editor --tree tree.json                         # the element tree as JSON
-```
-
-| Flag | Does |
-| --- | --- |
-| `--scene NAME` | Starts from a named scene instead of your files. |
-| `--snap FILE.png` | Renders one frame at `--at` seconds. |
-| `--video FILE.mp4` | Renders a video through ffmpeg, to the script's `end` mark. |
-| `--script FILE.json` | Replays timed keys, typing, clicks, drags and wheel turns. |
-| `--size WxH`, `--scale N` | The window size in points, and the pixel scale. The default scale is 2. |
-| `--at SECONDS`, `--fps N` | The frame time, and the video frame rate. |
-| `--keys [CORNER]`, `--pointer` | Draw the script's keys and clicks on the video. |
-| `--tree FILE.json` | Writes the element tree, with each element's place and size. |
-
-`EDITOR_SCENE_THEME=gruvbox` renders a scene in that built-in theme.
-`EDITOR_SCENE_AGENT=requests.json` makes the `agent` scene play agent requests at set times.
+| `~/.config/nsvim/config.toml` | `~/Library/Application Support/nsvim/config.toml` | Settings. See [configuration.md](configuration.md). |
+| `~/.local/state/nsvim/sessions/` | `~/Library/Application Support/nsvim/sessions/` | Open files and cursor positions, per project. |
+| `~/.local/state/nsvim/undo/` | `~/Library/Application Support/nsvim/undo/` | Undo histories of saved files. |
+| `~/.local/state/nsvim/swap/` | `~/Library/Application Support/nsvim/swap/` | Unsaved text, for crash recovery. |
+| `~/.local/state/nsvim/window.toml` | `~/Library/Application Support/nsvim/window.toml` | The window's last size and place. |

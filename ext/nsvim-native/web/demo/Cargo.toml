@@ -1,0 +1,9 @@
+[package]
+name = "notes"
+version = "0.1.0"
+edition = "2024"
+description = "Keep short notes with tags."
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"

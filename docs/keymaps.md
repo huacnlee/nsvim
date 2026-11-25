@@ -1,6 +1,6 @@
 # Keys
 
-editor has two keymaps. Setup asks which one you want. To switch later, run
+nsvim has two keymaps. Setup asks which one you want. To switch later, run
 `:set keymap=classic` or `:set keymap=neovim`, use Settings › keys & mouse, or pick
 `Keymap: Neovim` or `Keymap: classic` in the command palette.
 
@@ -20,7 +20,7 @@ mode too.
 
 Press the leader alone to see these keys in a popup. Press a key from the popup, or click
 it. `Esc` or any other key closes the popup. With the Space leader, the status line shows
-`<space> for keys`. A click on it opens the popup too.
+`Space for keys`. A click on it opens the popup too.
 
 | Keys | Does |
 | --- | --- |
@@ -378,16 +378,16 @@ A command takes a range when the table shows one. The next section explains rang
 
 | Command | Does |
 | --- | --- |
-| `:w`, `:write` | Write the buffer. In Settings, write `config.toml` |
+| `:w`, `:write` | Write the buffer |
 | `:w path`, `:sav path`, `:saveas path` | Write to `path`. The buffer takes the new path |
 | `:wa`, `:wall` | Write every modified buffer |
-| `:q`, `:quit`, `:clo`, `:close` | Close the buffer. After the last buffer, quit. In Settings, close Settings |
+| `:q`, `:quit`, `:clo`, `:close` | Close the buffer. After the last buffer, quit |
 | `:q!` | Close the buffer and drop its changes |
 | `:wq`, `:wq path` | Write the buffer, then close it |
 | `:x`, `:xit`, `:exi`, `:exit` | Write the buffer if it changed, then close it |
-| `:qa`, `:qall`, `:quita`, `:quitall` | Quit. A modified buffer or an unwritten Settings change stops it |
+| `:qa`, `:qall`, `:quita`, `:quitall` | Quit. A modified buffer stops it |
 | `:qa!` | Quit and drop every change |
-| `:wqa`, `:wqall`, `:xa`, `:xall` | Write every modified buffer and Settings, then quit when the writes are done |
+| `:wqa`, `:wqall`, `:xa`, `:xall` | Write every modified buffer, then quit when the writes are done |
 | `:e path`, `:edit path` | Open a file. A relative path starts at the project root. `~/` is your home folder |
 | `:e` | Read the buffer again from disk. With unsaved changes, it stops with `E37` |
 | `:e!` | Read the buffer again from disk and drop its changes |
@@ -483,12 +483,12 @@ All the changes of one `:s` undo as one step.
 `:set name` turns an option on, `:set noname` turns it off, `:set name!` flips it and
 `:set name=value` gives it a value. `:set name?` shows the value. One `:set` takes several
 options: `:set ts=2 noet wrap`. A change applies at once and
-shows in Settings. To keep it in `config.toml`, open Settings and run `:w`.
+shows in Settings. To keep it in `config.toml`, change it in Settings.
 
 | Option | Short | Values |
 | --- | --- | --- |
 | `keymap` | | `neovim`, `classic` |
-| `theme` | | `light`, `dark`, `system`, `omarchy`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
+| `theme` | | `light`, `dark`, `system`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
 | `number` | `nu` | `:set nu` shows absolute numbers, `:set nonu` hides them. `:set nu=hybrid`, `relative`, `absolute` or `off` sets the style |
 | `numbers` | | `hybrid`, `relative`, `absolute`, `off` |
 | `relativenumber` | `rnu` | `:set rnu` shows hybrid numbers, `:set nornu` shows absolute numbers |
@@ -646,17 +646,17 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 
 | Command | Does |
 | --- | --- |
-| `Find file` | Find a file |
-| `Find in project` | Search the project |
+| `Find file…` | Find a file |
+| `Find in project…` | Search the project |
 | `Save`, `Save all` | Write the buffer, every modified buffer |
 | `Toggle file tree` | Show or hide the file tree |
-| `Open settings` | Open Settings |
+| `Open settings…` | Open Settings |
 | `Close tab`, `Next tab`, `Previous tab` | Close, go to the next, go to the previous tab |
 | `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
-| `Theme: dark`, `Theme: light`, `Theme: follow the OS`, `Theme: follow Omarchy` | Switch the theme |
+| `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 | `Toggle soft wrap` | Turn soft wrap on or off |
-| `Show every key` | Show every key, with search |
-| `Agent: list outside changes` | List the changes made on disk from outside the editor |
+| `Show every key…` | Show every key, with search |
+| `Agent: list outside changes…` | List the changes made on disk from outside the editor |
 | `Agent: clear change marks` | Clear the outside-change marks |
 | `Agent: show the next proposal` | Show the next agent proposal |
 | `Quit` | Quit. A modified buffer stops it |
@@ -675,7 +675,9 @@ in its section name. Case counts only when you type an uppercase letter, as with
 ### Settings
 
 `:Settings` or `SPC ,` in the Neovim keymap, and `Ctrl ,` in the classic keymap, open
-Settings as a tab. A change applies at once.
+Settings over the whole window. A change applies at once and goes to `config.toml` at once.
+Settings takes every key while it shows. `:`, the leader and the window shortcuts do nothing
+there.
 
 | Keys | Does |
 | --- | --- |
@@ -683,13 +685,10 @@ Settings as a tab. A change applies at once.
 | `h` `←`, `l` `→` | Change the option back, forward |
 | `Enter` | Change the option forward |
 | `Space` | Change the option forward. Classic keymap |
-| `SPC` | Open the leader menu. Neovim keymap |
 | `Tab` `J`, `⇧ Tab` `K` | Go to the next, previous section |
-| `1` to `5` | Go to a section: `appearance`, `font`, `editor`, `formatting`, `keys & mouse` |
-| `:w`, `:q`, `:wq` | Write `config.toml`, close Settings, do both. Neovim keymap |
-| `Ctrl S`, `Ctrl W` | Write `config.toml`, close Settings. Classic keymap |
-| `Ctrl P`, `Ctrl ⇧ P`, `Ctrl ⇧ F`, `Ctrl B`, `Ctrl Tab`, `Ctrl Q` | Work as in the text. Classic keymap |
-| `\` | Open the leader menu, with the backslash leader |
+| `1` to `5` | Go to a section: Appearance, Font, Editor, Formatting, Keys & mouse |
+| `Esc`, `Ctrl W` (`⌘ W` on macOS) | Close Settings |
+| `Ctrl Q` | Quit. Classic keymap |
 
 ### Setup
 
@@ -705,7 +704,7 @@ The first launch runs setup in five steps.
 | Chars, `Backspace` | Type, delete the name of the terminal command, on the name field |
 
 The `skip`, `back` and `next →` buttons on the bottom line do the same with the mouse. On the
-last step, click `open editor →`, or go to the last choice and press `Enter`. The editor then
+last step, click `open nsvim →`, or go to the last choice and press `Enter`. The editor then
 writes `config.toml` and opens.
 
 ### Agent proposals

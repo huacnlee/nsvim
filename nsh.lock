@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "packages": [
+    {
+      "name": "nsvim-native",
+      "version": "0.3.2",
+      "path": "ext/nsvim-native",
+      "module": "nsvim-native"
+    }
+  ]
+}

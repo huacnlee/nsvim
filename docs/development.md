@@ -1,94 +1,126 @@
 # Development
 
-## Build
+## Build and run
 
 ```sh
-cargo build              # debug
-cargo build --release    # what you run every day
+nsh run                  # the app in a window. TSX edits apply at once (NSH 0.7 or later)
+nsh check                # cargo check, the nsvim-native types, and tsc over the TSX
+nsh build                # the crate and the TSX bundle. Read its warnings
+cargo build --release    # target/release/nsvim
+nsh build --release -o target/release/nsh   # its interface, next to it (docs/install.md)
 ```
 
-Linux needs `libxkbcommon-dev` and `libwayland-dev` (Debian and Ubuntu names). Rune is a git
-dependency pinned to one revision. Apps that build Rune patch four crates from the same
-revision; `Cargo.toml` has them under `[patch.crates-io]`. To move to a newer Rune, change all
-six `rev` values together.
+`nsh.json` lists the app's Rust as a path dependency (`ext/nsvim-native`), and `App.tsx` is the
+entry. Install the NSH CLI from [nsh.dev](https://nsh.dev/docs/installation).
+
+A window run uses your real home folder, and the setup screen writes to `~/.bashrc` and git's
+global config. For tests by hand, use a scratch home:
+
+```sh
+S=~/.cache/nsvim-scratch; mkdir -p $S/home
+HOME=$S/home XDG_CONFIG_HOME=$S/config XDG_STATE_HOME=$S/state nsh run
+```
+
+Linux needs GTK 4.14 or later (`libgtk-4-dev` on Debian and Ubuntu).
 
 ## Code layout
 
 ```text
-src/
-  lib.rs           the core: no window code
-  buffer.rs        rope, undo, marks, saves
-  editor.rs        Editor, Doc, Mode, Action, KeyInput
-  vim/             the Neovim keymap, Ex commands, search, regex
-  classic/         the classic keymap and multiple cursors
-  syntax/          tree-sitter objects and motions
-  main.rs          the app
-  app/             state, key routing, mouse, pickers, Settings, setup, LSP glue
-  ui/              views
-  services/        workers: io, index, git, grep, watch, lsp
-  config.rs        config.toml
-  theme.rs         palettes and the Omarchy reader
-  highlight.rs     syntax colours
-  scenes.rs        named states for headless snapshots
-docs/              this documentation and its media
-assets/            the icon and the Linux desktop entry
+Cargo.toml            the workspace: ext/nsvim-native and crates/editor-core
+nsh.json              the NSH app: its theme and its Rust dependency
+nsh.lock              the resolved dependencies, written by nsh
+theme.json            the theme tokens
+App.tsx               the entry: the window and its screens
+src/                  the TSX screens: tabs, tree, status and command lines, overlays,
+                      Settings, setup, shared controls
+crates/editor-core/   the core (library `editor`): no window code, no I/O
+  src/buffer.rs       rope, undo, marks, saves
+  src/editor.rs       Editor, Doc, Mode, Action, KeyInput
+  src/vim/            the Neovim keymap, Ex commands, search, regex
+  src/classic/        the classic keymap and multiple cursors
+  src/syntax/         tree-sitter objects, motions and highlight queries
+ext/nsvim-native/     the app's nshm (binary `nsvim`)
+  src/main.rs         the program: ctl, mcp, --wait, and the launch
+  src/lib.rs          the crate's exports and the launch
+  src/store.rs        Session: the app state, updates and effects
+  src/bridge.rs       the join to TSX: listeners and commands
+  src/exports/        nsvim-native: Workspace, TextArea, Icon and the area modules
+  src/model.rs        the text area's frame, from the Editor
+  src/app/            state, key routing, mouse, pickers, Settings, setup, LSP glue
+  src/ui/             Rust views (text area, popups, diff review, menu), theme tokens
+  src/services/       workers: io, index, git, grep, watch, lsp, probe, ipc
+  src/ipc/            the ctl and mcp commands
+  tests/              Headless tests of the real window
+  web/                the web build (build.sh, the demo, libc)
+docs/                 this documentation
+assets/               the icon and the Linux desktop entry
+website/              the website (Astro)
 ```
 
-Keep files under 800 lines, and put tests in a sibling `tests.rs` or `*_tests.rs`.
+Keep files under 800 lines, and put tests in a sibling `*_tests.rs` file or in `ext/nsvim-native/tests/`.
+
+## Look and copy
+
+- The program is `nsvim`, in lower case.
+- Colours come only from theme tokens (`theme.json`, `ext/nsvim-native/src/ui/style.rs`).
+- Corners are square: the radius is 2px (`rounded-(--radius)`). Use checkboxes, not switches.
+- Interface copy follows the [NSH Design Guides](https://nsh.dev/docs/design-guides.md):
+  sentence case for labels, hints and states, with no final period on a short label. Vim's
+  own text (`NORMAL`, `E37: ...`) stays as Vim writes it.
 
 ## Tests
 
 ```sh
-cargo test                                    # every test
-cargo test --lib                              # the core only: no window, no GPU
-cargo test --bin editor app::tests            # the app, driven by keys and clicks
-cargo test --bin editor lsp_live -- --ignored # against a real clangd
+TMPDIR=~/.cache/nsvim-test-tmp cargo test     # every test: core, app, Headless
+cargo test -p editor-core                     # the core only, fast, no window
+cargo clippy --all-targets -- -D warnings     # CI runs this
+cargo fmt
 ```
 
-The app tests run the real view and key routing in Rune's headless runtime. For example:
+Point `TMPDIR` at a folder outside `/tmp` and outside the checkout. Tests make project folders
+in it.
+
+The app tests in `ext/nsvim-native/tests/` start the real window in NSH's Headless engine, with no display.
+They press keys and views, and they read texts, test ids and app state. For example:
 
 ```rust
-let mut rt = run(app("neovim"));
-typ(&mut rt, "jdd");
-assert!(!text(&rt).contains("let a"));
+let mut app = start(&file);
+typ(&mut app, &["j", "d", "d"]);
+app.wait_for("text:/let b/")?;
 ```
 
-## Scenes and snapshots
+The helpers are in `ext/nsvim-native/tests/common/mod.rs`. They keep `HOME`, `XDG_CONFIG_HOME` and
+`XDG_STATE_HOME` in a scratch folder, so no test writes to your home folder.
 
-A scene is a named starting state in `src/scenes.rs`. `--snap` renders one to a PNG with no
-window:
+The bench tests print timings and check a budget. Run them in an optimized build:
 
 ```sh
-target/debug/editor --list-scenes
-target/debug/editor --snap finder.png --scene finder --size 1440x900 --scale 2 --at 0.5
+TMPDIR=~/.cache/nsvim-test-tmp cargo test --profile quick -p nsvim-native \
+  --test flows_bench -- --ignored --nocapture --test-threads=1
 ```
-
-`--at 0.5` waits half a second, so the layout settles and the font is measured.
-
-## Videos
-
-Rune records a scene and a key script straight to video, with the keys drawn as caps:
-
-```sh
-target/release/editor --scene editor --script demo.json \
-  --video demo.mp4 --fps 60 --size 1600x900 --scale 1.2 --keys bottom-right
-```
-
-`docs/media/editor-promo.mp4` is five such clips with title cards, joined with ffmpeg.
-
-To keep your own paths out of public media, record with a clean home folder: set `HOME` to an
-empty folder that holds a copy of the repository, and run from that copy.
 
 ## Releases
 
 Push a tag that starts with `v`:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
-`.github/workflows/release.yml` builds Linux x86-64 and ARM64 and macOS Apple silicon and
-Intel, packs each binary with the README, the license, the icon and the desktop entry, and
-attaches the archives to a GitHub release. `.github/workflows/ci.yml` runs the tests on every
-push and pull request.
+The tag must be the version in `nsh.json` and `ext/nsvim-native/Cargo.toml`, with a `v` in front.
+
+`.github/workflows/release.yml` builds `nsvim` for Linux, macOS and Windows. Each job compiles
+App.tsx with `nsh build --release`. `scripts/package-release.py` packs the program with its
+interface (`nsh/bundle.nshc`) into the archive that `install.sh` and `install.ps1` read. The
+publish job joins the checksums into one `SHA256SUMS` and attaches everything to a GitHub release.
+[docs/install.md](install.md) lists the archives.
+
+`.github/workflows/ci.yml` runs the format check, clippy and the tests on every push and pull
+request. It also tests the installers against local release fixtures:
+
+```sh
+TMPDIR=~/.cache/nsvim-test-tmp scripts/test-install.sh
+```
+
+`scripts/test-install.ps1` does the same for `install.ps1` on Windows.

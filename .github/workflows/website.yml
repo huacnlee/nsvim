@@ -1,0 +1,85 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths: ['website/**', 'install.sh', 'install.ps1', 'ext/**', 'src/**', 'App.tsx', 'theme.json', 'Cargo.lock', 'nsh.json', 'nsh.lock', '.github/workflows/website.yml']
+  pull_request:
+    paths: ['website/**', 'install.sh', 'install.ps1', 'ext/**', 'src/**', 'App.tsx', 'theme.json', 'Cargo.lock', 'nsh.json', 'nsh.lock', '.github/workflows/website.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      # The live editor on the page: nsvim built for the web with NSH. The build is about 28 MB,
+      # so it is made here for each deploy and is not in the repository.
+      # NSH builds a small native program of the app's crate first, which links GTK on Linux.
+      # The C parsers compile to WebAssembly with clang and llvm-ar.
+      - name: Linux packages
+        working-directory: .
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev pkg-config clang llvm
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.99.1'
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: web
+      - name: Install the NSH CLI
+        working-directory: .
+        run: |
+          curl -fsSL https://nsh.dev/install.sh | NSH_VERSION=v0.7.0 sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Build nsvim for the web
+        working-directory: .
+        run: |
+          nsh --version
+          ext/nsvim-native/web/build.sh
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+        env:
+          SITE_URL: https://huacnlee.github.io
+          BASE_PATH: /nsvim
+      - run: bun --bun x playwright install --with-deps chromium
+      - run: bun run test
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-test-results
+          path: website/test-results
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
