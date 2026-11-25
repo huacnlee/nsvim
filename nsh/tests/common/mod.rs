@@ -105,9 +105,8 @@ pub fn type_text(app: &mut Headless, text: &str) {
 
 // Probes: the flows tests read and change the app's state on the engine thread.
 
-use std::sync::atomic::AtomicBool;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use nsh_app_editor::Session;
@@ -120,9 +119,8 @@ pub type Job = Box<dyn FnOnce(Session) + Send>;
 
 type JobRx = tokio::sync::mpsc::UnboundedReceiver<Job>;
 
-/// A launch waiting for its `Probed` root: its id, what it opens, its probe jobs, and the flag
-/// the root sets while its key view has the focus.
-type Waiting = (u64, nsh_app_editor::Launch, JobRx, Arc<AtomicBool>);
+/// A launch waiting for its `Probed` root: its id, what it opens, and its probe jobs.
+type Waiting = (u64, nsh_app_editor::Launch, JobRx);
 
 /// Launches that a `Probed` root takes when it starts, by id.
 static LAUNCHES: Mutex<Vec<Waiting>> = Mutex::new(Vec::new());
@@ -137,11 +135,11 @@ pub struct ProbedProps {
 /// that runs probe jobs on the engine thread.
 #[component]
 pub fn Probed(props: ProbedProps) -> impl IntoElement {
-    let (launch, mut jobs, focused) = {
+    let (launch, mut jobs) = {
         let mut all = LAUNCHES.lock().unwrap();
         let at = all.iter().position(|(id, ..)| *id == props.id).expect("a launch for this probe");
-        let (_, l, rx, focused) = all.remove(at);
-        (l, rx, focused)
+        let (_, l, rx) = all.remove(at);
+        (l, rx)
     };
     let s = Session::new(nsh_app_editor::app_for(&launch));
     spawn(async move {
@@ -149,15 +147,13 @@ pub fn Probed(props: ProbedProps) -> impl IntoElement {
             job(s);
         }
     });
-    nsh_app_editor::window(s, move |on| focused.store(on, Ordering::SeqCst))
+    nsh_app_editor::window(s)
 }
 
 /// The app under test and a probe into its state.
 pub struct Flow {
     pub ui: Headless,
     jobs: tokio::sync::mpsc::UnboundedSender<Job>,
-    /// The view that takes the keys has the focus.
-    focused: Arc<AtomicBool>,
 }
 
 /// The app with `launch`, probed. The editor's window on a Linux desktop, as `start_with`.
@@ -166,15 +162,15 @@ pub fn flow_with(launch: nsh_app_editor::Launch) -> Flow {
     static NEXT: AtomicU64 = AtomicU64::new(1);
     let id = NEXT.fetch_add(1, Ordering::SeqCst);
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    let focused = Arc::new(AtomicBool::new(false));
-    LAUNCHES.lock().unwrap().push((id, launch, rx, focused.clone()));
+    LAUNCHES.lock().unwrap().push((id, launch, rx));
     let root = nsh_core::element::Root::new::<Probed>(move || ProbedProps { id }).app_id("dev.editor.app");
     let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ..EngineConfig::new(root) };
     config.environment.os = Os::Linux;
     let ui = Headless::start(config).unwrap();
-    let mut f = Flow { ui, jobs: tx, focused };
+    let mut f = Flow { ui, jobs: tx };
+    // Keys go nowhere until the view that takes them has the focus.
     let start = Instant::now();
-    while !f.focused.load(Ordering::SeqCst) {
+    while !f.read(|a| a.key_focus) {
         assert!(start.elapsed() < Duration::from_secs(10), "the key view never took the focus");
         f.ui.wait(Duration::from_millis(20)).unwrap();
     }

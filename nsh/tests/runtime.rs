@@ -17,23 +17,30 @@ use serde_json::json;
 /// A config that serves the control socket.
 const IPC_CONFIG: &str = "[ipc]\nenabled = true\n";
 
-/// Keeps the control sockets in a folder of this test run, never in the user's runtime folder.
-/// The path stays short: a Unix socket path has a limit of about 100 bytes.
-fn isolate_sockets() {
+/// Keeps every file the editor writes in a folder of this test run: state, config, control
+/// sockets, and the home folder and shell, so nothing can reach the user's own. Every test
+/// calls it before it starts the app. The socket path stays short: a Unix socket path has a
+/// limit of about 100 bytes.
+fn isolate() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
         isolate_home();
         let base = std::env::var_os("TMPDIR").map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
         let dir = base.join(format!("rt-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
+        let home = dir.join("home");
+        std::fs::create_dir_all(&home).unwrap();
         // SAFETY: set once, before any test starts the app.
-        unsafe { std::env::set_var("XDG_RUNTIME_DIR", &dir) };
+        unsafe {
+            std::env::set_var("XDG_RUNTIME_DIR", &dir);
+            std::env::set_var("HOME", &home);
+            std::env::set_var("SHELL", home.join("sh"));
+        }
     });
 }
 
 /// The app on `files` in `project`, with the control socket on.
 fn start_serving(project: &Path, files: &[&Path]) -> Headless {
-    isolate_sockets();
+    isolate();
     start_with(Launch {
         project: Some(project.to_path_buf()),
         config: Some(IPC_CONFIG.into()),
@@ -83,6 +90,7 @@ fn ex(app: &mut Headless, cmd: &str) {
 
 #[test]
 fn a_path_opens_in_the_running_editor_over_its_socket() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let b = write(dir.path(), "b.txt", "bravo one\nbravo two\n");
@@ -100,6 +108,7 @@ fn a_path_opens_in_the_running_editor_over_its_socket() -> Result<(), String> {
 
 #[test]
 fn wait_returns_when_the_buffer_closes() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let b = write(dir.path(), "NOTES.md", "notes\n");
@@ -121,13 +130,14 @@ fn wait_returns_when_the_buffer_closes() -> Result<(), String> {
 
 #[test]
 fn no_running_editor_means_the_path_opens_a_window() {
-    isolate_sockets();
+    isolate();
     let dir = scratch();
     assert_eq!(ipc::client::open_in_running(dir.path(), &[], false), None);
 }
 
 #[test]
 fn ctl_requests_round_trip_through_the_socket() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\nbeta\n");
     let mut app = start_serving(dir.path(), &[&a]);
@@ -149,6 +159,7 @@ fn ctl_requests_round_trip_through_the_socket() -> Result<(), String> {
 
 #[test]
 fn the_session_reopens_its_files_where_the_cursor_was() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let b = write(dir.path(), "b.txt", "one\ntwo\nthree\n");
@@ -172,7 +183,7 @@ fn the_session_reopens_its_files_where_the_cursor_was() -> Result<(), String> {
 
 /// The app on `file`, reading `config` again when it changes.
 fn start_watching(file: &Path, config: &Path) -> Headless {
-    isolate_home();
+    isolate();
     let launch = Launch {
         project: file.parent().map(Path::to_path_buf),
         config: Some(std::fs::read_to_string(config).unwrap()),
@@ -189,6 +200,7 @@ fn start_watching(file: &Path, config: &Path) -> Headless {
 
 #[test]
 fn a_change_to_config_toml_applies_while_the_editor_runs() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let conf = scratch();
@@ -210,6 +222,7 @@ fn a_change_to_config_toml_applies_while_the_editor_runs() -> Result<(), String>
 
 #[test]
 fn a_config_that_does_not_parse_shows_why_and_keeps_the_old_one() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let conf = scratch();
@@ -229,6 +242,7 @@ fn a_config_that_does_not_parse_shows_why_and_keeps_the_old_one() -> Result<(), 
 
 #[test]
 fn q_with_unsaved_edits_warns_and_keeps_the_window() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&file);
@@ -245,6 +259,7 @@ fn q_with_unsaved_edits_warns_and_keeps_the_window() -> Result<(), String> {
 
 #[test]
 fn wq_writes_the_file_then_quits() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&file);
@@ -259,6 +274,7 @@ fn wq_writes_the_file_then_quits() -> Result<(), String> {
 
 #[test]
 fn the_close_button_quits_a_clean_editor() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&file);
@@ -269,6 +285,7 @@ fn the_close_button_quits_a_clean_editor() -> Result<(), String> {
 
 #[test]
 fn the_close_button_asks_once_over_unsaved_edits_then_keeps_them_for_recovery() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&file);
@@ -289,6 +306,7 @@ fn the_close_button_asks_once_over_unsaved_edits_then_keeps_them_for_recovery() 
 
 #[test]
 fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
+    isolate();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&file);
@@ -298,5 +316,22 @@ fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
     app.quit_request()?;
     app.wait_for("text:/E37/")?;
     assert!(!app.quit());
+    Ok(())
+}
+
+#[test]
+fn search_results_show_the_preview_without_a_key() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let main = write(dir.path(), "main.rs", "fn main() {}\n");
+    write(dir.path(), "lib.rs", "// one\n// two\nconst NEEDLE: u8 = 1;\n");
+    let mut app = start(&main);
+    app.wait_for("text:/fn main/")?;
+    typ(&mut app, &["space", "/"]);
+    app.wait_for("text:Find in Project")?;
+    common::type_text(&mut app, "NEEDLE");
+    app.wait_for("id:picker-list >> label:lib.rs:3")?;
+    // No key after the results: their arrival asks for the preview.
+    app.wait_for("id:picker-preview >> text:/const/")?;
     Ok(())
 }
