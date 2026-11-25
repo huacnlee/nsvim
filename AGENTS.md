@@ -43,4 +43,4 @@ helpers.
 
 ## Talking to a running editor
 
-`editor ctl` and `editor mcp` drive a running editor over its socket. See `docs/agents.md`.
+`nsvim ctl` and `nsvim mcp` drive a running editor over its socket. See `docs/agents.md`.

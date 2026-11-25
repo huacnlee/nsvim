@@ -1,5 +1,5 @@
-//! Command-line arguments: `edit [path[:line]] [+line] [--wait] [--new]`, `edit ctl` and
-//! `edit mcp`. A folder opens as the project. A file opens in the project around it: its git
+//! Command-line arguments: `nsvim [path[:line]] [+line] [--wait] [--new]`, `nsvim ctl` and
+//! `nsvim mcp`. A folder opens as the project. A file opens in the project around it: its git
 //! work tree, else its folder.
 
 use std::path::{Path, PathBuf};
@@ -9,15 +9,15 @@ use editor::buffer::Pos;
 pub const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  edit [PATH[:LINE]]... [+LINE] [--wait] [--new]
-  edit ctl COMMAND [ARGS]     drive the running editor (edit ctl --help)
-  edit mcp                    serve the running editor to AI agents, over stdio
+  nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  nsvim ctl COMMAND [ARGS]    drive the running editor (nsvim ctl --help)
+  nsvim mcp                   serve the running editor to AI agents, over stdio
 
 Examples:
-  edit .                      open this folder as the project
-  edit src/main.rs:42         open a file at line 42, in the project around it
-  edit --wait NOTES.md        return when its buffer closes, for $EDITOR and git
-  edit --new                  open a new window, also when one runs for the project
+  nsvim .                     open this folder as the project
+  nsvim src/main.rs:42        open a file at line 42, in the project around it
+  nsvim --wait NOTES.md       return when its buffer closes, for $EDITOR and git
+  nsvim --new                 open a new window, also when one runs for the project
 
 A path opens in the editor already running for its project, when there is one.
 
@@ -30,10 +30,10 @@ Options:
 Docs: https://github.com/huacnlee/nsvim/blob/main/docs/cli.md
 ";
 
-pub const MCP_USAGE: &str = "edit mcp: a Model Context Protocol server, over stdio, for the editor
+pub const MCP_USAGE: &str = "nsvim mcp: a Model Context Protocol server, over stdio, for the editor
 running in the current folder. An agent starts it. You do not run it by hand.
 
-  claude mcp add nsvim -- edit mcp
+  claude mcp add nsvim -- nsvim mcp
 
 Tools and setup for Codex and opencode: https://github.com/huacnlee/nsvim/blob/main/docs/agents.md
 ";
@@ -41,9 +41,9 @@ Tools and setup for Codex and opencode: https://github.com/huacnlee/nsvim/blob/m
 /// What the command line asks for. `argv` includes the program name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
-    /// `edit ctl ARGS`: drive a running editor.
+    /// `nsvim ctl ARGS`: drive a running editor.
     Ctl(Vec<String>),
-    /// `edit mcp`: serve the running editor to an agent over stdio.
+    /// `nsvim mcp`: serve the running editor to an agent over stdio.
     Mcp,
     McpHelp,
     Help,

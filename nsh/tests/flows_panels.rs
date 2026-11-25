@@ -297,10 +297,7 @@ fn the_terminal_step_offers_vi_and_vim_aliases() {
     f.ui.wait_for("label:Open nsvim with vi and vim").unwrap();
     // The step builds again as each $PATH lookup answers. Press after the last one.
     f.settle("the $PATH lookups answer", |a| match &a.screen {
-        Screen::Setup(s) => {
-            s.exe.is_some()
-                && [s.cfg.cli.name.as_str(), "nsvim", "edtr", "e", "edx", "ered", "medit"].iter().all(|n| s.on_path.contains_key(*n))
-        }
+        Screen::Setup(s) => s.exe.is_some() && s.on_path.contains_key("nsvim"),
         _ => false,
     });
     let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias vi=") && t.contains("vim="));

@@ -117,7 +117,7 @@ fn setup_asks_each_name_once_and_takes_the_workers_answers() {
     let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
     let super::Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
     let first = s.check_name();
-    assert!(first.contains(&s.cfg.cli.name) && first.contains(&"edtr".to_string()), "{first:?}");
+    assert_eq!(first, vec!["nsvim".to_string()], "setup asks only for the command's name");
     assert!(s.check_name().is_empty(), "each name is asked once");
     let name = s.cfg.cli.name.clone();
     a.setup_answer(Answer::OnPath(vec![(name, Some("/usr/bin/editor".into()))]));

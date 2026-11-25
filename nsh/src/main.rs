@@ -1,8 +1,8 @@
 //! editor: a lightweight modal editor for opening code fast, reading it, finding your way
 //! around it and making quick edits, drawn with each platform's native views.
 //!
-//! `edit [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
-//! already running for the project when there is one. `edit ctl` and `edit mcp` talk to a
+//! `nsvim [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
+//! already running for the project when there is one. `nsvim ctl` and `nsvim mcp` talk to a
 //! running editor (see `docs/agents.md`).
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]

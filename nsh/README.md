@@ -39,7 +39,7 @@ Done: open, Vim and classic keys, cursor, Visual selection, scrolling (keys and 
 place the cursor, `:w`, `:q`, colours for 13 languages, light and dark theme.
 
 Not done: tabs, file tree, finder and pickers, leader menu, Settings, setup, git signs, LSP,
-search highlights, wrap, the control socket (`editor ctl`, `editor mcp`), sessions, swap files,
+search highlights, wrap, the control socket (`nsvim ctl`, `nsvim mcp`), sessions, swap files,
 and IME input.
 
 ## Known limits of NSH that the port works around

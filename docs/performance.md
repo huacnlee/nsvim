@@ -60,7 +60,7 @@ times the index walk on that folder.
 See where launch time goes. Each line is milliseconds since `main` started:
 
 ```sh
-EDITOR_TIMING=1 editor --new src/main.rs
+EDITOR_TIMING=1 nsvim --new src/main.rs
 ```
 
 ```text

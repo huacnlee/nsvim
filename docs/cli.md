@@ -1,33 +1,33 @@
 # Command line
 
-`editor` opens files and folders. `editor ctl` drives an editor that is already running, from
-a shell, a script or an AI agent. `editor mcp` serves that same editor to agents that speak the
+`editor` opens files and folders. `nsvim ctl` drives an editor that is already running, from
+a shell, a script or an AI agent. `nsvim mcp` serves that same editor to agents that speak the
 Model Context Protocol.
 
 ```sh
-editor .                          # open this folder as the project
-editor src/main.rs:42             # open a file at line 42
-editor ctl state                  # what the running editor shows, as JSON
-claude mcp add editor -- editor mcp
+nsvim .                          # open this folder as the project
+nsvim src/main.rs:42             # open a file at line 42
+nsvim ctl state                  # what the running editor shows, as JSON
+claude mcp add nsvim -- nsvim mcp
 ```
 
 ## Open files and folders
 
 ```text
-editor [PATH[:LINE]]... [+LINE] [--wait] [--new]
+nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
 ```
 
 | Form | Does |
 | --- | --- |
 | `editor` | Opens the current folder as the project, with the files of the last session. |
-| `editor .` | The same, for the folder you name. |
-| `editor src/main.rs` | Opens the file, in the project around it. |
-| `editor src/main.rs:42` | Opens the file with the cursor on line 42. |
-| `editor +42 src/main.rs` | The same. `+LINE` applies to the first file. |
+| `nsvim .` | The same, for the folder you name. |
+| `nsvim src/main.rs` | Opens the file, in the project around it. |
+| `nsvim src/main.rs:42` | Opens the file with the cursor on line 42. |
+| `nsvim +42 src/main.rs` | The same. `+LINE` applies to the first file. |
 | `editor a.rs b.rs` | Opens both files. The last one is active. |
-| `editor . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
-| `editor --wait NOTES.md` | Returns when you close that buffer. See [Use editor as `$EDITOR`](#use-editor-as-editor). |
-| `editor --new` | Opens a new window, also when an editor runs for the project already. |
+| `nsvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
+| `nsvim --wait NOTES.md` | Returns when you close that buffer. See [Use editor as `$EDITOR`](#use-editor-as-editor). |
+| `nsvim --new` | Opens a new window, also when an editor runs for the project already. |
 | `editor --help`, `editor -h` | Prints the usage. |
 | `editor --version`, `editor -V` | Prints the version: `editor 0.3.2`. |
 
@@ -65,8 +65,8 @@ window forward. `--new` skips this and always opens a new window.
 in your editor:
 
 ```sh
-export EDITOR="editor --wait" VISUAL="editor --wait"
-git config --global core.editor "editor --wait"
+export EDITOR="nsvim --wait" VISUAL="nsvim --wait"
+git config --global core.editor "nsvim --wait"
 ```
 
 With an editor running for the project, the file opens there, and the command returns when
@@ -74,13 +74,13 @@ you close that buffer: `:q`, `:wq`, `ZZ`, `SPC q` or `Ctrl W`. Without one, edit
 window and returns when you close the window. Setup's terminal step can add these lines for
 you.
 
-## `editor ctl`
+## `nsvim ctl`
 
 ```text
-editor ctl [--socket PATH] [--json] COMMAND [ARGS]
+nsvim ctl [--socket PATH] [--json] COMMAND [ARGS]
 ```
 
-`editor ctl` sends one request to the running editor of the current folder and prints the
+`nsvim ctl` sends one request to the running editor of the current folder and prints the
 reply. Lines and columns are 1-based. Paths are absolute or relative to the project folder.
 
 | Flag | Does |
@@ -146,15 +146,15 @@ When text is selected, `selection` holds `{"start": {"line", "column"}, "end": {
 not open yet. A file that does not exist starts empty. Nothing is written until you save.
 
 ```sh
-editor ctl reveal src/main.rs:10-14 --note "this is the bug"
-sed 's/foo/bar/' src/main.rs | editor ctl propose src/main.rs --label "rename foo"
-editor ctl read --lines 1-20
-editor ctl state | jq '.active | {relative, line, dirty}'
+nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
+sed 's/foo/bar/' src/main.rs | nsvim ctl propose src/main.rs --label "rename foo"
+nsvim ctl read --lines 1-20
+nsvim ctl state | jq '.active | {relative, line, dirty}'
 ```
 
 ### Which editor answers
 
-`editor ctl` and `editor mcp` find the editor in this order:
+`nsvim ctl` and `nsvim mcp` find the editor in this order:
 
 1. The socket in `$EDITOR_SOCKET`, when an editor answers there.
 2. The editor whose project is the current folder, or a folder above it.
@@ -173,13 +173,13 @@ socket off.
 | `1` | The editor refused the request. The reason is on stderr, such as a file that is not open, or `edit` when `ipc.allow_edits` is off. |
 | `2` | No editor runs for this folder, the editor did not answer in 10 seconds, or the command is wrong. |
 
-## `editor mcp`
+## `nsvim mcp`
 
-`editor mcp` is a Model Context Protocol server over stdio, for the editor running in the
+`nsvim mcp` is a Model Context Protocol server over stdio, for the editor running in the
 current folder. An agent starts it. Add it once:
 
 ```sh
-claude mcp add editor -- editor mcp       # Claude Code
+claude mcp add nsvim -- nsvim mcp       # Claude Code
 ```
 
 The server gives the agent 12 tools: `editor_state`, `editor_selection`, `editor_read`,
@@ -192,12 +192,12 @@ ctl` command of the same name. Setup for Codex and opencode, and what each tool 
 
 | Variable | Does |
 | --- | --- |
-| `EDITOR_SOCKET` | The socket `editor ctl` and `editor mcp` use first. |
+| `EDITOR_SOCKET` | The socket `nsvim ctl` and `nsvim mcp` use first. |
 | `XDG_RUNTIME_DIR` | The folder for the control sockets. |
 | `XDG_CONFIG_HOME`, `XDG_STATE_HOME` | Move the config and state folders on Linux. |
 | `XDG_ACTIVATION_TOKEN` | Lets a second `editor` command give the running window focus on Wayland. |
 | `SHELL` | Setup's terminal step writes to `~/.zshrc` for zsh, else `~/.bashrc`. |
-| `EDITOR_TIMING` | `EDITOR_TIMING=1 editor .` prints how long each step of startup takes. |
+| `EDITOR_TIMING` | `EDITOR_TIMING=1 nsvim .` prints how long each step of startup takes. |
 
 ## Files
 

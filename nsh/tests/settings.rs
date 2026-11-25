@@ -175,11 +175,12 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.wait_for("Use nsvim from the terminal")?;
     let git = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.starts_with("git config --global core.editor"));
     assert!(git(app.screen()), "git is on by default: {:?}", app.screen().texts());
-    assert!(app.shows("command name"), "the command's name shows while the command is on");
+    let link = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("ln -sf ") && t.ends_with("/nsvim"));
+    assert!(link(app.screen()), "the command is nsvim: {:?}", app.screen().texts());
     app.press("label:Use for git commit messages")?;
     app.wait_until("no git command", Duration::from_secs(2), |s| !git(s))?;
-    app.press("label:Add a terminal command")?;
-    app.wait_for_gone("command name", Duration::from_secs(2))?;
+    app.press("label:Add the nsvim command")?;
+    app.wait_until("no link", Duration::from_secs(2), |s| !link(s))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
     app.press("label:Open nsvim with vi and vim")?;
     app.wait_for("nothing. nsvim stays inside its window")?;
