@@ -132,6 +132,12 @@ pub enum Action {
     OpenAt(PathBuf, Pos),
     /// Rename the symbol under the cursor across the project (`:Rename name`, LSP).
     Rename(String),
+    /// Create a file, or a folder when the path ends in `/` (`:Create path`, the tree's `a`).
+    CreatePath(String),
+    /// Rename or move a file or folder (`:Move from to`, the tree's `r`).
+    MovePath(String, String),
+    /// Delete a file or folder (`:Delete path`, the tree's `d`).
+    DeletePath(String),
     /// List the language server's code actions at the cursor (`:CodeAction`).
     CodeActions,
     /// Replace lines `first..=last` with the output of a shell command run on them

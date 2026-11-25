@@ -132,6 +132,27 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
             }
             out.push(Action::Rename(name.to_string()));
         }
+        "Create" | "Mkdir" => {
+            let path = args.trim();
+            if path.is_empty() {
+                return Err("E471: Argument required".into());
+            }
+            out.push(Action::CreatePath(if name == "Mkdir" && !path.ends_with('/') { format!("{path}/") } else { path.to_string() }));
+        }
+        "Move" => {
+            let mut it = args.split_whitespace();
+            match (it.next(), it.next(), it.next()) {
+                (Some(a), Some(b), None) => out.push(Action::MovePath(a.to_string(), b.to_string())),
+                _ => return Err("E471: Usage: :Move from to".into()),
+            }
+        }
+        "Delete" => {
+            let path = args.trim();
+            if path.is_empty() {
+                return Err("E471: Argument required".into());
+            }
+            out.push(Action::DeletePath(path.to_string()));
+        }
         "CodeAction" | "codeaction" | "ca" => out.push(Action::CodeActions),
         "marks" => {
             need_doc(ed)?;

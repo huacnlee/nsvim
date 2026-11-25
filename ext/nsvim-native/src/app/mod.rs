@@ -2,6 +2,7 @@
 //! setup, git, the project index). `poll` applies what the background workers send.
 
 pub mod actions;
+mod files;
 pub mod fx;
 pub mod ipc;
 pub mod key_list;

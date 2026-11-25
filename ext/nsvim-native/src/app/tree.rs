@@ -67,6 +67,19 @@ impl TreeIndex {
         TreeIndex { children }
     }
 
+    /// Adds an empty folder (a new one, before the index worker sees it) and the folders above it.
+    pub fn add_dir(&mut self, path: &str) {
+        let mut parent = String::new();
+        for name in path.split('/').filter(|n| !n.is_empty()) {
+            let list = self.children.entry(parent.clone()).or_default();
+            if !list.iter().any(|(n, d)| n == name && *d) {
+                list.push((name.to_string(), true));
+                list.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| caseless(&a.0, &b.0)).then_with(|| a.0.cmp(&b.0)));
+            }
+            parent = if parent.is_empty() { name.to_string() } else { format!("{parent}/{name}") };
+        }
+    }
+
     /// The rows on screen with `open` folders expanded.
     pub fn rows(&self, open: &HashSet<String>) -> Vec<TreeRow> {
         let mut out = Vec::new();
@@ -187,6 +200,14 @@ impl App {
         }
     }
 
+    /// Opens the command line with `cmd` filled in, the cursor `back` chars before its end.
+    fn tree_command(&mut self, cmd: &str, back: usize) {
+        editor::vim::open_cmdline(&mut self.ed, ':', cmd);
+        if let Some(c) = &mut self.ed.cmd {
+            c.caret -= back.min(c.caret);
+        }
+    }
+
     /// Keys while the tree has focus. False passes the key on.
     pub fn tree_key(&mut self, k: KeyInput, tx: &mut Tx) -> bool {
         let rows = self.tree.index.rows(&self.tree.open);
@@ -250,6 +271,29 @@ impl App {
                 }
             }
             KeyCode::Esc | KeyCode::Char('q') => self.tree.focus = false,
+            // File operations: each opens the command line filled in, so Enter confirms and Esc
+            // cancels. `a` creates in the folder under the cursor (a trailing `/` makes a folder).
+            KeyCode::Char('a') | KeyCode::Char('A') if !k.ctrl && !k.cmd => {
+                let r = &rows[cur];
+                let dir = if r.dir { r.path.clone() } else { r.path.rsplit_once('/').map(|(p, _)| p.to_string()).unwrap_or_default() };
+                let base = if dir.is_empty() { String::new() } else { format!("{dir}/") };
+                let extra = if k.code == KeyCode::Char('A') { "/" } else { "" };
+                self.tree_command(&format!("Create {base}{extra}"), extra.len());
+            }
+            KeyCode::Char('r') | KeyCode::Char('m') | KeyCode::F(2) if !k.ctrl && !k.cmd => {
+                let p = rows[cur].path.clone();
+                self.tree_command(&format!("Move {p} {p}"), 0);
+            }
+            KeyCode::Char('d') | KeyCode::Delete if !k.ctrl && !k.cmd => {
+                let p = rows[cur].path.clone();
+                self.tree_command(&format!("Delete {p}"), 0);
+            }
+            // `O` opens the folder under the cursor as a project of its own.
+            KeyCode::Char('O') if !k.ctrl && !k.cmd => {
+                let r = &rows[cur];
+                let dir = if r.dir { r.path.clone() } else { r.path.rsplit_once('/').map(|(p, _)| p.to_string()).unwrap_or_default() };
+                self.open_project(self.ed.root.join(dir), tx);
+            }
             KeyCode::Char(c) if c == self.ed.vim.leader && self.is_vim() => {
                 self.overlay = super::Overlay::Leader(None);
             }

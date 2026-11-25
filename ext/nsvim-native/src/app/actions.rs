@@ -34,6 +34,9 @@ impl App {
                 Action::Open(path) => self.open_path(path, None),
                 Action::OpenAt(path, pos) => self.open_path(path, Some(pos)),
                 Action::Rename(name) => self.rename(name),
+                Action::CreatePath(p) => self.create_path(p),
+                Action::MovePath(a, b) => self.move_path(a, b),
+                Action::DeletePath(p) => self.delete_path(p),
                 Action::CodeActions => self.code_actions(),
                 Action::Filter { first, last, cmd } => self.filter(first, last, cmd),
                 Action::Shell(cmd) => {

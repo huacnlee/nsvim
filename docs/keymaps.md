@@ -606,6 +606,10 @@ and the text. `:Tree` and the classic `Ctrl B` show or hide it. A click on the
 text gives the focus back. The mouse wheel over the tree scrolls it, with or without the
 focus. These keys work while the tree has the focus.
 
+The same file operations work from the command line with paths relative to the project:
+`:Create src/new.rs`, `:Mkdir src/ui`, `:Move src/a.rs src/b.rs` and `:Delete src/old.rs`.
+Open files follow a rename or a move. A deleted file's buffer stays open, so `:w` writes it back.
+
 | Keys | Does |
 | --- | --- |
 | `j` `↓`, `k` `↑` | Move down, up |
@@ -615,6 +619,11 @@ focus. These keys work while the tree has the focus.
 | `l` `→` | Open a closed folder, or open a file |
 | `Enter` `o` | Open or close a folder, or open a file |
 | `h` `←` | Close an open folder, or go to the parent folder |
+| `a` | Create a file in the folder under the cursor: fills in `:Create <folder>/`. End the name with `/` for a folder |
+| `A` | Create a folder in the folder under the cursor |
+| `r` `m` `F2` | Rename or move: fills in `:Move <path> <path>`. Edit the second path; a path ending in `/` moves into that folder |
+| `d` `Delete` | Delete the file or folder: fills in `:Delete <path>`. Enter deletes it, `Esc` cancels |
+| `O` | Open the folder under the cursor as a project, in a window of its own |
 | `Esc` `q` | Give the focus back to the text |
 | `Ctrl w l`, `Ctrl w w`, `Ctrl w Ctrl w` | Give the focus back to the text. `Ctrl w p` does the same. `Ctrl w h` keeps the focus in the tree. Neovim keymap |
 | `Ctrl ⇧ E` | Give the focus back to the text. Classic keymap |
