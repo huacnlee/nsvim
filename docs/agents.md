@@ -1,16 +1,16 @@
 # AI agents and scripts
 
-editor has no AI inside it. Instead, a running editor is something an agent in your terminal
+nsvim has no AI inside it. Instead, a running nsvim is something an agent in your terminal
 can see and drive: Claude Code, Codex, opencode, or a shell script. The agent can read what you
 are looking at, point you at code, propose changes you review as a diff, and use the editor's
 language server diagnostics.
 
 ## Connect an agent
 
-Every running editor serves a socket for its project. Two clients use it:
+Every running nsvim serves a socket for its project. Two clients use it:
 
 - `nsvim mcp`, a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio.
-  Agents that speak MCP get the editor as tools.
+  Agents that speak MCP get nsvim as tools.
 - `nsvim ctl`, a command-line client for any agent or script.
 
 ### Claude Code
@@ -23,8 +23,8 @@ claude mcp add nsvim -- nsvim mcp
 
 ```toml
 # ~/.codex/config.toml
-[mcp_servers.editor]
-command = "editor"
+[mcp_servers.nsvim]
+command = "nsvim"
 args = ["mcp"]
 ```
 
@@ -33,7 +33,7 @@ args = ["mcp"]
 ```json
 {
   "mcp": {
-    "editor": { "type": "local", "command": ["editor", "mcp"] }
+    "nsvim": { "type": "local", "command": ["nsvim", "mcp"] }
   }
 }
 ```
@@ -43,7 +43,7 @@ args = ["mcp"]
 Tell it about `nsvim ctl` in its instructions file (`AGENTS.md`, `CLAUDE.md`):
 
 ```markdown
-The user reads code in `editor`. Use `nsvim ctl` from the project folder:
+The user reads code in nsvim. Use `nsvim ctl` from the project folder:
 - `nsvim ctl state` shows the open file, the cursor and the selection.
 - `nsvim ctl read PATH` returns a buffer's text with unsaved edits.
 - `nsvim ctl diagnostics` returns the language server's errors.
@@ -71,7 +71,7 @@ The user reads code in `editor`. Use `nsvim ctl` from the project folder:
 [cli.md](cli.md) has every command, flag and exit status. Lines and columns are 1-based. Paths are
 absolute or relative to the project root. `nsvim ctl`
 prints JSON for data and plain text for `read` and `selection`; add `--json` for JSON
-everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no editor is running.
+everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no nsvim is running.
 
 ```sh
 $ nsvim ctl state | jq '.active | {relative, line, dirty}'
@@ -96,7 +96,7 @@ $ sed 's/println!/eprintln!/' src/main.rs | nsvim ctl propose src/main.rs --labe
 
 ## `$EDITOR`, git and second launches
 
-`editor PATH` opens the file in the editor already running for that project, brings it forward
+`nsvim PATH` opens the file in the nsvim already running for that project, brings it forward
 and exits. `nsvim --wait PATH` waits until you close that buffer, so it works as `$EDITOR` for
 git commit messages and for agents that open a prompt in your editor. `--new` always opens a new
 window.
@@ -115,7 +115,7 @@ off the UI thread. This works with any CLI, AI tools included:
 
 ## Safety
 
-- The socket is `$XDG_RUNTIME_DIR/editor/<project>.sock`, readable by your user only. There is
+- The socket is `$XDG_RUNTIME_DIR/nsvim/<project>.sock`, readable by your user only. There is
   no network listener.
 - `ipc.allow_edits = false` in config.toml (Settings › keys & mouse) turns off `edit` and
   `command`. Proposals still work: nothing changes until you press `y`.

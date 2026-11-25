@@ -301,9 +301,16 @@ impl App {
         let on = !matches!(v, "false" | "0" | "off" | "no");
         match k {
             "keymap" | "keys.map" => self.cfg.keys.map = if v == "classic" { "classic".into() } else { "neovim".into() },
-            // A mode (`light`, `dark`, `system`, `omarchy`), or a built-in theme by id.
+            // A mode (`light`, `dark`, `system`), or a built-in theme by id.
             "theme" => match v {
-                "light" | "dark" | "system" | "omarchy" => self.cfg.theme.mode = v.into(),
+                "light" | "dark" | "system" => self.cfg.theme.mode = v.into(),
+                // The old Omarchy mode is System, which follows the Omarchy theme where it runs.
+                "omarchy" => {
+                    self.cfg.theme.mode = "system".into();
+                    self.config_changed();
+                    self.ed.message("theme=omarchy is now theme=system. System follows the Omarchy theme");
+                    return;
+                }
                 id if crate::theme::name(id) != id => {
                     let light = crate::theme::builtin(id).light;
                     self.cfg.theme.mode = if light { "light" } else { "dark" }.into();
@@ -314,7 +321,7 @@ impl App {
                     }
                 }
                 _ => {
-                    self.ed.error(format!("E474: Invalid argument: theme={v}. Use light, dark, system, omarchy or a theme id"));
+                    self.ed.error(format!("E474: Invalid argument: theme={v}. Use light, dark, system or a theme id"));
                     return;
                 }
             },

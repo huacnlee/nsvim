@@ -98,7 +98,7 @@ every key.
 ## Configuration
 
 Settings is a tab. Open it with `:Settings` or `SPC ,` in the Neovim keymap, or with `Ctrl ,`
-in the classic keymap. `:w` writes `~/.config/editor/config.toml`. Every change applies at
+in the classic keymap. `:w` writes `~/.config/nsvim/config.toml`. Every change applies at
 once. [docs/configuration.md](docs/configuration.md) lists every option.
 
 ## AI agents

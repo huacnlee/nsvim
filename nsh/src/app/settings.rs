@@ -86,13 +86,14 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
     match section {
         Section::Appearance => {
             out.push(Item::Head("-- theme"));
+            // An old config's "omarchy" is System now.
+            let mode = if cfg.theme.mode == "omarchy" { "system" } else { cfg.theme.mode.as_str() };
             out.push(seg(
                 "theme",
                 "System follows your OS, or the desktop theme on Omarchy.",
-                &cfg.theme.mode,
-                &[("light", "light"), ("dark", "dark"), ("system", "system"), ("omarchy", "omarchy")],
+                mode,
+                &[("light", "light"), ("dark", "dark"), ("system", "system")],
             ));
-            let mode = cfg.theme.mode.as_str();
             let themes = |list: &[&str]| list.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             // On Omarchy, System uses the desktop theme, so its dark and light themes do not apply.
             let os_themes = mode == "system" && omarchy.is_none();
@@ -120,27 +121,6 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
                         "What the OS asks for right now",
                         if system_dark { "dark".into() } else { "light".into() },
                     )),
-                }
-            }
-            if mode == "omarchy" {
-                match omarchy {
-                    Some(o) => {
-                        out.push(info("omarchy.current", "Read from the theme's colors.toml", o.name.clone()));
-                        let p = o.palette;
-                        out.push(Item::Row {
-                            key: "omarchy.palette",
-                            desc: "Background, text, accent and syntax colors".into(),
-                            ctl: Ctl::Chips(vec![p.bg, p.fg, p.ac, p.ins, p.vis, p.cmd, p.kw, p.str_, p.ty, p.err]),
-                        });
-                        out.push(info("omarchy.source", "Watched for changes; the editor re-themes live", crate::app::tilde(&o.dir)));
-                        out.push(info("omarchy.switch", "Change the theme from Omarchy", "Super Ctrl Shift Space".into()));
-                        out.push(info(
-                            "omarchy.light",
-                            "A theme with a light.mode file gets the light variant",
-                            if p.light { "light".into() } else { "dark".into() },
-                        ));
-                    }
-                    None => out.push(info("omarchy.current", "No Omarchy theme found. The dark theme applies", "not found".into())),
                 }
             }
             out.push(Item::Head("-- window"));
@@ -412,6 +392,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_theme_row_offers_no_omarchy_mode_and_shows_an_old_one_as_system() {
+        let mut cfg = Config::default();
+        cfg.theme.mode = "omarchy".into();
+        let list = items(Section::Appearance, &cfg, None, true);
+        let Some(Item::Row { ctl: Ctl::Seg { opts, cur }, .. }) = list.iter().find(|i| matches!(i, Item::Row { key: "theme", .. })) else {
+            panic!("no theme row")
+        };
+        assert!(opts.iter().all(|(v, _)| v != "omarchy"), "{opts:?}");
+        assert_eq!(cur, "system");
+        assert!(list.iter().all(|i| !matches!(i, Item::Row { key, .. } if key.starts_with("omarchy."))));
+        assert!(list.iter().any(|i| matches!(i, Item::Row { key: "system.now", .. })));
+    }
+
+    #[test]
     fn steps_clamp_and_echo_the_toml_line() {
         let mut cfg = Config::default();
         for _ in 0..40 {
@@ -419,8 +413,8 @@ mod tests {
         }
         assert_eq!(cfg.font.size, 24.0);
         assert_eq!(echo(&cfg, "font.size"), "font.size = 24.0");
-        pick(&mut cfg, "theme", "omarchy");
-        assert_eq!(echo(&cfg, "theme"), "theme.mode = \"omarchy\"");
+        pick(&mut cfg, "theme", "system");
+        assert_eq!(echo(&cfg, "theme"), "theme.mode = \"system\"");
     }
 
     #[test]

@@ -49,11 +49,11 @@ impl Response {
     }
 }
 
-/// `$XDG_RUNTIME_DIR/editor`, or a folder per user under the temp folder.
+/// `$XDG_RUNTIME_DIR/nsvim`, or a folder per user under the temp folder.
 pub fn runtime_dir() -> PathBuf {
     match std::env::var_os("XDG_RUNTIME_DIR") {
-        Some(d) if !d.is_empty() => PathBuf::from(d).join("editor"),
-        _ => std::env::temp_dir().join(format!("editor-{}", user_id())),
+        Some(d) if !d.is_empty() => PathBuf::from(d).join(crate::config::NAME),
+        _ => std::env::temp_dir().join(format!("{}-{}", crate::config::NAME, user_id())),
     }
 }
 
