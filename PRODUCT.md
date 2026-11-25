@@ -32,7 +32,7 @@ Settings over the whole window that writes each change at once. Speed is the dec
 
 ## Operating Context
 
-Launched from a terminal (`nsvim .`, `nsvim file:42`, or the `nvim` alias), a launcher, `$EDITOR` and git commit
+Launched from a terminal (`nvim .` or `nvim file:42`, through the aliases that setup adds), a launcher, `$EDITOR` and git commit
 messages. Used alongside git checkouts and AI agents that change files underneath it.
 
 ## Capabilities and Constraints
@@ -45,7 +45,7 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 - LSP: diagnostics, definition, references, hover, completion, rename, code actions.
 - Fuzzy finder, ripgrep project search, file tree with git status, leader menu.
 - Crash recovery, undo across restarts, reload on outside changes, atomic saves.
-- AI agents drive a running editor over `nsvim ctl` and `nsvim mcp`: read the selection and
+- AI agents drive a running editor over the program's `ctl` and `mcp` commands, run by its full path: read the selection and
   unsaved buffers, point at lines, propose changes shown as a diff (`y` accepts). No AI runs
   inside the editor.
 - 16 themes; follows the Omarchy desktop theme live.
