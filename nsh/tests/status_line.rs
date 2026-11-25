@@ -53,6 +53,19 @@ fn the_status_line_counts_diagnostics_and_outside_changes() -> Result<(), String
 }
 
 #[test]
+fn the_mode_badge_is_not_bold() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let mut app = start_files(&[&a], None);
+    wait_text(&mut app, "id:mode", "NORMAL")?;
+    // Capitals on a strong fill are enough. Bold on top of them is too loud.
+    let style = app.screen().span_style("id:mode-badge >> text:NORMAL")?;
+    assert!(style.font_weight < 700, "weight {}", style.font_weight);
+    assert!(style.letter_spacing.0 > 0.0, "spacing {}", style.letter_spacing.0);
+    Ok(())
+}
+
+#[test]
 fn the_position_takes_the_colour_of_the_mode() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
@@ -92,7 +105,7 @@ fn the_write_button_writes_config_and_gives_the_keys_back() -> Result<(), String
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut f = flow(&a, None);
     type_text(&mut f.ui, ":Settings\n");
-    wait_text(&mut f.ui, "id:mode", "SETTINGS")?;
+    wait_text(&mut f.ui, "id:mode", "Settings")?;
     // The theme mode starts with a capital letter: `System · Tokyo Night`.
     f.ui.wait_for("id:status-line >> text:/^[A-Z][a-z]+ · /")?;
     f.update(|app, _| app.cfg.ui.size += 1.0);

@@ -102,7 +102,7 @@ export function StatusLine() {
             <If when={st().badge}>
               {(badge) => (
                 <View class={`justify-center self-stretch px-3 ${FILL[st().badgeColor]}`} testID="mode-badge">
-                  <Line font={font} delta={DELTA} class="font-bold text-primary-foreground" testID="mode">
+                  <Line font={font} delta={DELTA} class="font-medium tracking-wide text-primary-foreground" testID="mode">
                     {badge()}
                   </Line>
                 </View>

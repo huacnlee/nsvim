@@ -31,7 +31,7 @@ pub enum ModeColor {
 /// What the status line shows, except the position.
 #[derive(Debug, Clone, Default, PartialEq, JsObject)]
 pub struct StatusState {
-    /// The text of the mode badge: the vim mode, or `SETTINGS`. None in the classic keymap.
+    /// The text of the mode badge: the vim mode, or `Settings` on the Settings tab. None in the classic keymap.
     pub badge: Option<String>,
     /// The colour of the mode badge.
     pub badge_color: ModeColor,
@@ -104,7 +104,7 @@ pub fn status_of(app: &App) -> StatusState {
     };
     let mut st = StatusState { mode_color, vim, branch: app.git.branch.clone(), ..StatusState::default() };
     if app.on_settings {
-        st.badge = Some("SETTINGS".into());
+        st.badge = Some("Settings".into());
         st.badge_color = ModeColor::ModeCommand;
         let dirty = if app.cfg != app.disk_cfg { " [+]" } else { "" };
         st.file = format!("config.toml{dirty}");

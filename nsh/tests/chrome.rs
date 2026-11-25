@@ -291,7 +291,7 @@ fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
     app.wait_for("role:tab[settings]")?;
     assert!(app.screen().selected("role:tab[settings]")?);
     assert!(!app.screen().selected("role:tab[a.txt]")?);
-    wait_text(&mut app, "id:mode", "SETTINGS")?;
+    wait_text(&mut app, "id:mode", "Settings")?;
     app.wait_for("text:config.toml")?;
     assert!(has(&app, "label:Write config.toml"));
     app.press("role:tab[a.txt]")?;
