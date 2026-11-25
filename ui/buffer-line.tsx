@@ -1,6 +1,6 @@
 // The buffer line: the project folder over the tree, then the tabs that Rust lists. A click on
 // a tab shows it. A click on its close button or a middle click closes it. A tab with unsaved
-// changes shows a dot in place of the close mark. Rust owns the state (`Tabs` in
+// changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
 // `nsh/src/exports/buffer_line.rs`).
 
 import { signal, Text, View, type MouseEvent } from "nsh";
@@ -41,7 +41,7 @@ function Label(props: { font: () => Font; on?: boolean; text: string; class?: st
   );
 }
 
-/** The mark of a tab: a solid dot while it has unsaved changes, else an X. The dot sits in a
+/** The mark of a tab: a small solid square while it has unsaved changes, else an X. The square sits in a
  * box as large as the X, so the tab keeps its width. */
 function Mark(props: { font: () => Font; index: number; dirty: boolean }) {
   return (
@@ -53,7 +53,7 @@ function Mark(props: { font: () => Font; index: number; dirty: boolean }) {
     >
       <View class="items-center justify-center" style={{ width: props.font().size + 1, height: props.font().size + 1 }}>
         <View
-          class="size-2 rounded-full bg-warning"
+          class="size-2 rounded-[1px] bg-warning"
           accessible
           role="image"
           accessibilityLabel="Unsaved changes"
@@ -83,7 +83,7 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
       <If
         when={props.tab().closable}
         else={
-          // A tab without a close button shows only the dot, while it has unsaved changes.
+          // A tab without a close button shows only the square, while it has unsaved changes.
           <If when={props.tab().dirty} else={<View class="pr-3" />}>
             <View class="self-stretch justify-center px-2.5">
               <Mark font={props.font} index={i} dirty />
