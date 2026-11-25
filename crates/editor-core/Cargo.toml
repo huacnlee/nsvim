@@ -1,0 +1,31 @@
+[package]
+name = "editor-core"
+version = "0.3.2"
+edition = "2024"
+description = "The editing core of editor: buffers, modes, keymaps and code structure. No window code and no I/O."
+license = "MIT"
+
+[lib]
+name = "editor"
+
+[dependencies]
+ropey = "1.6"
+serde = { version = "1", features = ["derive"] }
+# Code structure for text objects and motions, and syntax colours (src/syntax).
+tree-sitter = "0.25"
+streaming-iterator = "0.1"
+tree-sitter-rust = "0.24"
+tree-sitter-python = "0.25"
+tree-sitter-javascript = "0.25"
+tree-sitter-typescript = "0.23"
+tree-sitter-go = "0.25"
+tree-sitter-c = "0.24"
+tree-sitter-cpp = "0.23"
+tree-sitter-java = "0.23"
+tree-sitter-ruby = "0.23"
+tree-sitter-bash = "0.25"
+tree-sitter-json = "0.24"
+tree-sitter-lua = "0.5"
+
+[dev-dependencies]
+tempfile = "3"

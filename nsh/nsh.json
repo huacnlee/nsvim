@@ -1,0 +1,9 @@
+{
+  "name": "editor",
+  "id": "dev.editor.app",
+  "version": "0.3.2",
+  "build": 1,
+  "rust": ".",
+  "root": "App",
+  "theme": "theme.json"
+}

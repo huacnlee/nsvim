@@ -5,6 +5,7 @@
 //! text objects on an unchanged buffer cost only a walk of the tree. Files over 4 MiB and
 //! languages without a grammar give `None`.
 
+pub mod highlight;
 mod langs;
 mod objects;
 
@@ -51,6 +52,11 @@ pub fn object(buf: &Buffer, path: Option<&Path>, pos: Pos, obj: Obj, inner: bool
 /// fewer than `count` remain, the farthest one.
 pub fn jump(buf: &Buffer, path: Option<&Path>, pos: Pos, obj: Obj, forward: bool, end: bool, count: usize) -> Option<Pos> {
     with_tree(buf, path, |doc| objects::jump(doc, pos, obj, forward, end, count.max(1)))?
+}
+
+/// The language name of a file for the status line, or `text` when no grammar covers it.
+pub fn language_name(path: Option<&Path>) -> &'static str {
+    lang_for(path).map_or("text", Lang::name)
 }
 
 /// Whether a grammar covers this file.

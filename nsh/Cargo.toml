@@ -1,0 +1,35 @@
+[package]
+name = "nsh-app-editor"
+version = "0.3.2"
+edition = "2024"
+description = "editor on NSH: the same core, drawn with each platform's native views."
+license = "MIT"
+publish = false
+
+# Its own workspace: Rune's patches in the root manifest do not apply here.
+[workspace]
+
+[dependencies]
+editor = { package = "editor-core", path = "../crates/editor-core" }
+nsh-core = "0.7.0"
+nsh-base = "0.7.0"
+env_logger = "0.11"
+unicode-width = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+nsh-platform-linux = { version = "0.7.0", default-features = false, features = ["svg"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nsh-platform-macos = { version = "0.7.0", default-features = false, features = ["svg"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+nsh-platform-windows = { version = "0.7.0", default-features = false, features = ["svg"] }
+
+[dev-dependencies]
+nsh-engine = { version = "0.7.0", default-features = false }
+nsh-testing = { version = "0.7.0", default-features = false }
+tempfile = "3"
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false

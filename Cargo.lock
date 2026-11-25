@@ -803,10 +803,10 @@ name = "editor"
 version = "0.3.2"
 dependencies = [
  "dirs",
+ "editor-core",
  "globset",
  "ignore",
  "notify",
- "ropey",
  "rune",
  "rune-highlights",
  "serde",
@@ -814,6 +814,18 @@ dependencies = [
  "similar",
  "tempfile",
  "toml",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
+name = "editor-core"
+version = "0.3.2"
+dependencies = [
+ "ropey",
+ "serde",
+ "streaming-iterator",
+ "tempfile",
  "tree-sitter",
  "tree-sitter-bash",
  "tree-sitter-c",
@@ -827,8 +839,6 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-typescript",
- "unicode-segmentation",
- "unicode-width",
 ]
 
 [[package]]

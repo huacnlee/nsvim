@@ -54,6 +54,25 @@ pub fn lang_for(path: Option<&Path>) -> Option<Lang> {
 }
 
 impl Lang {
+    /// The name the status line shows.
+    pub fn name(self) -> &'static str {
+        match self {
+            Lang::Rust => "rust",
+            Lang::Python => "python",
+            Lang::JavaScript => "javascript",
+            Lang::TypeScript => "typescript",
+            Lang::Tsx => "tsx",
+            Lang::Go => "go",
+            Lang::C => "c",
+            Lang::Cpp => "cpp",
+            Lang::Java => "java",
+            Lang::Ruby => "ruby",
+            Lang::Bash => "bash",
+            Lang::Json => "json",
+            Lang::Lua => "lua",
+        }
+    }
+
     pub fn language(self) -> Language {
         match self {
             Lang::Rust => tree_sitter_rust::LANGUAGE.into(),

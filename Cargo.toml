@@ -9,10 +9,15 @@ license = "MIT"
 name = "editor"
 path = "src/main.rs"
 
+[workspace]
+members = [".", "crates/editor-core"]
+# The NSH port builds as its own workspace (nsh/Cargo.toml).
+exclude = ["nsh"]
+
 [dependencies]
+editor = { package = "editor-core", path = "crates/editor-core" }
 rune = { git = "https://github.com/anomalyco/rune", rev = "bf3f9d4a0459af5071cd352df816b610dda7f3a6" }
 rune-highlights = { git = "https://github.com/anomalyco/rune", rev = "bf3f9d4a0459af5071cd352df816b610dda7f3a6" }
-ropey = "1.6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
@@ -23,20 +28,6 @@ notify = "8"
 similar = "2"
 unicode-width = "0.2"
 unicode-segmentation = "1"
-# Code structure for text objects and motions (src/syntax).
-tree-sitter = "0.25"
-tree-sitter-rust = "0.24"
-tree-sitter-python = "0.25"
-tree-sitter-javascript = "0.25"
-tree-sitter-typescript = "0.23"
-tree-sitter-go = "0.25"
-tree-sitter-c = "0.24"
-tree-sitter-cpp = "0.23"
-tree-sitter-java = "0.23"
-tree-sitter-ruby = "0.23"
-tree-sitter-bash = "0.25"
-tree-sitter-json = "0.24"
-tree-sitter-lua = "0.5"
 
 [dev-dependencies]
 tempfile = "3"
