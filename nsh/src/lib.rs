@@ -11,6 +11,7 @@ pub mod geometry;
 pub mod highlight;
 pub mod ipc;
 pub mod keys;
+pub mod migrate;
 pub mod model;
 pub mod services;
 pub mod store;

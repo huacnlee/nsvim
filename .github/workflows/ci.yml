@@ -11,15 +11,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Linux packages
-        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev pkg-config fonts-dejavu-core
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev pkg-config fonts-dejavu-core
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.99.1"
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - name: Format
-        run: cargo fmt --check
+        run: cargo fmt --all --check
       - name: Lint
         run: cargo clippy --all-targets --locked -- -D warnings
       - name: Test
         run: cargo test --locked
+
+  # The app builds on each desktop it ships for. Tests run on Linux.
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.1"
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Lint
+        run: cargo clippy --all-targets --locked -- -D warnings

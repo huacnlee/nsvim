@@ -178,12 +178,16 @@ pub struct App {
     pub exited: bool,
     /// The view that takes every key has the keyboard focus.
     pub key_focus: bool,
+    /// The old folders to copy to the new names, once the workers start.
+    pub migration: crate::migrate::Migration,
 }
 
 impl App {
     /// The first state, before the window's first frame. Reads config.toml and the session:
     /// small files, read once at startup.
     pub fn init() -> App {
+        // Only looks: the file worker copies the old folders (`crate::migrate`).
+        let migration = crate::migrate::plan();
         let (cfg, first, notice) = match config::load() {
             config::Loaded::FirstLaunch => (Config::default(), true, None),
             config::Loaded::Ok(c) => (c, false, None),
@@ -196,6 +200,7 @@ impl App {
         crate::timing::mark("omarchy theme read");
         let mut app = App::new(cfg, root.clone(), first, omarchy);
         app.config_file = Some(config::config_path());
+        app.migration = migration;
         app.to_open = targets;
         app.restore_session();
         if let Some((p, _)) = app.to_open.first()
@@ -276,6 +281,7 @@ impl App {
             close_asked: None,
             exited: false,
             key_focus: false,
+            migration: Default::default(),
         }
     }
 
@@ -283,6 +289,7 @@ impl App {
     pub fn setup(&mut self, waker: crate::services::Waker) {
         crate::timing::mark("window ready, starting workers");
         let svc = Services::start(self.ed.root.clone(), waker, self.cfg.ipc.enabled);
+        svc.migrate(std::mem::take(&mut self.migration));
         crate::timing::mark("workers started");
         for (path, at) in self.to_open.drain(..) {
             svc.open(path, at);
@@ -468,6 +475,7 @@ impl App {
             }
             Event::Config(loaded) => self.config_reloaded(loaded),
             Event::Setup(answer) => self.setup_answer(answer),
+            Event::Migrated(line) => self.ed.message(line),
             Event::Omarchy(o) => {
                 if o.is_some() {
                     self.omarchy = o;

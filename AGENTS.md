@@ -1,42 +1,41 @@
-# Working on editor
+# Working on nsvim
 
-A modal code editor in Rust on [Rune](https://github.com/anomalyco/rune). Read
-`docs/architecture.md` before changing structure.
+A modal code editor in Rust. Its UI is [NSH](https://nsh.dev), which draws with the native
+views of each platform. Read `docs/architecture.md` before you change structure.
 
 ## Commands
 
 ```sh
-cargo build                                   # debug
-cargo test                                    # every test: core, tree-sitter, app, IPC
-cargo test --lib                              # the core only, fast, no GPU
+nsh run                                       # the app in a window (NSH 0.7 or later)
+cargo build                                   # debug: target/debug/nsvim
+TMPDIR=~/.cache/nsvim-test-tmp cargo test     # every test: core, app, Headless
+cargo test -p editor-core                     # the core only, fast, no window
 cargo clippy --all-targets -- -D warnings     # CI runs this
 cargo fmt                                     # rustfmt.toml: 140 columns
 ```
 
+Never use `/tmp`. Point `TMPDIR` at a folder outside `/tmp` and outside the checkout.
+
 ## Check your work without a window
 
-Rune renders headless. Use it to see a change instead of guessing:
+NSH runs the real window headless. App tests in `nsh/tests/` press keys and views, and read
+texts, test ids and app state. Copy the helpers in `nsh/tests/common/mod.rs` (`start`, `typ`,
+`type_text`, `write`, `scratch`). Give a view that a test finds a `.test_id(..)`.
 
-```sh
-target/debug/editor --list-scenes
-target/debug/editor --snap /tmp/out.png --scene finder --size 1440x900 --at 0.5
-target/debug/editor --scene editor --script keys.json --snap /tmp/out.png --at 3
-target/debug/editor --scene editor --tree /tmp/tree.json     # the element tree as JSON
-```
-
-A script is `{"events": [{"t": 0.5, "type": "type", "text": "dd"}, {"t": 1, "type": "key",
-"name": "Escape"}]}`. Add a scene in `src/scenes.rs` for new UI. App tests in
-`src/app/tests.rs` drive the real view with keys and clicks; copy their `run`, `typ` and `ask`
-helpers.
+Headless tests prove behaviour, not the look. For a visible change, run the app (`nsh run`)
+and look at it.
 
 ## Rules
 
-- The core (`src/lib.rs`: buffer, editor, vim, classic, syntax) has no window code and no I/O.
-  A keymap returns `Action`s; the app carries them out.
-- No file I/O, process spawning or LSP traffic on the UI thread. Workers in `src/services` do
-  it and send `Event`s back.
+- The core (`crates/editor-core`: buffer, editor, vim, classic, syntax) has no window code and
+  no I/O. A keymap returns `Action`s. The app carries them out.
+- No file I/O, process spawning or LSP traffic on the engine thread. Workers in
+  `nsh/src/services` do it and send `Event`s back.
 - Every edit goes through `Buffer` inside `begin`/`commit`: one command, one undo step.
-- Keep files under 800 lines. Tests go in a sibling `tests.rs` or `*_tests.rs`.
+- Change app state only through `Session::update`. A view reads state only through a memo
+  (`Session::view`), because a component body runs once.
+- Colours come only from theme tokens (`nsh/src/ui/style.rs`). Write no raw colours in views.
+- Keep files under 800 lines. Tests go in a sibling `*_tests.rs` file or in `nsh/tests/`.
 - Text: ASD-STE100 Simplified Technical English in comments, docs and messages. Short
   sentences, active voice, no em dashes or semicolons in prose.
 - Never add AI attribution to commits, code or docs.

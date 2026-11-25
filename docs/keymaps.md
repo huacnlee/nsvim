@@ -1,6 +1,6 @@
 # Keys
 
-editor has two keymaps. Setup asks which one you want. To switch later, run
+nsvim has two keymaps. Setup asks which one you want. To switch later, run
 `:set keymap=classic` or `:set keymap=neovim`, use Settings › keys & mouse, or pick
 `Keymap: Neovim` or `Keymap: classic` in the command palette.
 
@@ -488,7 +488,7 @@ shows in Settings. To keep it in `config.toml`, open Settings and run `:w`.
 | Option | Short | Values |
 | --- | --- | --- |
 | `keymap` | | `neovim`, `classic` |
-| `theme` | | `light`, `dark`, `system`, `omarchy`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
+| `theme` | | `light`, `dark`, `system`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
 | `number` | `nu` | `:set nu` shows absolute numbers, `:set nonu` hides them. `:set nu=hybrid`, `relative`, `absolute` or `off` sets the style |
 | `numbers` | | `hybrid`, `relative`, `absolute`, `off` |
 | `relativenumber` | `rnu` | `:set rnu` shows hybrid numbers, `:set nornu` shows absolute numbers |
@@ -653,7 +653,7 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 | `Open settings` | Open Settings |
 | `Close tab`, `Next tab`, `Previous tab` | Close, go to the next, go to the previous tab |
 | `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
-| `Theme: dark`, `Theme: light`, `Theme: follow the OS`, `Theme: follow Omarchy` | Switch the theme |
+| `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 | `Toggle soft wrap` | Turn soft wrap on or off |
 | `Show every key` | Show every key, with search |
 | `Agent: list outside changes` | List the changes made on disk from outside the editor |
@@ -705,7 +705,7 @@ The first launch runs setup in five steps.
 | Chars, `Backspace` | Type, delete the name of the terminal command, on the name field |
 
 The `skip`, `back` and `next →` buttons on the bottom line do the same with the mouse. On the
-last step, click `open editor →`, or go to the last choice and press `Enter`. The editor then
+last step, click `open nsvim →`, or go to the last choice and press `Enter`. The editor then
 writes `config.toml` and opens.
 
 ### Agent proposals

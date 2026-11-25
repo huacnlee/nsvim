@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/editor.svg" width="96" alt="nsvim icon: four lines in the mode colors">
+<img src="assets/editor.svg" width="96" alt="nsvim icon: an N in the Normal, Visual and Insert colors over an orange command line">
 
 # nsvim
 
@@ -30,8 +30,7 @@ back to editor. Report nsvim issues here, not to editor.
 The main change: nsvim draws its UI with [NSH](https://nsh.dev), which uses the native views of
 each platform (GTK 4 on Linux, AppKit on macOS, WinUI on Windows). The NSH app is in
 [`nsh/`](nsh). The editing core (buffer, Vim and classic keymaps, tree-sitter) is the crate
-`editor-core` in [`crates/editor-core`](crates/editor-core). The Rune app from editor is still
-in [`src/`](src) while the port finishes.
+`editor-core` in [`crates/editor-core`](crates/editor-core).
 
 ## What it is
 
@@ -99,7 +98,7 @@ every key.
 ## Configuration
 
 Settings is a tab. Open it with `:Settings` or `SPC ,` in the Neovim keymap, or with `Ctrl ,`
-in the classic keymap. `:w` writes `~/.config/editor/config.toml`. Every change applies at
+in the classic keymap. `:w` writes `~/.config/nsvim/config.toml`. Every change applies at
 once. [docs/configuration.md](docs/configuration.md) lists every option.
 
 ## AI agents
@@ -125,4 +124,15 @@ Read [AGENTS.md](AGENTS.md) and [nsh/README.md](nsh/README.md) before you change
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright the editor authors and Jason Lee.
+nsvim is released under the MIT license. See [LICENSE](LICENSE).
+
+nsvim is based on [editor](https://github.com/bjarneo/editor), the original work of
+[Bjarne Oeverli](https://github.com/bjarneo) and its contributors, also under the MIT license.
+Their copyright notice stays in [LICENSE](LICENSE), as the license asks. The editing core, the
+keymaps, the tree-sitter support, the agent socket and much of the design come from their work.
+Thank you to them.
+
+- Copyright (c) 2026 The editor authors: the original work.
+- Copyright (c) 2026 Jason Lee and the nsvim contributors: the changes in nsvim.
+
+If you copy or change nsvim, keep both copyright lines and the license text.

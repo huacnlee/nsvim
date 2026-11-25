@@ -72,7 +72,6 @@ pub const COMMANDS: &[(&str, &str)] = &[
     ("Theme: dark", "theme=dark"),
     ("Theme: light", "theme=light"),
     ("Theme: follow the OS", "theme=system"),
-    ("Theme: follow Omarchy", "theme=omarchy"),
     ("Toggle soft wrap", "wrap"),
     ("Show every key", "keys"),
     ("Agent: list outside changes", "outside"),

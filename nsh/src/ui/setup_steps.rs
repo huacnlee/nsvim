@@ -490,7 +490,7 @@ fn step_ready(k: Keys, m: &Model) -> View {
         ("mouse", if cfg.mouse.enabled { "on".into() } else { "keyboard only".into() }),
         (
             "theme",
-            if let Some(name) = m.omarchy_name.clone().filter(|_| matches!(cfg.theme.mode.as_str(), "system" | "omarchy")) {
+            if let Some(name) = m.omarchy_name.clone().filter(|_| cfg.theme.mode == "system") {
                 format!("Omarchy ({name} right now)")
             } else {
                 cfg.theme.mode.clone()
@@ -560,6 +560,6 @@ fn step_ready(k: Keys, m: &Model) -> View {
     }
     view()
         .gap(px(22.0))
-        .child(heading("Ready", "Saved to ~/.config/editor/config.toml when you open nsvim."))
+        .child(heading("Ready", "Saved to ~/.config/nsvim/config.toml when you open nsvim."))
         .child(view().flex_row().gap(px(16.0)).flex_wrap().items_start().child(summary).child(tips_box))
 }

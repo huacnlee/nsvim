@@ -20,6 +20,7 @@ pub enum Lang {
     Bash,
     Json,
     Lua,
+    Markdown,
 }
 
 /// The language of a file, by its name, then its extension.
@@ -49,8 +50,27 @@ pub fn lang_for(path: Option<&Path>) -> Option<Lang> {
         "sh" | "bash" | "zsh" | "ksh" => Lang::Bash,
         "json" | "jsonc" => Lang::Json,
         "lua" if cfg!(not(target_arch = "wasm32")) => Lang::Lua,
+        "md" | "markdown" | "mkd" | "mdx" => Lang::Markdown,
         _ => return None,
     })
+}
+
+/// The language a Markdown code block names after its fence: `rust`, `py`, `sh`.
+pub fn lang_named(name: &str) -> Option<Lang> {
+    let name = name.trim().to_ascii_lowercase();
+    let ext = match name.as_str() {
+        "rust" => "rs",
+        "python" => "py",
+        "javascript" => "js",
+        "typescript" => "ts",
+        "golang" => "go",
+        "ruby" => "rb",
+        "shell" | "console" | "shellsession" => "sh",
+        "c++" => "cpp",
+        "markdown" => "md",
+        other => other,
+    };
+    lang_for(Some(Path::new(&format!("x.{ext}"))))
 }
 
 impl Lang {
@@ -70,6 +90,7 @@ impl Lang {
             Lang::Bash => "bash",
             Lang::Json => "json",
             Lang::Lua => "lua",
+            Lang::Markdown => "markdown",
         }
     }
 
@@ -96,6 +117,8 @@ impl Lang {
             // `lang_for` gives no Lua on the web.
             #[cfg(target_arch = "wasm32")]
             Lang::Lua => tree_sitter_json::LANGUAGE.into(),
+            // The block grammar. Highlighting parses inline text with `INLINE_LANGUAGE`.
+            Lang::Markdown => tree_sitter_md::LANGUAGE.into(),
         }
     }
 
@@ -124,6 +147,7 @@ impl Lang {
             Lang::Bash => &["function_definition"],
             Lang::Json => &[],
             Lang::Lua => &["function_declaration", "function_definition"],
+            Lang::Markdown => &[],
         }
     }
 
@@ -148,7 +172,7 @@ impl Lang {
                 &["class_declaration", "interface_declaration", "enum_declaration", "record_declaration", "annotation_type_declaration"]
             }
             Lang::Ruby => &["class", "module", "singleton_class"],
-            Lang::Bash | Lang::Json | Lang::Lua => &[],
+            Lang::Bash | Lang::Json | Lang::Lua | Lang::Markdown => &[],
         }
     }
 
@@ -175,7 +199,7 @@ impl Lang {
             Lang::Cpp => &["parameter_list", "argument_list", "template_parameter_list", "template_argument_list"],
             Lang::Java => &["formal_parameters", "argument_list", "type_parameters", "type_arguments", "inferred_parameters"],
             Lang::Ruby => &["method_parameters", "lambda_parameters", "block_parameters", "argument_list"],
-            Lang::Bash | Lang::Json => &[],
+            Lang::Bash | Lang::Json | Lang::Markdown => &[],
             Lang::Lua => &["parameters", "arguments"],
         }
     }
@@ -236,6 +260,8 @@ mod tests {
         assert_eq!(lang_for(Some(Path::new("web/App.TSX"))), Some(Lang::Tsx));
         assert_eq!(lang_for(Some(Path::new("/home/x/.bashrc"))), Some(Lang::Bash));
         assert_eq!(lang_for(Some(Path::new("Gemfile"))), Some(Lang::Ruby));
+        assert_eq!(lang_for(Some(Path::new("README.md"))), Some(Lang::Markdown));
+        assert_eq!((lang_named("rust"), lang_named("sh"), lang_named("toml")), (Some(Lang::Rust), Some(Lang::Bash), None));
         assert_eq!(lang_for(Some(Path::new("notes.txt"))), None);
         assert_eq!(lang_for(None), None);
     }
@@ -256,6 +282,7 @@ mod tests {
             Lang::Bash,
             Lang::Json,
             Lang::Lua,
+            Lang::Markdown,
         ] {
             let mut p = tree_sitter::Parser::new();
             p.set_language(&l.language()).unwrap_or_else(|e| panic!("{l:?}: {e}"));

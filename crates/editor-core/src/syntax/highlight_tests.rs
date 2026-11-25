@@ -22,7 +22,7 @@ fn rust_keywords_strings_and_comments_get_their_kinds() {
 
 #[test]
 fn every_language_query_compiles() {
-    for file in ["a.rs", "a.py", "a.js", "a.ts", "a.tsx", "a.go", "a.c", "a.cpp", "A.java", "a.rb", "a.sh", "a.json", "a.lua"] {
+    for file in ["a.rs", "a.py", "a.js", "a.ts", "a.tsx", "a.go", "a.c", "a.cpp", "A.java", "a.rb", "a.sh", "a.json", "a.lua", "a.md"] {
         assert!(highlighted(Some(Path::new(file))), "{file}");
     }
 }
@@ -42,4 +42,22 @@ fn files_with_no_grammar_have_no_runs() {
     let buf = Buffer::from_str("plain text\n");
     assert!(runs(&buf, Some(Path::new("notes.txt")), 0, 1)[0].is_empty());
     assert!(runs(&buf, None, 0, 1)[0].is_empty());
+}
+
+#[test]
+fn markdown_colours_headings_code_and_inline_marks() {
+    let src = "# Title\n\nSome **bold**, *soft* and `code` with a [link](https://x.dev).\n\n```rust\nfn x() {}\n```\n- item\n\n```\nfn y() {}\n```\n";
+    let lines = of(src, "README.md");
+    assert_eq!(kind_at(&lines, 0, 2), Some(Kind::Keyword), "the heading");
+    assert_eq!(kind_at(&lines, 2, 7), Some(Kind::Keyword), "bold");
+    assert_eq!(kind_at(&lines, 2, 16), Some(Kind::Type), "italics");
+    assert_eq!(kind_at(&lines, 2, 28), Some(Kind::String), "a code span");
+    assert_eq!(kind_at(&lines, 2, 42), Some(Kind::Function), "the link text");
+    assert_eq!(kind_at(&lines, 2, 50), Some(Kind::Comment), "the link target");
+    assert_eq!(kind_at(&lines, 4, 0), Some(Kind::Punct), "a code fence");
+    assert_eq!(kind_at(&lines, 5, 0), Some(Kind::Keyword), "Rust in a rust block");
+    assert_eq!(kind_at(&lines, 5, 3), Some(Kind::Function), "Rust in a rust block");
+    assert_eq!(kind_at(&lines, 10, 0), Some(Kind::String), "a block with no language");
+    assert_eq!(kind_at(&lines, 7, 0), Some(Kind::Punct), "a list marker");
+    assert_eq!(kind_at(&lines, 2, 0), None, "plain text");
 }

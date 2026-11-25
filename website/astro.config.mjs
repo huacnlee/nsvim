@@ -1,9 +1,7 @@
-import { defineConfig } from "astro/config";
-
-// GitHub Pages serves the website at https://huacnlee.github.io/nsvim/.
+import { defineConfig } from 'astro/config';
 export default defineConfig({
-  site: "https://huacnlee.github.io",
-  base: "/nsvim",
-  output: "static",
-  build: { inlineStylesheets: "always" },
+  site: process.env.SITE_URL || 'https://huacnlee.github.io',
+  base: process.env.BASE_PATH || '/nsvim',
+  trailingSlash: 'always',
+  devToolbar: { enabled: false },
 });

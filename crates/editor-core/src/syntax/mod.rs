@@ -105,6 +105,22 @@ fn with_tree<R>(buf: &Buffer, path: Option<&Path>, f: impl FnOnce(&objects::Doc)
     })
 }
 
+/// Parses a short text, such as a code block in Markdown, with the parser of `lang`.
+fn parse_str(lang: Lang, text: &str) -> Option<Tree> {
+    PARSERS.with(|parsers| {
+        let mut parsers = parsers.borrow_mut();
+        let parser = match parsers.entry(lang) {
+            std::collections::hash_map::Entry::Occupied(e) => e.into_mut(),
+            std::collections::hash_map::Entry::Vacant(v) => {
+                let mut p = Parser::new();
+                p.set_language(&lang.language()).ok()?;
+                v.insert(p)
+            }
+        };
+        parser.parse(text, None)
+    })
+}
+
 /// Parses the rope chunk by chunk, with no copy of the text.
 fn parse(buf: &Buffer, lang: Lang) -> Option<Tree> {
     PARSERS.with(|parsers| {

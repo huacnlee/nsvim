@@ -83,3 +83,165 @@ const tree = [
   </div>
   <div class="m-cmd">:%s/Doc/Buffer/g<span class="cur"> </span></div>
 </div>
+
+<style is:global>
+/* nsvim dark: the window keeps the app's own colors in both page schemes. */
+.mock {
+  --ink: #0e1016; --ink-2: #0a0c11; --ink-3: #151925; --rule: #232838; --rule-2: #2e3448;
+  --text: #d6dae4; --text-2: #a3abbd; --text-3: #8b93a6;
+  --normal: #6c9eff; --insert: #a7d46f; --visual: #c39bff; --command: #ffa266;
+  --mode: var(--normal); --fade: 160ms cubic-bezier(.16, 1, .3, 1);
+}
+.mock[data-mode='insert'] { --mode: var(--insert); }
+.mock[data-mode='visual'] { --mode: var(--visual); }
+.mock[data-mode='command'] { --mode: var(--command); }
+.mock {
+  --m-bg: var(--ink);
+  --m-panel: var(--ink-2);
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  height: 100%;
+  min-height: 0;
+  background: var(--m-bg);
+  font: 400 clamp(8.5px, 1.05vw, 13px) / 1.6 'JetBrains Mono Variable', monospace;
+  color: var(--text);
+  overflow: hidden;
+}
+.m-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--m-panel);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.m-project {
+  flex: 0 0 22%;
+  padding: 0.5em 1em;
+  border-right: 1px solid var(--rule);
+}
+.m-tab {
+  padding: 0.5em 1.2em;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+}
+.m-tab.on {
+  background: var(--m-bg);
+  color: var(--text);
+  border-bottom-color: var(--mode);
+  transition: border-color var(--fade);
+}
+.m-body {
+  display: grid;
+  grid-template-columns: 22% 1fr;
+  min-height: 0;
+}
+.m-tree,
+.m-code {
+  margin: 0;
+  padding: 0.6em 0;
+  list-style: none;
+  overflow: hidden;
+}
+.m-tree {
+  background: var(--m-panel);
+  border-right: 1px solid var(--rule);
+  color: var(--text-2);
+}
+.m-tree li {
+  padding: 0 1em 0 calc(1em + var(--d) * 1.2em);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m-tree li.on {
+  background: var(--ink-3);
+  color: var(--text);
+}
+.m-tree li.git-m {
+  color: var(--command);
+}
+.m-tree li.git-a {
+  color: var(--insert);
+}
+.m-code {
+  counter-reset: row;
+  white-space: pre;
+}
+.m-code li {
+  counter-increment: row;
+  padding-right: 1em;
+}
+.m-code li::before {
+  content: counter(row);
+  display: inline-block;
+  width: 3.2em;
+  padding-right: 1.2em;
+  text-align: right;
+  color: var(--rule-2);
+}
+.m-code li.here::before {
+  color: var(--text-2);
+}
+.m-code .k {
+  color: var(--visual);
+}
+.m-code .t {
+  color: var(--command);
+}
+.m-code .f {
+  color: var(--normal);
+}
+.m-code .c {
+  color: var(--text-3);
+  font-style: italic;
+}
+.mock .cur {
+  background: var(--mode);
+  color: var(--m-bg);
+}
+.mock[data-mode="insert"] .m-code .cur {
+  background: none;
+  color: inherit;
+  box-shadow: inset 2px 0 0 var(--mode);
+}
+.mock[data-mode="visual"] .m-code li.sel {
+  background: rgb(195 155 255 / 0.18);
+}
+.m-status {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  padding: 0.3em 1em 0.3em 0;
+  background: var(--m-panel);
+  border-top: 1px solid var(--rule);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.m-pill {
+  padding: 0.1em 0.9em;
+  background: var(--mode);
+  color: var(--m-bg);
+  font-weight: 700;
+  transition: background-color var(--fade);
+}
+.m-pos {
+  margin-left: auto;
+}
+.m-cmd {
+  display: none;
+  padding: 0.3em 1em;
+  color: var(--text);
+}
+.mock[data-mode="command"] .m-cmd {
+  display: block;
+}
+.mock[data-mode="command"] .m-code .cur {
+  background: none;
+  color: inherit;
+}
+
+@media (max-width: 680px) {
+  .m-tree, .m-project { display: none; }
+  .m-body { grid-template-columns: 1fr; }
+}
+</style>

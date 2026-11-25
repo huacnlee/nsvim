@@ -6,9 +6,6 @@ description = "editor on NSH: the same core, drawn with each platform's native v
 license = "MIT"
 publish = false
 
-# Its own workspace: Rune's patches in the root manifest do not apply here.
-[workspace]
-
 # The program is nsvim. The library keeps the crate name, which the tests import.
 [[bin]]
 name = "nsvim"
@@ -44,7 +41,3 @@ nsh-platform-windows = { version = "0.7.0", default-features = false, features =
 nsh-engine = { version = "0.7.0", default-features = false }
 nsh-testing = { version = "0.7.0", default-features = false }
 tempfile = "3"
-
-[profile.dev.package."*"]
-opt-level = 2
-debug = false
