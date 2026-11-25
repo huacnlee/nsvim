@@ -144,7 +144,7 @@ jobs:
         run: |
           for target in $TARGETS; do
             case "$target" in
-              *windows*) archive="dist/nsvim-$RELEASE_VERSION-$target.zip"; need="nsvim.exe nsh/bundle.nshc nsh/app.json" ;;
+              *windows*) archive="dist/nsvim-$RELEASE_VERSION-$target.zip"; need="nsvim.exe nsh/bundle.nshc nsh/app.json nsh/icon.ico" ;;
               *apple-darwin) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"
                 need="nsvim.app/Contents/MacOS/nsvim nsvim.app/Contents/Info.plist nsvim.app/Contents/Resources/nsh/bundle.nshc" ;;
               *) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"; need="nsvim nsh/bundle.nshc packaging/nsvim.desktop packaging/nsvim.svg" ;;

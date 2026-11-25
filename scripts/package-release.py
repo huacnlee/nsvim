@@ -12,6 +12,8 @@ import json
 import plistlib
 import re
 import shutil
+import struct
+import sys
 import subprocess
 import tarfile
 import tempfile
@@ -74,6 +76,39 @@ def icns(path):
         subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(path)], check=True)
 
 
+def windows_icon(exe, ico):
+    """Embed the icon file `ico` in `exe` as icon group 1, the one Explorer, the Start menu
+    shortcut and the taskbar show. Uses Windows' resource update API, so it runs on Windows only.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    data = ico.read_bytes()
+    _, kind, count = struct.unpack_from("<HHH", data)
+    if kind != 1 or count == 0:
+        raise SystemExit(f"{ico} is not an icon file")
+    images, group = [], struct.pack("<HHH", 0, 1, count)
+    for index in range(count):
+        width, height, colors, _, planes, bits, size, offset = struct.unpack_from("<BBBBHHII", data, 6 + 16 * index)
+        images.append(data[offset : offset + size])
+        group += struct.pack("<BBBBHHIH", width, height, colors, 0, planes, bits, size, index + 1)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.BeginUpdateResourceW.restype = wintypes.HANDLE
+    kernel32.BeginUpdateResourceW.argtypes = [wintypes.LPCWSTR, wintypes.BOOL]
+    kernel32.UpdateResourceW.argtypes = [wintypes.HANDLE, ctypes.c_void_p, ctypes.c_void_p, wintypes.WORD, ctypes.c_void_p, wintypes.DWORD]
+    kernel32.EndUpdateResourceW.argtypes = [wintypes.HANDLE, wintypes.BOOL]
+    update = kernel32.BeginUpdateResourceW(str(exe), False)
+    if not update:
+        raise ctypes.WinError(ctypes.get_last_error())
+    RT_ICON, RT_GROUP_ICON, LANGUAGE = 3, 14, 0
+    ok = all(
+        kernel32.UpdateResourceW(update, RT_ICON, index + 1, LANGUAGE, image, len(image))
+        for index, image in enumerate(images)
+    ) and kernel32.UpdateResourceW(update, RT_GROUP_ICON, 1, LANGUAGE, group, len(group))
+    if not kernel32.EndUpdateResourceW(update, not ok) or not ok:
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
 def macos_app(stage, binary, nsh_dir, version):
     app = stage / "nsvim.app"
     contents = app / "Contents"
@@ -134,6 +169,11 @@ def package(binary, nsh_dir, output, version, target):
         else:
             shutil.copy2(binary, stage / "nsvim.exe")
             interface(nsh_dir, stage / "nsh")
+            # The window, taskbar and Alt+Tab icon: the runner reads nsh\icon.ico.
+            shutil.copy2(ROOT / "assets/nsvim.ico", stage / "nsh/icon.ico")
+            # The executable's own icon, which Explorer and the Start menu shortcut show.
+            if sys.platform == "win32":
+                windows_icon(stage / "nsvim.exe", ROOT / "assets/nsvim.ico")
         for name in ("LICENSE", "README.md"):
             shutil.copy2(ROOT / name, stage / name)
         if platform == "windows":
