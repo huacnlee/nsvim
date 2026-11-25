@@ -15,11 +15,11 @@ pub const ITEMS: &[(&str, &str, &str, &str)] = &[
     ("all", "Select all", "ggVG", "Ctrl A"),
     ("-", "", "", ""),
     ("definition", "Go to definition", "gd", "F12"),
-    ("references", "Find references", "SPC l r", ""),
-    ("rename", "Rename symbol", "SPC l n", "F2"),
-    ("actions", "Code actions", "SPC l a", "Ctrl ."),
+    ("references", "Find references…", "SPC l r", ""),
+    ("rename", "Rename symbol…", "SPC l n", "F2"),
+    ("actions", "Code actions…", "SPC l a", "Ctrl ."),
     ("-", "", "", ""),
-    ("grep", "Find in project", "SPC /", "Ctrl ⇧ F"),
+    ("grep", "Find in project…", "SPC /", "Ctrl ⇧ F"),
 ];
 
 /// The in-app menu while it shows: where, and the highlighted row.

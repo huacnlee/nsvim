@@ -230,13 +230,13 @@ pub(super) fn head(a: &App) -> PickHead {
         format!("{} / {}", pk.total, if pk.kind == PickKind::Files { a.files.len() } else { pk.items.len() })
     };
     let empty = if grep && a.grep.running {
-        "searching…".to_string()
+        "Searching".to_string()
     } else if let Some(e) = &a.grep.error {
         e.clone()
     } else if grep && pk.query.is_empty() {
-        "type to search the project".into()
+        "Type to search the project".into()
     } else {
-        "no matches".into()
+        "No matches".into()
     };
     let title = if locs { a.locations_title } else { pk.kind.title() };
     PickHead { title: title.into(), query: pk.query.clone(), count, wide: wide(pk.kind), empty }

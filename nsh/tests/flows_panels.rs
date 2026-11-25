@@ -47,8 +47,8 @@ fn space_opens_the_leader_menu_and_b_lists_buffers() {
 fn the_leader_menu_and_the_buffer_list_show_their_rows() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(" ");
-    f.ui.wait_for("text:/find file/").unwrap();
-    f.ui.wait_for("text:/\\+git/").unwrap();
+    f.ui.wait_for("text:/Find file…/").unwrap();
+    f.ui.wait_for("text:/\\+Git/").unwrap();
     f.keys("b");
     f.ui.wait_for("text:Buffers").unwrap();
     f.ui.wait_for("text:/main\\.rs/").unwrap();

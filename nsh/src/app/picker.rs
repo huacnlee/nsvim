@@ -34,12 +34,12 @@ pub enum PickKind {
 impl PickKind {
     pub fn title(self) -> &'static str {
         match self {
-            PickKind::Files => "Find Files",
-            PickKind::Grep => "Find in Project",
+            PickKind::Files => "Find files",
+            PickKind::Grep => "Find in project",
             PickKind::Buffers => "Buffers",
             PickKind::Commands => "Commands",
             PickKind::Locations => "Locations",
-            PickKind::Actions => "Code Actions",
+            PickKind::Actions => "Code actions",
             PickKind::Keys => "Keys",
         }
     }
@@ -70,12 +70,12 @@ pub struct Picker {
 
 /// The command palette: a label and what it does.
 pub const COMMANDS: &[(&str, &str)] = &[
-    ("Find file", "find"),
-    ("Find in project", "grep"),
+    ("Find file…", "find"),
+    ("Find in project…", "grep"),
     ("Save", "save"),
     ("Save all", "save-all"),
     ("Toggle file tree", "tree"),
-    ("Open settings", "settings"),
+    ("Open settings…", "settings"),
     ("Close tab", "close"),
     ("Next tab", "next"),
     ("Previous tab", "prev"),
@@ -85,8 +85,8 @@ pub const COMMANDS: &[(&str, &str)] = &[
     ("Theme: light", "theme=light"),
     ("Theme: follow the OS", "theme=system"),
     ("Toggle soft wrap", "wrap"),
-    ("Show every key", "keys"),
-    ("Agent: list outside changes", "outside"),
+    ("Show every key…", "keys"),
+    ("Agent: list outside changes…", "outside"),
     ("Agent: clear change marks", "clear-outside"),
     ("Agent: show the next proposal", "proposal"),
     ("Quit", "quit"),

@@ -646,17 +646,17 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 
 | Command | Does |
 | --- | --- |
-| `Find file` | Find a file |
-| `Find in project` | Search the project |
+| `Find file…` | Find a file |
+| `Find in project…` | Search the project |
 | `Save`, `Save all` | Write the buffer, every modified buffer |
 | `Toggle file tree` | Show or hide the file tree |
-| `Open settings` | Open Settings |
+| `Open settings…` | Open Settings |
 | `Close tab`, `Next tab`, `Previous tab` | Close, go to the next, go to the previous tab |
 | `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
 | `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 | `Toggle soft wrap` | Turn soft wrap on or off |
-| `Show every key` | Show every key, with search |
-| `Agent: list outside changes` | List the changes made on disk from outside the editor |
+| `Show every key…` | Show every key, with search |
+| `Agent: list outside changes…` | List the changes made on disk from outside the editor |
 | `Agent: clear change marks` | Clear the outside-change marks |
 | `Agent: show the next proposal` | Show the next agent proposal |
 | `Quit` | Quit. A modified buffer stops it |

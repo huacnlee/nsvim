@@ -23,7 +23,7 @@ function Query(props: { head: PickHead }) {
         </Text>
         <View class="w-[1.5px] h-[16px] bg-primary" testID="picker-caret" />
         <If when={!props.head.query}>
-          <Text class="text-[13px] text-text-faint">{"  type to filter"}</Text>
+          <Text class="text-[13px] text-text-faint">{"  Type to filter"}</Text>
         </If>
         <View class="flex-1" />
         <Text class="text-muted-foreground" style={{ fontSize: SIZE }} testID="picker-count">

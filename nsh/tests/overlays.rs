@@ -41,7 +41,7 @@ fn the_finder_filters_by_the_query_and_enter_opens_the_pick() -> Result<(), Stri
     let mut app = start(&main);
     app.wait_for("text:/fn main/")?;
     typ(&mut app, &["space", "f"]);
-    app.wait_for("text:Find Files")?;
+    app.wait_for("text:Find files")?;
     wait_files(&mut app, 3)?;
     app.wait_for("id:picker-list >> label:other.md")?;
     type_text(&mut app, "needl");
@@ -106,17 +106,17 @@ fn the_leader_menu_lists_keys_and_runs_the_one_pressed() -> Result<(), String> {
     typ(&mut app, &["space"]);
     app.wait_for("id:leader")?;
     assert!(app.shows("SPC"));
-    assert!(app.screen().matches("role:menuitem[find file]")?);
-    assert!(app.shows("+git"));
+    assert!(app.screen().matches("role:menuitem[Find file…]")?);
+    assert!(app.shows("+Git"));
     // A group opens its own keys.
     typ(&mut app, &["g"]);
-    app.wait_for("role:menuitem[next change]")?;
+    app.wait_for("role:menuitem[Next change]")?;
     assert!(app.shows("SPC g"));
     typ(&mut app, &["escape"]);
     app.wait_for_gone("id:leader", WAIT)?;
     // A press on an entry runs it: buffers lists the open files.
     typ(&mut app, &["space"]);
-    app.press("role:menuitem[buffers]")?;
+    app.press("role:menuitem[Buffers…]")?;
     app.wait_for("text:Buffers")?;
     app.wait_for("id:picker-list >> label:a.txt")?;
     app.wait_for("id:picker-list >> label:b.txt")?;
@@ -149,8 +149,8 @@ fn project_search_lists_hits_and_previews_the_line() -> Result<(), String> {
     let mut app = start(&main);
     app.wait_for("text:/fn main/")?;
     typ(&mut app, &["space", "/"]);
-    app.wait_for("text:Find in Project")?;
-    app.wait_for("text:type to search the project")?;
+    app.wait_for("text:Find in project")?;
+    app.wait_for("text:Type to search the project")?;
     type_text(&mut app, "NEEDLE");
     app.wait_for("id:picker-list >> label:lib.rs:3")?;
     // The preview follows the picked row: a move asks for it.
@@ -173,7 +173,7 @@ fn the_palette_filters_commands_and_runs_the_pick() -> Result<(), String> {
     app.wait_for("text:Commands")?;
     assert!(app.screen().matches("role:option[Save all]")?);
     type_text(&mut app, "every key");
-    app.wait_for("role:option[Show every key]")?;
+    app.wait_for("role:option[Show every key…]")?;
     assert!(!app.screen().matches("role:option[Save all]")?, "the query filters the list");
     typ(&mut app, &["enter"]);
     // The command opens the key list in the same overlay.
@@ -286,7 +286,7 @@ fn MenuHost(props: MenuHostProps) -> impl IntoElement {
                 .item(PopupItem::new("cut", "Cut".into()).enabled(false))
                 .item(PopupItem::new("copy", "Copy".into()))
                 .separator()
-                .item(PopupItem::new("grep", "Find in project".into()));
+                .item(PopupItem::new("grep", "Find in project…".into()));
             let then = Box::new(move |_: &mut App, id: Option<String>, _: &mut nsh_app_editor::app::fx::Tx| {
                 answer.set(id.unwrap_or_else(|| "nothing".into()));
             });
@@ -305,7 +305,7 @@ fn the_native_menu_shows_the_items_and_answers_the_pick() -> Result<(), String> 
     app.press("Open")?;
     let entries = app.menu().ok_or("no menu shows")?;
     let labels: Vec<&str> = entries.iter().map(|e| e.label.as_str()).collect();
-    assert_eq!(labels, ["Cut", "Copy", "Find in project"]);
+    assert_eq!(labels, ["Cut", "Copy", "Find in project…"]);
     assert!(entries[0].disabled && !entries[1].disabled);
     app.choose_menu_item("Copy")?;
     app.wait_for("text:picked:copy")?;
@@ -332,9 +332,9 @@ fn the_in_app_menu_shows_its_items_and_runs_the_pressed_one() -> Result<(), Stri
     // A disabled item takes no press.
     assert!(app.press("role:menuitem[Copy]").is_err(), "Copy takes no press");
     assert!(app.screen().matches("id:context-menu")?);
-    // Find in project searches for the word at the cursor.
-    app.press("role:menuitem[Find in project]")?;
-    app.wait_for("text:Find in Project")?;
+    // Find in project… searches for the word at the cursor.
+    app.press("role:menuitem[Find in project…]")?;
+    app.wait_for("text:Find in project")?;
     app.wait_for("id:picker-input >> text:hello")?;
     assert!(!app.screen().matches("id:context-menu")?);
     Ok(())

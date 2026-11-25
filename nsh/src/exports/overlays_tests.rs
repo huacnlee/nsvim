@@ -145,7 +145,7 @@ fn commands_have_no_preview() {
     a.open_picker(PickKind::Commands);
     assert!(preview_src(&a).is_none());
     assert!(preview()(&a).lines.is_empty());
-    assert!(all_rows(&a).iter().any(|r| r.label == "Show every key"));
+    assert!(all_rows(&a).iter().any(|r| r.label == "Show every key…"));
 }
 
 #[test]
@@ -157,7 +157,7 @@ fn the_leader_menu_shows_the_group_it_is_in() {
     a.overlay = Overlay::Leader(Some('l'));
     let p = leader(&a);
     assert_eq!(p.title, "SPC l");
-    assert!(p.items.iter().any(|i| i.label == "references"));
+    assert!(p.items.iter().any(|i| i.label == "References…"));
 }
 
 #[test]
