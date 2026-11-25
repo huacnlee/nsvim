@@ -27,7 +27,7 @@ Options:
   -h, --help      print this help
   -V, --version   print the version
 
-Docs: https://github.com/bjarneo/editor/blob/main/docs/cli.md
+Docs: https://github.com/huacnlee/nsvim/blob/main/docs/cli.md
 ";
 
 pub const MCP_USAGE: &str = "edit mcp: a Model Context Protocol server, over stdio, for the editor
@@ -35,7 +35,7 @@ running in the current folder. An agent starts it. You do not run it by hand.
 
   claude mcp add nsvim -- edit mcp
 
-Tools and setup for Codex and opencode: https://github.com/bjarneo/editor/blob/main/docs/agents.md
+Tools and setup for Codex and opencode: https://github.com/huacnlee/nsvim/blob/main/docs/agents.md
 ";
 
 /// What the command line asks for. `argv` includes the program name.
