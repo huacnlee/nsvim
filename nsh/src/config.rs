@@ -125,10 +125,6 @@ pub struct MouseCfg {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CliCfg {
-    /// Not used: setup no longer adds a terminal command. The setup view still reads `name` and
-    /// `path`. Old config files keep them.
-    pub name: String,
-    pub path: bool,
     pub editor_env: bool,
     pub git: bool,
     pub default_app: bool,
@@ -200,7 +196,7 @@ impl Default for MouseCfg {
 
 impl Default for CliCfg {
     fn default() -> Self {
-        CliCfg { name: "nsvim".into(), path: false, editor_env: true, git: true, default_app: false, vim_aliases: true }
+        CliCfg { editor_env: true, git: true, default_app: false, vim_aliases: true }
     }
 }
 
@@ -212,7 +208,7 @@ fn two_places<S: serde::Serializer>(v: &f32, s: S) -> Result<S::Ok, S::Error> {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct IpcCfg {
-    /// Serve the control socket that `nsvim ctl`, `nsvim mcp` and agents use.
+    /// Serve the control socket that the `ctl` and `mcp` commands and agents use.
     pub enabled: bool,
     /// Let `edit` and `command` requests change buffers. `propose` works either way.
     pub allow_edits: bool,

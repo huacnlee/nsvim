@@ -47,9 +47,9 @@ fn first_launch() -> (Headless, tempfile::TempDir) {
     // nowhere, so Tab is tried until it moves on, and Shift+Tab comes back.
     for _ in 0..50 {
         app.press_key("tab").unwrap();
-        if app.shows("setup 2/5 · mouse") {
+        if app.shows("Setup 2/5 · Mouse") {
             app.press_key("shift+tab").unwrap();
-            app.wait_for("setup 1/5 · keys").unwrap();
+            app.wait_for("Setup 1/5 · Keys").unwrap();
             return (app, dir);
         }
         app.wait(Duration::from_millis(100)).unwrap();
@@ -57,15 +57,22 @@ fn first_launch() -> (Headless, tempfile::TempDir) {
     panic!("the keys never reached the setup");
 }
 
+/// The scratch folder of a test, and its turn at config.toml: each change in Settings writes it.
+struct Held {
+    _dir: tempfile::TempDir,
+    _lock: std::sync::MutexGuard<'static, ()>,
+}
+
 /// The app on a file, with Settings open by `:Settings`.
-fn settings_on(text: &str, config: Option<&str>) -> Result<(Headless, tempfile::TempDir), String> {
+fn settings_on(text: &str, config: Option<&str>) -> Result<(Headless, Held), String> {
+    let lock = config_lock();
     let dir = scratch();
     let file = write(dir.path(), "a.txt", text);
     let mut app = common::start_files(&[&file], config);
     app.wait_for(&format!("text:/{}/", text.lines().next().unwrap_or("")))?;
     type_text(&mut app, ":Settings\n");
     app.wait_for("id:settings")?;
-    Ok((app, dir))
+    Ok((app, Held { _dir: dir, _lock: lock }))
 }
 
 fn texts(app: &Headless) -> String {
@@ -78,7 +85,7 @@ fn texts(app: &Headless) -> String {
 fn setup_shows_on_first_launch_and_not_otherwise() -> Result<(), String> {
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
-    assert!(app.shows("setup 1/5 · keys"), "{:?}", app.screen().texts());
+    assert!(app.shows("Setup 1/5 · Keys"), "{:?}", app.screen().texts());
     assert!(app.shows("SETUP"));
     assert!(!app.screen().matches("id:text-area")?, "the editor waits for the setup");
 
@@ -93,25 +100,25 @@ fn setup_shows_on_first_launch_and_not_otherwise() -> Result<(), String> {
 fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
-    app.press("label:next")?;
+    app.press("label:Next")?;
     app.wait_for("Use the mouse?")?;
-    assert!(app.shows("setup 2/5 · mouse"));
+    assert!(app.shows("Setup 2/5 · Mouse"));
     typ(&mut app, &["tab"]);
     app.wait_for("Pick a look")?;
-    app.press("label:back")?;
+    app.press("label:Back")?;
     app.wait_for("Use the mouse?")?;
     typ(&mut app, &["tab", "tab"]);
     app.wait_for("Use nsvim from the terminal")?;
-    assert!(app.shows("setup 4/5 · terminal"));
+    assert!(app.shows("Setup 4/5 · Terminal"));
     typ(&mut app, &["shift+tab"]);
     app.wait_for("Pick a look")?;
     typ(&mut app, &["escape"]);
     app.wait_for("Use the mouse?")?;
-    app.press("label:skip")?;
+    app.press("label:Skip")?;
     app.wait_for("Ready")?;
-    assert!(app.shows("setup 5/5 · ready"));
-    assert!(app.screen().matches("label:open nsvim")?);
-    assert!(!app.screen().matches("label:next")?, "the last step has no next");
+    assert!(app.shows("Setup 5/5 · Ready"));
+    assert!(app.screen().matches("label:Open nsvim")?);
+    assert!(!app.screen().matches("label:Next")?, "the last step has no next");
     Ok(())
 }
 
@@ -126,8 +133,8 @@ fn setup_keys_step_picks_a_keymap_by_press_and_by_key() -> Result<(), String> {
     app.wait_until("classic picked", Duration::from_secs(2), |s| s.selected("label:Classic shortcuts").unwrap_or(false))?;
     assert!(!app.screen().selected("label:Neovim motions")?);
     app.wait_for("Add cursors with Alt-click")?;
-    assert!(app.shows("arrows move   enter pick   tab next"));
-    // A press picks Neovim again, and a switch changes its option.
+    assert!(app.shows("Arrows move   Enter picks   Tab next"));
+    // A press picks Neovim again, and a checkbox changes its option.
     app.press("label:Neovim motions")?;
     app.wait_for("Use Space as the leader key")?;
     assert!(app.shows("SPC f"), "Space is the leader: {:?}", app.screen().texts());
@@ -156,13 +163,13 @@ fn setup_mouse_and_look_steps_change_the_picks() -> Result<(), String> {
     app.press("id:size:16")?;
     app.wait_until("16 pt picked", Duration::from_secs(2), |s| s.selected("id:size:16").unwrap_or(false))?;
     assert!(app.screen().selected("id:font:Fira Code")?);
-    app.press("label:skip")?;
+    app.press("label:Skip")?;
     app.wait_for("Ready")?;
-    for want in ["keyboard only", "light", "Fira Code, 16 pt", "Neovim motions, Space leader"] {
+    for want in ["Keyboard only", "Light", "Fira Code, 16 pt", "Neovim motions, Space leader"] {
         assert!(app.shows(want), "{want}: {:?}", app.screen().texts());
     }
     // `change` goes back to the step of that row.
-    app.press("label:change mouse")?;
+    app.press("label:Change mouse")?;
     app.wait_for("Use the mouse?")?;
     Ok(())
 }
@@ -182,8 +189,8 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.press("label:Use for git commit messages")?;
     app.wait_until("no git command", Duration::from_secs(2), |s| !git(s))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
-    app.press("label:Open nsvim with vi and vim")?;
-    app.wait_for("nothing. nsvim stays inside its window")?;
+    app.press("label:Open nsvim with nvim, vim and vi")?;
+    app.wait_for("Nothing. nsvim stays inside its window.")?;
     Ok(())
 }
 
@@ -193,10 +200,12 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
     app.press("label:Classic shortcuts")?;
-    app.press("label:skip")?;
+    app.press("label:Skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
-    app.press("label:open nsvim")?;
+    // The last step says how to start nsvim: the aliases are on by default.
+    app.wait_for("text:/nvim . opens a folder/")?;
+    app.press("label:Open nsvim")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
     let cfg =
@@ -206,7 +215,8 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     assert!(!app.screen().matches("id:mode-badge")?, "{:?}", app.screen().texts());
     // The terminal step ran what it showed, in the tests' own home: $EDITOR in the rc file.
     let rc = std::path::PathBuf::from(std::env::var_os("HOME").ok_or("no HOME")?).join(".bashrc");
-    app.wait_until("the rc file", Duration::from_secs(5), |_| std::fs::read_to_string(&rc).is_ok_and(|t| t.contains("export EDITOR=")))?;
+    let ran = |t: &str| t.contains("export EDITOR=") && t.contains("alias nvim=");
+    app.wait_until("the rc file", Duration::from_secs(5), |_| std::fs::read_to_string(&rc).is_ok_and(|t| ran(&t)))?;
     Ok(())
 }
 
@@ -215,7 +225,7 @@ fn enter_on_the_last_step_opens_the_editor() -> Result<(), String> {
     let _lock = config_lock();
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
-    app.press("label:skip")?;
+    app.press("label:Skip")?;
     app.wait_for("Ready")?;
     // The focus starts on the first `change`. The last choice opens the editor.
     typ(&mut app, &["j", "j", "j", "j", "j", "enter"]);
@@ -251,8 +261,7 @@ fn settings_opens_with_each_section() -> Result<(), String> {
 }
 
 #[test]
-fn a_switch_changes_the_app_and_w_writes_the_config() -> Result<(), String> {
-    let _lock = config_lock();
+fn a_checkbox_changes_the_app_and_config_toml_at_once() -> Result<(), String> {
     let (mut app, _dir) = settings_on("hello\n", None)?;
     app.press("id:section:editor")?;
     app.wait_for("id:row:editor.wrap")?;
@@ -262,13 +271,18 @@ fn a_switch_changes_the_app_and_w_writes_the_config() -> Result<(), String> {
         s.accessibility_state("label:editor.wrap").is_ok_and(|a| a.checked == Some(nsh_core::Checked::True))
     })?;
     app.wait_for("editor.wrap = true")?;
-    // The keys still reach the app after a press: `:w` writes config.toml.
-    type_text(&mut app, ":w\n");
+    // The change is on disk with no `:w`.
     let cfg = written(&mut app, "config.toml with wrap on", |t| get(t, "editor", "wrap").and_then(|v| v.as_bool()) == Some(true))?;
     assert_eq!(get(&cfg, "editor", "wrap").and_then(|v| v.as_bool()), Some(true));
-    // Pressed again, it turns off.
-    app.press("label:editor.wrap")?;
+    // It is a checkbox, and its description takes the press too: pressed again, it turns off,
+    // on disk too.
+    assert!(app.screen().matches("role:checkbox[editor.wrap]")?, "{}", texts(&app));
+    app.press("text:Soft-wrap long lines")?;
     app.wait_for("editor.wrap = false")?;
+    written(&mut app, "config.toml with wrap off", |t| get(t, "editor", "wrap").and_then(|v| v.as_bool()) == Some(false))?;
+    // The keys still reach the app after a press: Esc closes Settings.
+    typ(&mut app, &["escape"]);
+    app.wait_for_gone("id:settings", Duration::from_secs(2))?;
     Ok(())
 }
 
@@ -364,13 +378,75 @@ fn the_preview_follows_the_options() -> Result<(), String> {
 }
 
 #[test]
-fn closing_settings_returns_to_the_text() -> Result<(), String> {
+fn escape_closes_settings_and_shows_the_text() -> Result<(), String> {
     let (mut app, _dir) = settings_on("hello\n", None)?;
-    assert!(!app.screen().matches("id:text-area")?);
-    type_text(&mut app, ":q\n");
+    // `:` does nothing in Settings: no command line opens, and Settings stays.
+    type_text(&mut app, ":");
+    app.wait(Duration::from_millis(200))?;
+    assert!(app.screen().matches("id:settings")?);
+    typ(&mut app, &["escape"]);
     app.wait_for_gone("id:settings", Duration::from_secs(2))?;
     app.wait_for("id:text-area")?;
     app.wait_for("text:/hello/")?;
+    app.wait_for("NORMAL")?;
+    Ok(())
+}
+
+#[test]
+fn settings_covers_the_window_and_adds_no_tab() -> Result<(), String> {
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    app.wait_for("text:Settings")?;
+    assert!(!app.screen().matches("role:tab[settings]")?, "Settings is not a tab");
+    assert!(app.screen().matches("role:tab[a.txt]")?, "the file keeps its tab under Settings");
+    // The close button closes it.
+    app.press("label:Close settings")?;
+    app.wait_for_gone("id:settings", Duration::from_secs(2))?;
+    app.wait_for("NORMAL")?;
+    Ok(())
+}
+
+#[test]
+fn a_press_on_the_empty_area_keeps_settings_open() -> Result<(), String> {
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    // A short section leaves empty space under its rows, and the header has space beside the
+    // title. A press there does not close Settings.
+    app.press("id:section:formatting")?;
+    app.wait_for("id:row:format.line_endings")?;
+    // The window is 1200 by 800 points.
+    for (x, y) in [(600.0, 700.0), (600.0, 20.0)] {
+        app.press_at("id:settings", common::point(x, y))?;
+        app.wait(Duration::from_millis(200))?;
+        assert!(app.screen().matches("id:settings")?, "a press at {x},{y} closed Settings");
+    }
+    Ok(())
+}
+
+#[test]
+fn a_failed_write_shows_in_the_header() -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    app.press("id:section:editor")?;
+    app.press("label:editor.wrap")?;
+    written(&mut app, "config.toml", |_| true)?;
+    // config.toml and its folder refuse writes until this test ends.
+    struct ReadOnly(std::path::PathBuf);
+    impl Drop for ReadOnly {
+        fn drop(&mut self) {
+            let _ = std::fs::set_permissions(&self.0, std::fs::Permissions::from_mode(0o755));
+            let _ = std::fs::set_permissions(self.0.join("config.toml"), std::fs::Permissions::from_mode(0o644));
+        }
+    }
+    let path = nsh_app_editor::config::config_path();
+    let folder = ReadOnly(path.parent().ok_or("no folder")?.to_path_buf());
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o444)).map_err(|e| e.to_string())?;
+    std::fs::set_permissions(&folder.0, std::fs::Permissions::from_mode(0o555)).map_err(|e| e.to_string())?;
+    app.press("label:editor.wrap")?;
+    app.wait_for("id:settings-error")?;
+    assert!(app.shows("Could not save config.toml."), "{:?}", app.screen().texts());
+    drop(folder);
+    // A good write clears it.
+    app.press("label:editor.wrap")?;
+    app.wait_for_gone("id:settings-error", Duration::from_secs(5))?;
     Ok(())
 }
 
@@ -419,5 +495,76 @@ fn an_old_config_with_the_omarchy_mode_loads_as_system() -> Result<(), String> {
     // System's rows show: the OS themes and what the OS asks for now (no Omarchy theme here).
     assert!(app.screen().matches("id:row:system.now")?);
     assert!(app.screen().matches("id:row:theme.dark")? && app.screen().matches("id:row:theme.light")?);
+    Ok(())
+}
+
+#[test]
+fn edit_config_toml_closes_settings_and_opens_the_file() -> Result<(), String> {
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    // The path of config.toml shows under the sections.
+    app.wait_until("the path", Duration::from_secs(2), |s| s.texts().iter().any(|t| t.ends_with("nsvim/config.toml")))?;
+    app.press("label:Edit config.toml")?;
+    app.wait_for_gone("id:settings", Duration::from_secs(2))?;
+    app.wait_for("id:text-area")?;
+    // The buffer line has a tab for config.toml, and the text area shows the file.
+    app.wait_until("config.toml open", Duration::from_secs(5), |s| {
+        let t = s.texts();
+        t.contains(&"config.toml") && t.contains(&"[theme]")
+    })?;
+    app.wait_for("NORMAL")?;
+    Ok(())
+}
+
+#[test]
+fn a_press_in_setup_gives_the_keys_back_to_the_editor() -> Result<(), String> {
+    let (mut app, _dir) = first_launch();
+    app.wait_for("How do you want to edit?")?;
+    // A press on a card picks it. The next key goes to setup, not to the card.
+    app.press("label:Classic shortcuts")?;
+    app.wait_until("classic picked", Duration::from_secs(2), |s| s.selected("label:Classic shortcuts").unwrap_or(false))?;
+    typ(&mut app, &["tab"]);
+    app.wait_for("Use the mouse?")?;
+    // The same after a checkbox: Shift+Tab goes back a step.
+    app.press("label:Click places the cursor")?;
+    app.wait_until("click off", Duration::from_secs(2), |s| {
+        s.accessibility_state("label:Click places the cursor").is_ok_and(|a| a.checked == Some(nsh_core::Checked::False))
+    })?;
+    typ(&mut app, &["shift+tab"]);
+    app.wait_for("How do you want to edit?")?;
+    Ok(())
+}
+
+#[test]
+fn the_ready_step_lists_the_tips_of_the_keymap() -> Result<(), String> {
+    let (mut app, _dir) = first_launch();
+    app.wait_for("How do you want to edit?")?;
+    app.press("label:Skip")?;
+    app.wait_for("Ready")?;
+    for want in ["Find a file", "Every key, in a popup", ":Settings", "SPC"] {
+        assert!(app.shows(want), "{want}: {:?}", app.screen().texts());
+    }
+    assert!(app.screen().matches("id:setup-summary")?);
+    app.press("label:Change keys")?;
+    app.wait_for("How do you want to edit?")?;
+    app.press("label:Classic shortcuts")?;
+    app.press("label:Skip")?;
+    app.wait_for("Command palette")?;
+    assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
+    Ok(())
+}
+
+#[test]
+fn hover_changes_the_other_sections_and_not_the_active_one() -> Result<(), String> {
+    let (mut app, _dir) = settings_on("hello\n", None)?;
+    let bg = |app: &Headless, sel: &str| app.screen().view_style(sel).ok().flatten().and_then(|s| s.background_color);
+    let active = bg(&app, "id:section:appearance");
+    let other = bg(&app, "id:section:font");
+    app.hover("id:section:appearance")?;
+    app.wait(Duration::from_millis(100))?;
+    assert_eq!(bg(&app, "id:section:appearance"), active, "the active section keeps its look under the pointer");
+    app.hover("id:section:font")?;
+    app.wait_until("the other section takes hover", Duration::from_secs(2), |s| {
+        s.view_style("id:section:font").ok().flatten().and_then(|s| s.background_color) != other
+    })?;
     Ok(())
 }

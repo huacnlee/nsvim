@@ -293,7 +293,6 @@ impl App {
         {
             self.overlay = Overlay::None;
             self.ed.active = i.min(self.ed.docs.len().saturating_sub(1));
-            self.on_settings = false;
             self.apply_doc_opts();
             return;
         }

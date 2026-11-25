@@ -2,7 +2,6 @@
 //! The choices land in config.toml. Terminal integration runs only what the user leaves on,
 //! and shows each command before it runs.
 
-use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use super::fx::Tx;
@@ -13,7 +12,7 @@ use crate::args::shell_word;
 use crate::config::Config;
 use crate::theme::Omarchy;
 
-pub const STEPS: &[&str] = &["keys", "mouse", "look", "terminal", "ready"];
+pub const STEPS: &[&str] = &["Keys", "Mouse", "Look", "Terminal", "Ready"];
 
 /// The desktop entry and icon the default-app choice installs on Linux.
 const DESKTOP: &str = include_str!("../../../assets/editor.desktop");
@@ -22,7 +21,7 @@ const ICON: &str = include_str!("../../../assets/editor.svg");
 pub const FONTS: &[&str] = &["JetBrains Mono", "IBM Plex Mono", "Fira Code"];
 pub const SIZES: &[f32] = &[12.0, 13.0, 14.0, 16.0];
 /// The looks setup offers. System follows the Omarchy theme where there is one.
-pub const LOOKS: &[&str] = &["light", "dark", "system"];
+pub const LOOKS: &[&str] = &["system", "light", "dark"];
 
 pub struct Setup {
     pub step: usize,
@@ -31,13 +30,12 @@ pub struct Setup {
     pub mac: bool,
     /// The focused choice on this step.
     pub focus: usize,
-    pub shadow: bool,
+    /// The terminal step shows. Windows has none: its shells do not read the lines it writes.
+    pub terminal: bool,
+    /// The default-app choice shows. Only Linux reads the desktop entry it writes.
+    pub desktop_entry: bool,
     /// This binary, with links resolved. The aliases, `$EDITOR` and git name it by its full path.
     pub exe: Option<PathBuf>,
-    /// `command -v` answers by name, so each name is looked up once.
-    pub on_path: HashMap<String, Option<String>>,
-    /// The names sent to the probe worker, so each is asked once.
-    pub asked: HashSet<String>,
     /// The leader key `~/.config/nvim` sets, as the probe worker found it.
     pub nvim_leader: Option<char>,
     pub omarchy_name: Option<String>,
@@ -53,7 +51,6 @@ pub enum Choice {
     Look(usize),
     Font(usize),
     Size(usize),
-    Shadow,
     Change(usize),
     Open,
 }
@@ -70,11 +67,10 @@ impl Setup {
             cfg,
             mac: cfg!(target_os = "macos"),
             focus: 0,
-            shadow: false,
+            terminal: !cfg!(target_os = "windows"),
+            desktop_entry: cfg!(target_os = "linux"),
             // The probe worker answers this from the disk (`App::setup_answer`).
             exe: None,
-            on_path: HashMap::new(),
-            asked: HashSet::new(),
             nvim_leader: None,
             omarchy_name: omarchy.map(|o| o.name.clone()),
         }
@@ -114,13 +110,14 @@ impl Setup {
             4 => {
                 // Setup puts no command on $PATH. The aliases open this binary by its full path.
                 c.extend([Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git")]);
-                // The release ships no macOS app bundle, so only Linux can be the default app.
-                if !self.mac {
+                // The default-app step writes a desktop entry, which only Linux reads.
+                if self.desktop_entry {
                     c.push(Choice::Toggle("default"));
                 }
             }
             _ => {
-                c.extend((0..5).map(Choice::Change));
+                // The rows of the summary: keys, mouse, theme, font and, with its step, terminal.
+                c.extend((0..self.rows()).map(Choice::Change));
                 c.push(Choice::Open);
             }
         }
@@ -140,7 +137,6 @@ impl Setup {
             "drag" => m.drag,
             "double" => m.double_click,
             "right" => m.right_click,
-            "path" => cli.path,
             "env" => cli.editor_env,
             "git" => cli.git,
             "default" => cli.default_app,
@@ -163,7 +159,6 @@ impl Setup {
             "drag" => m.drag = on,
             "double" => m.double_click = on,
             "right" => m.right_click = on,
-            "path" => cli.path = on,
             "env" => cli.editor_env = on,
             "git" => cli.git = on,
             "default" => cli.default_app = on,
@@ -172,34 +167,14 @@ impl Setup {
         }
     }
 
-    pub fn name_valid(&self) -> bool {
-        let n = &self.cfg.cli.name;
-        !n.is_empty()
-            && n.len() <= 32
-            && n.chars().next().is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-            && n.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '_' | '-'))
+    /// The rows of the summary on the last step.
+    pub fn rows(&self) -> usize {
+        if self.terminal { 5 } else { 4 }
     }
 
-    /// Where the name already is on `$PATH`, if anywhere.
-    pub fn taken(&self) -> Option<String> {
-        if !self.name_valid() {
-            return None;
-        }
-        self.on_path.get(&self.cfg.cli.name).cloned().flatten()
-    }
-
-    /// The command's name to look up on `$PATH`, once. The probe worker looks it up off the UI
-    /// thread.
-    pub fn check_name(&mut self) -> Vec<String> {
-        let n = self.cfg.cli.name.clone();
-        if self.name_valid() && self.asked.insert(n.clone()) { vec![n] } else { Vec::new() }
-    }
-
-    /// Whether setup can install a terminal command under the name. It never does now: the
-    /// aliases `nvim`, `vim` and `vi` open the binary by its full path. The setup view still
-    /// reads this, `taken` and `check_name` for its command row. Remove them with that row.
-    pub fn installable(&self) -> bool {
-        false
+    /// The steps that show, by name. Windows has no terminal step.
+    pub fn steps(&self) -> Vec<&'static str> {
+        STEPS.iter().copied().filter(|t| self.terminal || *t != "Terminal").collect()
     }
 
     pub fn rc_file(&self) -> String {
@@ -219,6 +194,9 @@ impl Setup {
         let rc = self.rc_file();
         let program = self.program();
         let mut out = Vec::new();
+        if !self.terminal {
+            return out;
+        }
         if cli.vim_aliases {
             out.push(append_line(&vim_aliases(&program), &rc));
         }
@@ -228,7 +206,7 @@ impl Setup {
         if cli.git {
             out.push(format!("git config --global core.editor \"{}\"", in_double_quotes(&format!("{program} --wait"))));
         }
-        if cli.default_app && !self.mac {
+        if cli.default_app && self.desktop_entry {
             out.push("# write ~/.local/share/applications/nsvim.desktop and its icon".into());
             out.push(format!("xdg-mime default nsvim.desktop {}", mime_types().join(" ")));
         }
@@ -289,7 +267,11 @@ impl App {
     /// Moves `by` steps; past the last step, the editor opens.
     pub fn setup_go(&mut self, by: isize) {
         let Screen::Setup(s) = &mut self.screen else { return };
-        let next = (s.step as isize + by).clamp(1, STEPS.len() as isize) as usize;
+        let mut next = (s.step as isize + by).clamp(1, STEPS.len() as isize) as usize;
+        // Without the terminal step, a move goes over it.
+        if !s.terminal && STEPS[next - 1] == "Terminal" {
+            next = if by < 0 { next - 1 } else { next + 1 };
+        }
         s.step = next;
         s.focus = 0;
     }
@@ -297,13 +279,9 @@ impl App {
     /// The probe worker answered: keep what it found for the setup screen.
     pub fn setup_answer(&mut self, answer: crate::services::probe::Answer) {
         let Screen::Setup(s) = &mut self.screen else { return };
-        match answer {
-            crate::services::probe::Answer::Facts { exe, nvim_leader } => {
-                s.exe = exe;
-                s.nvim_leader = nvim_leader;
-            }
-            crate::services::probe::Answer::OnPath(found) => s.on_path.extend(found),
-        }
+        let crate::services::probe::Answer::Facts { exe, nvim_leader } = answer;
+        s.exe = exe;
+        s.nvim_leader = nvim_leader;
     }
 
     pub fn setup_choose(&mut self, c: Choice, tx: &mut Tx) {
@@ -319,7 +297,6 @@ impl App {
             Choice::Look(i) => s.cfg.theme.mode = LOOKS[i].into(),
             Choice::Font(i) => s.cfg.font.family = FONTS[i].into(),
             Choice::Size(i) => s.cfg.font.size = SIZES[i],
-            Choice::Shadow => s.shadow = !s.shadow,
             Choice::Change(i) => {
                 s.step = [1, 2, 3, 3, 4][i.min(4)];
                 s.focus = 0;
@@ -349,7 +326,7 @@ impl App {
             env: s.cfg.cli.editor_env,
             vim: s.cfg.cli.vim_aliases,
             git: s.cfg.cli.git,
-            default_app: s.cfg.cli.default_app && !s.mac,
+            default_app: s.cfg.cli.default_app && s.desktop_entry,
             rc: s.rc_file(),
         };
         let mac = s.mac;
@@ -473,6 +450,7 @@ mod tests {
     fn the_terminal_step_aliases_nvim_vim_and_vi_to_the_full_path() {
         let mut s = Setup::new(None);
         s.step = 4;
+        s.terminal = true;
         s.exe = Some(PathBuf::from("/home/dev/.local/share/nsvim/nsvim"));
         let line = "alias nvim=\"/home/dev/.local/share/nsvim/nsvim\" vim=\"/home/dev/.local/share/nsvim/nsvim\" vi=\"/home/dev/.local/share/nsvim/nsvim\"";
         let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with(&format!("echo '{line}' >> ")));
@@ -502,7 +480,8 @@ mod tests {
     #[test]
     fn the_terminal_step_shows_what_it_runs() {
         let mut s = Setup::new(None);
-        s.mac = false;
+        s.terminal = true;
+        s.desktop_entry = true;
         s.exe = Some(PathBuf::from("/opt/nsvim/nsvim"));
         s.cfg.cli.default_app = true;
         let cmds = s.commands().join("\n");
@@ -512,10 +491,32 @@ mod tests {
         // Setup puts nothing on $PATH and adds no command of its own.
         assert!(!cmds.contains("ln -s") && !cmds.contains("export PATH") && !cmds.contains("alias nsvim"), "{cmds}");
         s.step = 4;
-        assert!(!s.choices().contains(&Choice::Toggle("path")) && !s.choices().contains(&Choice::Shadow));
-        s.mac = true;
-        assert!(!s.commands().join("\n").contains("xdg-mime"), "macOS has no default-app step");
+        assert_eq!(s.choices(), [Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git"), Choice::Toggle("default")]);
+        s.desktop_entry = false;
+        assert!(!s.commands().join("\n").contains("xdg-mime"), "macOS and Windows have no default-app step");
         assert!(!s.choices().contains(&Choice::Toggle("default")), "and no default-app choice");
+    }
+
+    /// Windows shells do not read the lines the terminal step writes, so Windows has no step.
+    #[test]
+    fn without_the_terminal_step_setup_goes_over_it_and_runs_nothing() {
+        let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
+        let at = |a: &App| match &a.screen {
+            Screen::Setup(s) => s.step,
+            _ => 0,
+        };
+        let Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
+        s.terminal = false;
+        assert_eq!(s.steps(), ["Keys", "Mouse", "Look", "Ready"]);
+        assert!(s.commands().is_empty(), "{:?}", s.commands());
+        s.step = 3;
+        a.setup_go(1);
+        assert_eq!(at(&a), 5, "on from the look step to ready");
+        a.setup_go(-1);
+        assert_eq!(at(&a), 3, "back from ready to the look step");
+        let Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
+        s.step = 5;
+        assert_eq!(s.choices().iter().filter(|c| matches!(c, Choice::Change(_))).count(), 4, "no terminal row");
     }
 
     #[test]

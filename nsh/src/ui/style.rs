@@ -127,3 +127,8 @@ pub struct CodeFont {
 pub fn frame(radius: f32) -> View {
     view().absolute().inset(px(0.0)).rounded(px(radius)).border_1().border_color(move || color("border"))
 }
+
+/// No fill: a token at zero opacity, for a state that shows nothing.
+pub fn clear() -> AdaptiveColor {
+    color("background").opacity(0.0)
+}

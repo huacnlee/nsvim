@@ -69,14 +69,6 @@ curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh
 irm https://huacnlee.github.io/nsvim/install.ps1 | iex
 ```
 
-**mise**
-
-```sh
-mise use -g github:huacnlee/nsvim
-```
-
-On macOS, use `mise use -g 'github:huacnlee/nsvim[bin_path=nsvim.app/Contents/MacOS]'`.
-
 **From source**
 
 The program reads its interface from `nsh/bundle.nshc` next to it, so `cargo install` alone does

@@ -268,8 +268,6 @@ mod page {
         /// The web has no setup screen.
         pub fn probe_setup(&self) {}
 
-        pub fn look_up(&self, _names: Vec<String>) {}
-
         /// The web has no files that change from outside.
         pub fn watch_config(&self, _file: PathBuf) {}
 

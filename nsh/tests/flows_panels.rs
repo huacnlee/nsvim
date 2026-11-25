@@ -57,26 +57,30 @@ fn the_leader_menu_and_the_buffer_list_show_their_rows() {
 }
 
 #[test]
-fn colon_settings_opens_the_tab_and_w_writes_the_config() {
+fn colon_settings_opens_it_and_a_change_is_on_disk_at_once() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(":Settings\n");
     assert!(f.read(|a| a.on_settings), "{:?}", f.msg());
-    // The first row is the theme; `l` moves it from dark to system.
+    // The first row is the theme. `l` moves it from dark, the last, round to system.
     f.keys("l");
     assert_eq!(f.read(|a| a.cfg.theme.mode.clone()), "system");
-    assert!(f.read(|a| a.cfg != a.disk_cfg));
-    f.keys(":w\n");
-    assert!(f.read(|a| a.cfg == a.disk_cfg), "`:w` in Settings writes config.toml");
-    f.keys(":q\n");
+    let path = nsh_app_editor::config::config_path();
+    f.settle("config.toml has the change with no :w", move |_| {
+        std::fs::read_to_string(&path).is_ok_and(|t| t.contains("mode = \"system\""))
+    });
+    // `:` does nothing here. Esc closes Settings.
+    f.keys(":");
+    assert!(f.read(|a| a.on_settings && a.ed.mode != Mode::Command));
+    f.keys("\x1b");
     assert!(!f.read(|a| a.on_settings));
 }
 
 #[test]
-fn the_settings_tab_shows_its_sections_and_rows() {
+fn settings_shows_its_sections_and_rows() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(":Settings\n");
-    f.ui.wait_for("text:appearance").unwrap();
-    f.ui.wait_for("text:/keys & mouse/").unwrap();
+    f.ui.wait_for("text:Appearance").unwrap();
+    f.ui.wait_for("text:/Keys & mouse/").unwrap();
     f.keys("J");
     f.ui.wait_for("text:/JetBrains Mono/").unwrap();
 }
@@ -162,11 +166,12 @@ fn settings_keys_pick_sections_and_change_rows() {
     assert_eq!(f.read(|a| a.cfg.editor.numbers.clone()), "relative");
     f.keys("hj\n");
     assert_eq!(f.read(|a| (a.cfg.editor.numbers.clone(), a.cfg.editor.cursor.clone())), ("hybrid".into(), "bar".into()));
-    // Space is the leader here too: it opens the menu and changes no option.
+    // Space is the leader: it changes no option, and no menu opens over Settings.
     f.keys(" ");
-    assert!(f.check(|a| matches!(a.overlay, Overlay::Leader(None))));
+    assert!(f.read(|a| matches!(a.overlay, Overlay::None) && a.on_settings));
     assert_eq!(f.read(|a| a.cfg.editor.cursor.clone()), "bar");
     f.keys("\x1b");
+    assert!(!f.read(|a| a.on_settings), "Esc closes Settings");
 }
 
 /// A proposal: Tab and ] go to the next change, [ to the one before, g to the top. Esc rejects,
@@ -294,7 +299,7 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     });
     f.update(|a, _| a.setup_go(3));
     f.ui.wait_for("text:Use nsvim from the terminal").unwrap();
-    f.ui.wait_for("label:Open nsvim with vi and vim").unwrap();
+    f.ui.wait_for("label:Open nsvim with nvim, vim and vi").unwrap();
     // The step builds again when the probe answers. Press after it.
     f.settle("the probe answers", |a| match &a.screen {
         Screen::Setup(s) => s.exe.is_some(),
@@ -311,7 +316,7 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     // Under load, a press can reach the row while the step builds again. Press again only
     // while the switch is still on, so a second press never turns it back on.
     for _ in 0..3 {
-        f.ui.press("label:Open nsvim with vi and vim").unwrap();
+        f.ui.press("label:Open nsvim with nvim, vim and vi").unwrap();
         let t = std::time::Instant::now();
         while on(&f) && t.elapsed() < std::time::Duration::from_secs(1) {
             std::thread::sleep(std::time::Duration::from_millis(20));
@@ -322,4 +327,32 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     }
     assert!(!on(&f), "the press turns the aliases off");
     f.ui.wait_until("no alias line", std::time::Duration::from_secs(2), |s| !alias(s)).unwrap();
+}
+
+/// A long project path over a narrow tree stays inside its header, with padding before the
+/// divider. The header is as wide as the tree, and the full path is its accessibility name.
+#[test]
+fn a_long_project_path_fits_over_a_narrow_tree() {
+    let dir = scratch();
+    let deep = "a-long-folder-name-for-the-test/another-long-folder-name/and-one-more-long-name/project";
+    let file = write(&dir.path().join(deep), "main.rs", SRC);
+    let mut f = flow(&file, None);
+    f.wait_open(&file);
+    f.update(|a, _| {
+        a.tree.show = true;
+        a.tree.width = 160.0;
+    });
+    let full = f.read(|a| nsh_app_editor::app::tilde(&a.ed.root));
+    assert!(full.len() > 60, "the path is long: {full}");
+    f.ui.wait_until("the header is as wide as the tree", std::time::Duration::from_secs(5), |s| {
+        s.layout("id:project").unwrap().is_some_and(|l| (l.bounds.size.width.0 - 160.0).abs() < 1.0)
+    })
+    .unwrap();
+    let h = f.ui.screen().layout("id:project").unwrap().unwrap().bounds;
+    let text = f.ui.screen().layout("text:/one-more-long-name.project$/").unwrap().expect("the path shows").bounds;
+    let right = |b: nsh_engine::Bounds<nsh_engine::Points>| b.origin.x.0 + b.size.width.0;
+    assert!(text.origin.x.0 >= h.origin.x.0 + 11.0, "padding before the path");
+    assert!(right(text) <= right(h) - 11.0, "the path ends before the padding");
+    let name = f.ui.screen().accessibility(Some("id:project")).unwrap().map(|n| n.name);
+    assert_eq!(name.as_deref(), Some(full.as_str()));
 }

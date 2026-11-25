@@ -74,16 +74,8 @@ impl App {
         }
     }
 
-    /// Writes the active buffer, or config.toml when the Settings tab shows.
+    /// Writes the active buffer.
     pub fn save_active(&mut self, path: Option<PathBuf>, then: AfterSave) {
-        if self.on_settings {
-            self.write_config();
-            // `:wq` and `:x` in Settings write config.toml and close the tab.
-            if matches!(then, AfterSave::Close) {
-                self.close_settings();
-            }
-            return;
-        }
         if !self.ed.has_doc() {
             self.ed.error("E32: No file name");
             return;
@@ -134,18 +126,14 @@ impl App {
         n
     }
 
-    /// `:wqa`: writes every modified buffer and the Settings tab, then quits once the writes are
+    /// `:wqa`: writes every modified buffer, then quits once the writes are
     /// done.
     fn save_all_and_quit(&mut self, tx: &mut Tx) {
         if let Some(i) = self.ed.docs.iter().position(|d| d.buf.is_dirty() && d.buf.path.is_none()) {
             self.ed.error(format!("E141: No file name for buffer {}", i + 1));
             return;
         }
-        let config = self.settings.is_some() && self.cfg != self.disk_cfg && self.svc.is_some();
-        if config {
-            self.write_config();
-        }
-        let n = self.save_all(false) + usize::from(config);
+        let n = self.save_all(false);
         if n == 0 {
             self.quit_all(false, tx);
         } else {
@@ -165,10 +153,6 @@ impl App {
 
     /// `:q` closes the buffer and quits after the last one (`quit_last`); `SPC q` only closes.
     fn close_active(&mut self, force: bool, quit_last: bool, tx: &mut Tx) {
-        if self.on_settings {
-            self.close_settings();
-            return;
-        }
         if !self.ed.has_doc() {
             if quit_last {
                 self.quit(tx);
@@ -186,12 +170,9 @@ impl App {
         }
         self.ed.close(i);
         self.ed.mode = self.ed.rest_mode();
-        if self.ed.docs.is_empty() && quit_last && self.settings.is_none() {
+        if self.ed.docs.is_empty() && quit_last {
             self.quit(tx);
             return;
-        }
-        if self.ed.docs.is_empty() && self.settings.is_some() {
-            self.on_settings = true;
         }
         self.apply_doc_opts();
     }
@@ -202,10 +183,6 @@ impl App {
             if let Some(first) = dirty.first() {
                 let more = if dirty.len() > 1 { format!(" and {} more", dirty.len() - 1) } else { String::new() };
                 self.ed.error(format!("E37: No write since last change for \"{first}\"{more} (add ! to override)"));
-                return;
-            }
-            if self.settings.as_ref().is_some_and(|_| self.cfg != self.disk_cfg) {
-                self.ed.error("E37: Settings have changes. :w in the settings tab writes them, :qa! drops them");
                 return;
             }
         }
@@ -233,20 +210,12 @@ impl App {
     }
 
     fn cycle_buffer(&mut self, by: isize) {
-        let n = self.ed.docs.len() + usize::from(self.settings.is_some());
+        let n = self.ed.docs.len();
         if n == 0 {
             return;
         }
-        // The Settings tab sits after the files.
-        let cur = if self.on_settings { self.ed.docs.len() } else { self.ed.active };
-        let next = (cur as isize + by).rem_euclid(n as isize) as usize;
-        if next == self.ed.docs.len() {
-            self.on_settings = true;
-        } else {
-            self.on_settings = false;
-            self.ed.active = next;
-            self.apply_doc_opts();
-        }
+        self.ed.active = (self.ed.active as isize + by).rem_euclid(n as isize) as usize;
+        self.apply_doc_opts();
         self.ed.mode = self.ed.rest_mode();
     }
 
@@ -399,12 +368,22 @@ impl App {
         }
     }
 
+    /// Shows the file of tab `i` from the mouse: a click on its tab.
+    pub fn show_tab(&mut self, i: usize) {
+        if i >= self.ed.docs.len() {
+            return;
+        }
+        self.ed.active = i;
+        self.on_settings = false;
+        self.ed.mode = self.ed.rest_mode();
+        self.apply_doc_opts();
+    }
+
     /// Closes tab `i` from the mouse: the close button or a middle-click. A tab with unsaved
     /// changes stays open and shows why.
     pub fn close_tab(&mut self, i: usize) {
         if self.ed.docs.get(i).is_some_and(|d| d.buf.is_dirty()) {
             self.ed.active = i;
-            self.on_settings = false;
             self.ed.error("E37: No write since last change (save first, or :q! to drop it)");
             return;
         }
@@ -415,6 +394,7 @@ impl App {
         self.apply_doc_opts();
     }
 
+    /// Shows Settings over the whole window.
     pub fn open_settings(&mut self) {
         if self.settings.is_none() {
             self.settings = Some(Settings::default());
@@ -425,11 +405,13 @@ impl App {
         self.ed.message(":Settings");
     }
 
+    /// Hides Settings. Each change is on disk already.
     pub fn close_settings(&mut self) {
         self.settings = None;
         self.on_settings = false;
     }
 
+    /// Writes config.toml through the io worker. Settings calls it after each change.
     pub fn write_config(&mut self) {
         let text = self.cfg.to_toml();
         self.disk_cfg = self.cfg.clone();

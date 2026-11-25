@@ -9,8 +9,8 @@ use std::time::Duration;
 use common::{scratch, start, start_files, typ, type_text, write};
 use nsh_app_editor::app::{App, DocMeta};
 use nsh_app_editor::config::Config;
+use nsh_app_editor::exports::{KeyHint, MessageTone, ModeColor, command_of, position_of, status_of};
 use nsh_app_editor::services::lsp::Diag;
-use nsh_app_editor::ui::chrome::{Hint, Tone, command_of, status_of};
 use nsh_engine::{Point, Points};
 use nsh_testing::{DragOptions, Headless};
 
@@ -73,6 +73,31 @@ fn the_buffer_line_shows_the_project_folder_over_the_tree() -> Result<(), String
     Ok(())
 }
 
+/// The tab that shows has a raised background. The other tabs show the background of
+/// the line.
+#[test]
+fn the_tab_that_shows_has_its_own_background() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let mut app = start_files(&[&a, &b], None);
+    app.wait_for("text:/beta/")?;
+    let line = background(&app, "id:buffer-line");
+    assert!(line.is_some(), "the line has a background");
+    app.wait_until("the tab of b.txt has its own background", WAIT, |s| {
+        let bg = |sel: &str| s.view_style(sel).unwrap().and_then(|st| st.background_color);
+        bg("role:tab[b.txt]").is_some() && bg("role:tab[b.txt]") != line && bg("role:tab[a.txt]") != bg("role:tab[b.txt]")
+    })?;
+    let on = background(&app, "role:tab[b.txt]");
+    assert_eq!(background(&app, "role:tab[a.txt]"), None, "the other tab shows the line's background");
+    app.press("role:tab[a.txt]")?;
+    app.wait_until("the background goes to the tab of a.txt", WAIT, |s| {
+        s.view_style("role:tab[a.txt]").unwrap().and_then(|st| st.background_color) == on
+    })?;
+    assert_eq!(background(&app, "role:tab[b.txt]"), None, "the other tab loses the background");
+    Ok(())
+}
+
 #[test]
 fn a_dirty_file_shows_a_dot_on_its_tab_and_a_plus_in_the_status_line() -> Result<(), String> {
     let dir = scratch();
@@ -114,7 +139,7 @@ fn the_status_line_follows_the_mode() -> Result<(), String> {
     let mut app = start(&a);
     app.wait_for("text:/alpha/")?;
     wait_text(&mut app, "id:mode", "NORMAL")?;
-    assert_eq!(name(app.screen(), "id:language").as_deref(), Some("text"));
+    assert_eq!(name(app.screen(), "id:language").as_deref(), Some("Plain text"));
     assert_eq!(name(app.screen(), "id:position").as_deref(), Some("1:1"));
     let normal = background(&app, "id:mode-badge");
     typ(&mut app, &["i"]);
@@ -282,25 +307,6 @@ fn a_drag_on_the_tree_edge_changes_its_width() -> Result<(), String> {
 }
 
 #[test]
-fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
-    let dir = scratch();
-    let a = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start(&a);
-    app.wait_for("text:/alpha/")?;
-    type_text(&mut app, ":Settings\n");
-    app.wait_for("role:tab[settings]")?;
-    assert!(app.screen().selected("role:tab[settings]")?);
-    assert!(!app.screen().selected("role:tab[a.txt]")?);
-    wait_text(&mut app, "id:mode", "SETTINGS")?;
-    app.wait_for("text:config.toml")?;
-    assert!(has(&app, "label:Write config.toml"));
-    app.press("role:tab[a.txt]")?;
-    wait_text(&mut app, "id:mode", "NORMAL")?;
-    assert!(app.screen().selected("role:tab[a.txt]")?);
-    Ok(())
-}
-
-#[test]
 fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
@@ -318,7 +324,7 @@ fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<()
     assert!(has(&app, "id:branch-icon"), "a branch icon goes before the name");
     app.wait_for("role:treeitem[a.txt] >> text:U")?;
     app.wait_for("role:treeitem[src] >> id:tree-changes")?;
-    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-changes"), "a file shows its letter, not the dot");
+    assert!(!has(&app, "role:treeitem[a.txt] >> id:tree-changes"), "a file shows its letter, not the square");
     Ok(())
 }
 
@@ -342,12 +348,12 @@ fn the_status_line_counts_errors_and_warnings_and_shows_the_scroll() {
     let st = status_of(&app);
     assert_eq!((st.errors, st.warnings), (2, 1));
     assert_eq!(st.file, "a.rs");
-    assert_eq!(st.scroll, "Top");
-    assert_eq!(st.badge, Some(("NORMAL", "primary")));
+    assert_eq!(position_of(&app).scroll, "Top");
+    assert_eq!((st.badge.as_deref(), st.mode_color), (Some("NORMAL"), ModeColor::Primary));
     app.ed.doc_mut().view.cursor.line = 49;
-    assert_eq!(status_of(&app).scroll, "50%");
+    assert_eq!(position_of(&app).scroll, "50%");
     app.ed.doc_mut().view.cursor.line = 100;
-    assert_eq!(status_of(&app).scroll, "Bot");
+    assert_eq!(position_of(&app).scroll, "Bot");
 }
 
 #[test]
@@ -357,8 +363,8 @@ fn the_command_line_shows_the_file_size_and_the_leader_hint() {
     let c = command_of(&app);
     assert!(c.shows);
     assert_eq!(c.text, "\"a.rs\" 2L, 8B");
-    assert_eq!(c.tone, Tone::Quiet);
-    assert_eq!(c.hint, Hint::Keys);
+    assert_eq!(c.tone, MessageTone::Quiet);
+    assert_eq!(c.hint, KeyHint::Keys);
 }
 
 #[test]
@@ -372,6 +378,6 @@ fn the_command_line_shows_pending_keys_and_a_button_for_the_keys() -> Result<(),
     typ(&mut app, &["escape"]);
     app.wait_for("label:Show the keys")?;
     app.press("label:Show the keys")?;
-    wait_text(&mut app, "id:pending", "<space>")?;
+    wait_text(&mut app, "id:pending", "<Space>")?;
     Ok(())
 }

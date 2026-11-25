@@ -1,5 +1,5 @@
-//! What the first-launch setup must know about this machine: this binary, which command
-//! names are taken, and the leader key Neovim uses. Each answer needs the disk, so a worker finds it and sends an `Event::Setup`.
+//! What the first-launch setup must know about this machine: this binary and the leader key
+//! Neovim uses. Each answer needs the disk, so a worker finds it and sends an `Event::Setup`.
 
 use std::path::PathBuf;
 #[cfg(not(target_arch = "wasm32"))]
@@ -11,8 +11,6 @@ use super::{Event, Out};
 pub enum Job {
     /// Find the facts that do not change while setup runs.
     Facts,
-    /// Look these command names up on `$PATH`.
-    LookUp(Vec<String>),
 }
 
 /// A worker's answer for the setup screen.
@@ -24,8 +22,6 @@ pub enum Answer {
         /// The leader key `~/.config/nvim` sets, if any.
         nvim_leader: Option<char>,
     },
-    /// Each name, and where it already is on `$PATH`, if anywhere.
-    OnPath(Vec<(String, Option<String>)>),
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -39,30 +35,12 @@ pub fn start(out: Out) -> Sender<Job> {
                     Job::Facts => {
                         Answer::Facts { exe: std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()), nvim_leader: nvim_leader() }
                     }
-                    Job::LookUp(names) => Answer::OnPath(names.into_iter().map(|n| (n.clone(), command_v(&n))).collect()),
                 };
                 out.send(Event::Setup(answer));
             }
         })
         .expect("start the probe worker");
     tx
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-/// `command -v name`: the first executable `name` on `$PATH`.
-pub fn command_v(name: &str) -> Option<String> {
-    let path = std::env::var_os("PATH")?;
-    let found = std::env::split_paths(&path).map(|d| d.join(name)).find(|p| p.is_file())?;
-    // This editor, installed under that name (`cargo install`, an earlier setup): not taken.
-    let me = std::env::current_exe().ok().and_then(|e| e.canonicalize().ok());
-    if me.is_some() && found.canonicalize().ok() == me {
-        return None;
-    }
-    let shown = crate::app::tilde(&found);
-    Some(match std::fs::read_link(&found) {
-        Ok(target) => format!("{shown}, a link to {}", crate::app::tilde(&target)),
-        Err(_) => shown,
-    })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -91,14 +69,11 @@ mod tests {
     use std::sync::Arc;
 
     #[test]
-    fn the_worker_answers_facts_and_names() {
+    fn the_worker_answers_the_facts() {
         let (tx, rx) = channel();
         let jobs = start(Out { tx, waker: Arc::new(|| {}) });
-        jobs.send(Job::LookUp(vec!["no-such-command-for-editor-tests".into()])).unwrap();
         jobs.send(Job::Facts).unwrap();
-        let Ok(Event::Setup(Answer::OnPath(names))) = rx.recv() else { panic!("names first") };
-        assert_eq!(names, vec![("no-such-command-for-editor-tests".to_string(), None)]);
-        let Ok(Event::Setup(Answer::Facts { exe, .. })) = rx.recv() else { panic!("then the facts") };
+        let Ok(Event::Setup(Answer::Facts { exe, .. })) = rx.recv() else { panic!("the facts") };
         assert!(exe.is_some_and(|e| e.is_absolute()));
     }
 }

@@ -15,38 +15,6 @@ pub fn TextArea() -> impl IntoElement {
     ui::text_area::text_area(s, keys)
 }
 
-/// The line of open buffers above the text.
-#[component]
-pub fn BufferLine() -> impl IntoElement {
-    ui::tabs::buffer_line(current().0)
-}
-
-/// The file tree beside the text.
-#[component]
-pub fn Tree() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::tree_view::tree(s, keys)
-}
-
-/// The Settings tab, in place of the text area.
-#[component]
-pub fn Settings() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::settings_view::settings(s, keys)
-}
-
-/// The status line under the text.
-#[component]
-pub fn StatusLine() -> impl IntoElement {
-    ui::chrome::status_line(current().0)
-}
-
-/// The command line under the status line.
-#[component]
-pub fn CommandLine() -> impl IntoElement {
-    ui::chrome::command_line(current().0)
-}
-
 /// The leader menu, the pickers, the popups and the dialogs, over the editor.
 #[component]
 pub fn Overlays() -> impl IntoElement {
@@ -54,19 +22,12 @@ pub fn Overlays() -> impl IntoElement {
     ui::overlays::overlays(s, keys)
 }
 
-/// First-launch setup, in place of the editor.
-#[component]
-pub fn Setup() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::setup_view::setup(s, keys)
-}
-
 /// What the window shows.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct ScreenState {
     /// First-launch setup shows, in place of the editor.
     pub setup: bool,
-    /// The Settings tab shows, in place of the text area.
+    /// Settings shows, over the whole editor.
     pub settings: bool,
     /// The file tree shows beside the text.
     pub tree: bool,
@@ -81,11 +42,7 @@ impl Shell {
     /// Calls `listener` with what the window shows, now and after each change.
     pub fn on_change(#[args(screen)] listener: Callback<ScreenState>) -> Stop {
         crate::bridge::subscribe(
-            |a| ScreenState {
-                setup: matches!(a.screen, AppScreen::Setup(_)),
-                settings: a.on_settings,
-                tree: a.tree.show && !a.on_settings,
-            },
+            |a| ScreenState { setup: matches!(a.screen, AppScreen::Setup(_)), settings: a.on_settings, tree: a.tree.show },
             listener,
         )
     }

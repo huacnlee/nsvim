@@ -47,18 +47,6 @@ fn a_config_that_does_not_parse_keeps_the_one_in_use() {
 }
 
 #[test]
-fn unsaved_settings_stay_when_the_file_changes() {
-    let mut a = app();
-    a.settings = Some(super::Settings::default());
-    a.cfg.font.size = 20.0;
-    let mut disk = Config::default();
-    disk.indent.width = 8;
-    a.event(Event::Config(Ok(disk.clone())), &mut Tx::new());
-    assert_eq!(a.cfg.font.size, 20.0, "the Settings tab's change stays");
-    assert_eq!(a.disk_cfg, disk);
-}
-
-#[test]
 fn a_new_omarchy_theme_recolours_the_editor() {
     let mut a = app();
     a.cfg.theme.mode = "omarchy".into();
@@ -112,18 +100,11 @@ fn the_window_follows_the_config() {
 }
 
 #[test]
-fn setup_asks_each_name_once_and_takes_the_workers_answers() {
+fn setup_takes_the_workers_answers() {
     use crate::services::probe::Answer;
     let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
-    let super::Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
-    let first = s.check_name();
-    assert_eq!(first, vec!["nsvim".to_string()], "setup asks only for the command's name");
-    assert!(s.check_name().is_empty(), "each name is asked once");
-    let name = s.cfg.cli.name.clone();
-    a.setup_answer(Answer::OnPath(vec![(name, Some("/usr/bin/editor".into()))]));
     a.setup_answer(Answer::Facts { exe: Some(PathBuf::from("/opt/editor")), nvim_leader: Some('\\') });
     let super::Screen::Setup(s) = &a.screen else { panic!("setup shows") };
-    assert_eq!(s.taken().as_deref(), Some("/usr/bin/editor"));
     assert_eq!((s.exe.clone(), s.nvim_leader), (Some(PathBuf::from("/opt/editor")), Some('\\')));
 }
 

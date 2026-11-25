@@ -98,11 +98,11 @@ One view takes every key (`capture_keys(KeyCapture::All)` in `src/lib.rs`) and g
 `App::key`. The key goes to the first of these that wants it:
 
 1. First-launch setup.
-2. An open overlay: the leader menu, a picker, the context menu.
-3. The command line (`:`, `/`, `?`).
-4. A hover or completion popup.
-5. The file tree, when it has focus.
-6. The Settings tab.
+2. Settings, while it shows. It covers the whole window.
+3. An open overlay: the leader menu, a picker, the context menu.
+4. The command line (`:`, `/`, `?`).
+5. A hover or completion popup.
+6. The file tree, when it has focus.
 7. The active keymap.
 
 The text area measures one character of the code font. The mouse code maps a point to a line

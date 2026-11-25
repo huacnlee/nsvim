@@ -285,13 +285,6 @@ impl Services {
         let _ = self.probe.send(probe::Job::Facts);
     }
 
-    /// Looks command names up on `$PATH`. Sends `Event::Setup`.
-    pub fn look_up(&self, names: Vec<String>) {
-        if !names.is_empty() {
-            let _ = self.probe.send(probe::Job::LookUp(names));
-        }
-    }
-
     /// Reads `file` again each time it changes and sends `Event::Config`.
     pub fn watch_config(&self, file: PathBuf) {
         let _ = self.watch.send(watch::Job::Config(file));

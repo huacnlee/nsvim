@@ -99,22 +99,8 @@ download the Windows ZIP from the release page and extract it.
 
 ## mise
 
-[mise](https://mise.jdx.dev) can install the release from GitHub:
-
-```sh
-mise use -g github:huacnlee/nsvim
-```
-
-On macOS, point mise at the program in the app:
-
-```sh
-mise use -g 'github:huacnlee/nsvim[bin_path=nsvim.app/Contents/MacOS]'
-```
-
-mise installs only the program and its interface, and it puts the program on `PATH` as `nsvim`.
-It does not add the Linux desktop entry and icon, or put `nsvim.app` in Applications. The setup's
-aliases and `$EDITOR` name the program in the folder of one mise version. After `mise upgrade`,
-change that path in your shell startup file and in `git config --global core.editor`.
+mise can install the release archive, but it puts the program in a folder with the version in
+its name. The aliases name that folder, so they break after `mise upgrade`. Use the installers.
 
 ## Build from source
 
@@ -149,6 +135,11 @@ Each release has these archives and one `SHA256SUMS` file:
 
 To install by hand, download the archive for your system, check its SHA-256 against
 `SHA256SUMS`, and extract it. Keep `nsh/` next to the program.
+
+## A link from an earlier setup
+
+An earlier setup made the command `nsvim` as a link in `~/.local/bin`. The installer does not
+touch it. To remove it, run `rm ~/.local/bin/nsvim`.
 
 ## Uninstall
 
