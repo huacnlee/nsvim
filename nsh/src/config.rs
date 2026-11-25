@@ -131,6 +131,8 @@ pub struct CliCfg {
     pub editor_env: bool,
     pub git: bool,
     pub default_app: bool,
+    /// `vi` and `vim` in the shell open nsvim (aliases in the shell's startup file).
+    pub vim_aliases: bool,
 }
 
 impl Default for ThemeCfg {
@@ -197,7 +199,7 @@ impl Default for MouseCfg {
 
 impl Default for CliCfg {
     fn default() -> Self {
-        CliCfg { name: "edit".into(), path: true, editor_env: true, git: true, default_app: false }
+        CliCfg { name: "edit".into(), path: true, editor_env: true, git: true, default_app: false, vim_aliases: true }
     }
 }
 

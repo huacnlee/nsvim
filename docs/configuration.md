@@ -62,11 +62,12 @@ double_click = true
 right_click = false      # right-click opens a context menu
 
 [cli]                    # what setup's terminal step did
-name = "editor"
+name = "edit"
 path = true
 editor_env = true
 git = true
 default_app = false      # Linux: the default app for the file types in editor.desktop
+vim_aliases = true       # vi and vim open nsvim (shell aliases)
 ```
 
 ## Themes

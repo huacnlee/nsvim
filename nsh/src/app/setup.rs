@@ -122,7 +122,7 @@ impl Setup {
                         c.push(Choice::Shadow);
                     }
                 }
-                c.extend([Choice::Toggle("path"), Choice::Toggle("env"), Choice::Toggle("git")]);
+                c.extend([Choice::Toggle("path"), Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git")]);
                 // The release ships no macOS app bundle, so only Linux can be the default app.
                 if !self.mac {
                     c.push(Choice::Toggle("default"));
@@ -153,6 +153,7 @@ impl Setup {
             "env" => cli.editor_env,
             "git" => cli.git,
             "default" => cli.default_app,
+            "vim" => cli.vim_aliases,
             _ => false,
         }
     }
@@ -175,6 +176,7 @@ impl Setup {
             "env" => cli.editor_env = on,
             "git" => cli.git = on,
             "default" => cli.default_app = on,
+            "vim" => cli.vim_aliases = on,
             _ => {}
         }
     }
@@ -262,6 +264,9 @@ impl Setup {
                 out.push(format!("echo 'export PATH=\"{}:$PATH\"' >> {}", self.bin_dir().replace('~', "$HOME"), self.rc_file()));
             }
         }
+        if cli.vim_aliases {
+            out.push(format!("echo '{}' >> {}", vim_aliases(&cmd_ref), self.rc_file()));
+        }
         if cli.editor_env {
             out.push(format!("echo 'export EDITOR=\"{cmd_ref} --wait\" VISUAL=\"{cmd_ref} --wait\"' >> {}", self.rc_file()));
         }
@@ -274,6 +279,12 @@ impl Setup {
         }
         out
     }
+}
+
+/// The shell line that makes `vi` and `vim` open nsvim through `cmd`. `\\vim` or `command vim`
+/// still runs the real Vim.
+fn vim_aliases(cmd: &str) -> String {
+    format!("alias vi=\"{cmd}\" vim=\"{cmd}\"")
 }
 
 /// The file types the desktop entry opens: its `MimeType=` line.
@@ -396,6 +407,7 @@ impl App {
             by_name: s.cfg.cli.path && s.installable(),
             add_path: s.cfg.cli.path && s.installable() && s.adds_path(),
             env: s.cfg.cli.editor_env,
+            vim: s.cfg.cli.vim_aliases,
             git: s.cfg.cli.git,
             default_app: s.cfg.cli.default_app && !s.mac,
             rc: s.rc_file(),
@@ -457,6 +469,8 @@ struct Integration {
     by_name: bool,
     add_path: bool,
     env: bool,
+    /// `vi` and `vim` aliases in the shell's startup file.
+    vim: bool,
     git: bool,
     default_app: bool,
     rc: String,
@@ -490,6 +504,9 @@ impl Integration {
         if self.add_path {
             append(format!("export PATH=\"{}:$PATH\"", bin.display()));
         }
+        if self.vim {
+            append(vim_aliases(&cmd_ref));
+        }
         if self.env {
             append(format!("export EDITOR=\"{cmd_ref} --wait\" VISUAL=\"{cmd_ref} --wait\""));
         }
@@ -522,6 +539,18 @@ fn desktop_entry(exe: &std::path::Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_terminal_step_aliases_vi_and_vim_to_the_command() {
+        let mut s = Setup::new(None);
+        s.step = 4;
+        s.bin_on_path = true;
+        let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with("echo 'alias vi=\"edit\" vim=\"edit\"' >> "));
+        assert!(s.cfg.cli.vim_aliases && alias(&s), "on by default: {:?}", s.commands());
+        assert!(s.choices().contains(&Choice::Toggle("vim")));
+        s.flip("vim");
+        assert!(!s.cfg.cli.vim_aliases && !alias(&s), "{:?}", s.commands());
+    }
 
     #[test]
     fn the_look_starts_on_system_when_omarchy_is_found() {

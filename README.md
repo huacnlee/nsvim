@@ -62,9 +62,9 @@ nsvim src/main.rs:42    # a file, at line 42
 ```
 
 The first launch runs a five-step setup: keys, mouse, look, terminal and ready. The terminal
-step can add the command `edit`, set `$EDITOR` and set git's editor. On Linux, it can also make
-nsvim the default app for text files. It shows every command before it runs, and it runs only
-the ones you leave on. After setup, `edit .` opens nsvim.
+step can add the command `edit`, make `vi` and `vim` open nsvim, set `$EDITOR` and set git's
+editor. On Linux, it can also make nsvim the default app for text files. It shows every command
+before it runs, and it runs only the ones you leave on. After setup, `edit .` opens nsvim.
 
 ## Keys
 
