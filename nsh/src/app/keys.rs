@@ -8,27 +8,32 @@ use super::{App, Overlay, Screen};
 
 /// The leader menu's entries: key, label, and whether it opens a group.
 pub const LEADER: &[(char, &str, bool)] = &[
-    ('f', "find file", false),
-    ('e', "file tree", false),
-    ('/', "grep project", false),
-    ('b', "buffers", false),
-    ('w', "write", false),
-    ('q', "close buffer", false),
-    ('d', "diagnostics", false),
-    (',', "settings", false),
-    ('?', "every key", false),
-    ('g', "+git", true),
-    ('l', "+lsp", true),
-    ('a', "+agent", true),
+    ('f', "Find file…", false),
+    ('e', "File tree", false),
+    ('/', "Grep project…", false),
+    ('b', "Buffers…", false),
+    ('w', "Write", false),
+    ('q', "Close buffer", false),
+    ('d', "Diagnostics…", false),
+    (',', "Settings…", false),
+    ('?', "Every key…", false),
+    ('g', "+Git", true),
+    ('l', "+LSP", true),
+    ('a', "+Agent", true),
 ];
 
 pub const LEADER_AGENT: &[(char, &str, bool)] =
-    &[('l', "outside changes", false), ('c', "clear change marks", false), ('p', "next proposal", false), ('n', "clear the note", false)];
+    &[('l', "Outside changes…", false), ('c', "Clear change marks", false), ('p', "Next proposal", false), ('n', "Clear the note", false)];
 
 pub const LEADER_GIT: &[(char, &str, bool)] =
-    &[('n', "next change", false), ('p', "previous change", false), ('s', "status in tree", false)];
-pub const LEADER_LSP: &[(char, &str, bool)] =
-    &[('d', "definition", false), ('r', "references", false), ('h', "hover", false), ('n', "rename", false), ('a', "code actions", false)];
+    &[('n', "Next change", false), ('p', "Previous change", false), ('s', "Status in tree", false)];
+pub const LEADER_LSP: &[(char, &str, bool)] = &[
+    ('d', "Definition", false),
+    ('r', "References…", false),
+    ('h', "Hover", false),
+    ('n', "Rename…", false),
+    ('a', "Code actions…", false),
+];
 
 /// The classic keymap's window shortcuts. They work with no file open. Settings keeps them out.
 pub fn classic_window_key(k: &KeyInput) -> Option<Action> {

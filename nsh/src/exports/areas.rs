@@ -15,13 +15,6 @@ pub fn TextArea() -> impl IntoElement {
     ui::text_area::text_area(s, keys)
 }
 
-/// The leader menu, the pickers, the popups and the dialogs, over the editor.
-#[component]
-pub fn Overlays() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::overlays::overlays(s, keys)
-}
-
 /// What the window shows.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct ScreenState {

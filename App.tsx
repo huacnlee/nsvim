@@ -4,19 +4,14 @@
 
 import { mount, signal, View } from "nsh";
 import { currentWindow } from "nsh/desktop";
-import {
-  Overlays,
-  Shell,
-  TextArea,
-  Workspace,
-  type ScreenState,
-} from "nsvim/native";
+import { Shell, TextArea, Workspace, type ScreenState } from "nsvim/native";
 import { Tree } from "./ui/tree";
 import { BufferLine } from "./ui/buffer-line";
 import { CommandLine } from "./ui/command-line";
 import { StatusLine } from "./ui/status-line";
 import { Settings } from "./ui/settings/Settings";
 import { Setup } from "./ui/setup/Setup";
+import { Overlays } from "./ui/overlays/Overlays";
 
 /** The editor: the buffer line, the tree beside the text, the status line and the command
  * line, with the overlays over them. Settings covers all of it, the overlays too. */

@@ -9,6 +9,7 @@ mod areas;
 mod buffer_line;
 mod command;
 mod icon;
+mod overlays;
 mod settings;
 mod setup;
 mod status;
@@ -25,6 +26,7 @@ pub use areas::*;
 pub use buffer_line::*;
 pub use command::*;
 pub use icon::*;
+pub use overlays::*;
 pub use settings::*;
 pub use setup::*;
 pub use status::*;
@@ -37,8 +39,8 @@ pub fn register(registry: &mut Registry) {
         .register::<Workspace>()
         .register::<TextArea>()
         .register::<Icon>()
-        .register::<Overlays>()
         .module::<Shell>()
+        .module::<Overlays>()
         .module::<FileTree>()
         .module::<Tabs>()
         .module::<Status>()

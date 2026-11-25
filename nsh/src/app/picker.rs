@@ -12,6 +12,10 @@ use crate::fuzzy::{self, Match};
 
 /// Rows the finder ranks and draws at most.
 const LIMIT: usize = 200;
+/// The height of one row of the list, in points.
+pub const ROW_H: f32 = 22.0;
+/// Rows that show until the list reports how many fit. The tallest list fits fewer.
+const FIT: usize = 24;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PickKind {
@@ -30,12 +34,12 @@ pub enum PickKind {
 impl PickKind {
     pub fn title(self) -> &'static str {
         match self {
-            PickKind::Files => "Find Files",
-            PickKind::Grep => "Find in Project",
+            PickKind::Files => "Find files",
+            PickKind::Grep => "Find in project",
             PickKind::Buffers => "Buffers",
             PickKind::Commands => "Commands",
             PickKind::Locations => "Locations",
-            PickKind::Actions => "Code Actions",
+            PickKind::Actions => "Code actions",
             PickKind::Keys => "Keys",
         }
     }
@@ -54,16 +58,24 @@ pub struct Picker {
     pub targets: Vec<usize>,
     /// The file the preview shows and its text, once the file worker read it.
     pub preview: Option<(PathBuf, String)>,
+    /// The first row on screen, as the last key or wheel left it.
+    pub top: usize,
+    /// Rows that fit in the list. Zero until the list reports its height.
+    pub fit: usize,
+    /// The list scrolls to show the picked row. A key sets it, the wheel clears it.
+    pub follow: bool,
+    /// The part of a row the wheel has turned but not scrolled.
+    pub wheel_rest: f32,
 }
 
 /// The command palette: a label and what it does.
 pub const COMMANDS: &[(&str, &str)] = &[
-    ("Find file", "find"),
-    ("Find in project", "grep"),
+    ("Find file…", "find"),
+    ("Find in project…", "grep"),
     ("Save", "save"),
     ("Save all", "save-all"),
     ("Toggle file tree", "tree"),
-    ("Open settings", "settings"),
+    ("Open settings…", "settings"),
     ("Close tab", "close"),
     ("Next tab", "next"),
     ("Previous tab", "prev"),
@@ -73,8 +85,8 @@ pub const COMMANDS: &[(&str, &str)] = &[
     ("Theme: light", "theme=light"),
     ("Theme: follow the OS", "theme=system"),
     ("Toggle soft wrap", "wrap"),
-    ("Show every key", "keys"),
-    ("Agent: list outside changes", "outside"),
+    ("Show every key…", "keys"),
+    ("Agent: list outside changes…", "outside"),
     ("Agent: clear change marks", "clear-outside"),
     ("Agent: show the next proposal", "proposal"),
     ("Quit", "quit"),
@@ -82,7 +94,58 @@ pub const COMMANDS: &[(&str, &str)] = &[
 
 impl Picker {
     pub fn new(kind: PickKind) -> Picker {
-        Picker { kind, query: String::new(), sel: 0, matches: Vec::new(), total: 0, items: Vec::new(), targets: Vec::new(), preview: None }
+        Picker {
+            kind,
+            query: String::new(),
+            sel: 0,
+            matches: Vec::new(),
+            total: 0,
+            items: Vec::new(),
+            targets: Vec::new(),
+            preview: None,
+            top: 0,
+            fit: 0,
+            follow: true,
+            wheel_rest: 0.0,
+        }
+    }
+
+    /// Rows that show: as many as fit, or `FIT` until the list reports its height.
+    pub fn shown(&self) -> usize {
+        if self.fit == 0 { FIT } else { self.fit }
+    }
+
+    /// The first row on screen when the list has `len` rows: the scroll position, moved the
+    /// least that shows the picked row while `follow` is set. The view draws from here, so it
+    /// stays a pure function of the state.
+    pub fn view_top(&self, len: usize) -> usize {
+        let n = self.shown();
+        let mut top = self.top;
+        if self.follow {
+            if self.sel < top {
+                top = self.sel;
+            } else if self.sel >= top + n {
+                top = self.sel + 1 - n;
+            }
+        }
+        top.min(len.saturating_sub(n))
+    }
+
+    /// Stores the first row on screen as the scroll position, before a key or the wheel moves it.
+    pub fn settle(&mut self, len: usize) {
+        self.top = self.view_top(len);
+    }
+
+    /// Scrolls the list by `dy` points (positive: toward the end), and leaves the picked row
+    /// where it is. A trackpad's small steps add up until they make a whole row.
+    pub fn wheel(&mut self, dy: f32, len: usize) {
+        self.settle(len);
+        self.follow = false;
+        self.wheel_rest += dy / ROW_H;
+        let rows = self.wheel_rest.trunc();
+        self.wheel_rest -= rows;
+        let max = len.saturating_sub(self.shown());
+        self.top = (self.top as isize + rows as isize).clamp(0, max as isize) as usize;
     }
 
     /// Ranks the candidates against the query again.
@@ -123,8 +186,18 @@ impl Picker {
 }
 
 impl App {
+    /// Rows the open picker lists now, or zero.
+    pub fn pick_rows(&self) -> usize {
+        let Overlay::Pick(p) = &self.overlay else { return 0 };
+        p.len(if p.kind == PickKind::Locations { self.locations.len() } else { self.grep.hits.len() })
+    }
+
     pub fn open_picker(&mut self, kind: PickKind) {
         let mut p = Picker::new(kind);
+        // A picker that opens from another (the palette's key list) keeps its list's size.
+        if let Overlay::Pick(old) = &self.overlay {
+            p.fit = old.fit;
+        }
         match kind {
             PickKind::Buffers => {
                 for (i, d) in self.ed.docs.iter().enumerate() {
@@ -150,8 +223,10 @@ impl App {
 
     /// Keys while a picker is open. Always takes the key.
     pub fn picker_key(&mut self, k: KeyInput, tx: &mut Tx) {
+        let rows = self.pick_rows();
         let Overlay::Pick(p) = &mut self.overlay else { return };
-        let rows = p.len(if p.kind == PickKind::Locations { self.locations.len() } else { self.grep.hits.len() });
+        p.settle(rows);
+        p.follow = true;
         let mut requery = false;
         match k.code {
             KeyCode::Esc => {
@@ -219,6 +294,9 @@ impl App {
     /// Lists code actions to pick from.
     pub fn open_actions(&mut self, titles: Vec<String>) {
         let mut p = Picker::new(PickKind::Actions);
+        if let Overlay::Pick(old) = &self.overlay {
+            p.fit = old.fit;
+        }
         p.items = titles;
         p.refilter(&self.files);
         self.overlay = Overlay::Pick(Box::new(p));

@@ -321,7 +321,7 @@ fn search_results_show_the_preview_without_a_key() -> Result<(), String> {
     let mut app = start(&main);
     app.wait_for("text:/fn main/")?;
     typ(&mut app, &["space", "/"]);
-    app.wait_for("text:Find in Project")?;
+    app.wait_for("text:Find in project")?;
     common::type_text(&mut app, "NEEDLE");
     app.wait_for("id:picker-list >> label:lib.rs:3")?;
     // No key after the results: their arrival asks for the preview.

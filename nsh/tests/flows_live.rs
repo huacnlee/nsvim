@@ -370,7 +370,7 @@ fn every_key_shows_in_a_list_with_search() {
     f.press("f1");
     let all = key_rows(&f);
     assert!(all.iter().any(|r| r.starts_with("Ctrl D ")) && !all.iter().any(|r| r.starts_with("SPC f ")), "the classic keys");
-    assert!(all.iter().any(|r| r.starts_with("Show every key ")), "the palette entries are in the classic list");
+    assert!(all.iter().any(|r| r.starts_with("Show every key… ")), "the palette entries are in the classic list");
     f.keys("\x1b");
     f.press("ctrl+shift+e");
     assert!(f.read(|a| a.tree.show && a.tree.focus), "Ctrl ⇧ E focuses the tree");
