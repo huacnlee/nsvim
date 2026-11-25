@@ -90,6 +90,12 @@ impl Shell {
         )
     }
 
+    /// Gives the focus back to the view that takes every key. Call it after a press on a
+    /// screen, so that the next key goes to the editor.
+    pub fn focus_keys() {
+        crate::bridge::send(|_| current().1.focus());
+    }
+
     /// The user asked to close the window. The app decides: it quits, or warns about unsaved
     /// edits first.
     pub fn close_requested() {
