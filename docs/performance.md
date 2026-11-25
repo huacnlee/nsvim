@@ -17,8 +17,11 @@ engine, so a key time includes the update, the memos and the layout, but not the
 | Engine start to the file on screen | 21 ms | `bench_first_frame` |
 | No LSP or file I/O on the engine thread | Workers do all of it | [architecture](architecture.md) |
 
-One target is not met yet. In a small file, the first edit after launch takes about 140 ms, and
-the next keys take 0.2 ms (`bench_first_edit_small_file`). This is under investigation.
+The first edit after launch costs 0.25 to 0.65 ms of engine-thread time, and the next keys 0.4
+to 0.7 ms (`bench_first_edit_small_file`). That bench also fails if the engine thread reads or
+writes a file, or starts a process, while it handles keys. In Headless tests the first key
+reports about 130 ms of wall time. That is the test driver, which waits for the language server
+and file watcher events of the open. It is not work, and a real window does not wait for it.
 
 ## What keeps it fast
 
