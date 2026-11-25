@@ -1,27 +1,115 @@
-//! What the screen shows, computed from the core `Editor`: the visible lines with their
-//! colours and selection, the cursor, the status line and the command line. This module has
-//! no NSH code. The views read a `Frame` and draw it.
+//! What the screen shows, computed from the core `Editor`: the visible rows with their
+//! colours, selection, search matches, diagnostics and gutter signs, the cursors, the status
+//! line and the command line. This module has no NSH code. The views read a `Frame` and draw
+//! it.
+//!
+//! `frame` reads the core `Editor` and a `Look`: the options and marks the app keeps beside
+//! the core (config.toml's look, git signs, diagnostics, an agent's note). `Look::of` makes
+//! one from the app.
 
+use editor::buffer::Pos;
 use editor::editor::{Editor, Keymap, Mode, VisualKind};
 use editor::syntax::highlight::{self, Kind};
 use unicode_width::UnicodeWidthChar;
 
+use crate::app::App;
+use crate::services::git::{Sign as GitSign, SignKind};
+use crate::services::lsp::Diag;
+
 /// Columns of the gutter before the line numbers: room for a sign.
 const SIGN_COLS: usize = 2;
 
-/// One piece of a line with one look.
-#[derive(Clone, Debug, PartialEq)]
+/// Chars of a diagnostic's message shown after its line.
+const MESSAGE_CHARS: usize = 160;
+
+/// How bad a diagnostic is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Level {
+    Error,
+    Warning,
+    Info,
+}
+
+impl Level {
+    /// The level of an LSP severity: 1 error, 2 warning, 3 and 4 information.
+    pub fn of(severity: u8) -> Level {
+        match severity {
+            0 | 1 => Level::Error,
+            2 => Level::Warning,
+            _ => Level::Info,
+        }
+    }
+}
+
+/// One piece of a row with one look.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Seg {
     pub text: String,
     pub kind: Option<Kind>,
     pub selected: bool,
+    /// Inside a match of the last search.
+    pub matched: bool,
+    /// A whitespace mark (`·` or `→`), drawn faint.
+    pub ws: bool,
+    /// Under a diagnostic.
+    pub diag: Option<Level>,
+}
+
+/// The mark in a row's gutter.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sign {
+    /// Git: lines added, changed, or removed after this line.
+    Added,
+    Modified,
+    Deleted,
+    /// The line changed on disk from outside the editor.
+    Outside,
+    /// The worst diagnostic on the line.
+    Diag(Level),
+}
+
+impl Sign {
+    /// The glyph the gutter shows.
+    pub fn glyph(self) -> &'static str {
+        match self {
+            Sign::Added | Sign::Modified => "▎",
+            Sign::Deleted => "▁",
+            Sign::Outside => "┃",
+            Sign::Diag(Level::Error) => "E",
+            Sign::Diag(Level::Warning) => "W",
+            Sign::Diag(Level::Info) => "I",
+        }
+    }
+}
+
+/// Text after the end of a row: a diagnostic's message or an agent's note.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum After {
+    Diag(Level, String),
+    Note(String),
 }
 
 /// A row of the text area.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Row {
-    /// A line of the buffer.
-    Line { number: String, current: bool, segs: Vec<Seg>, cursorline: bool },
+    /// A line of the buffer, or one piece of a wrapped line.
+    Line {
+        /// The line number, or empty on a wrapped piece and with numbers off.
+        number: String,
+        /// The cursor's line: the number shows bold.
+        current: bool,
+        segs: Vec<Seg>,
+        /// Fill the row as the cursor line.
+        cursorline: bool,
+        sign: Option<Sign>,
+        /// The whole line is selected (Visual line mode, or a selection across it).
+        full: bool,
+        /// The line is inside an agent's note: tint it.
+        tint: bool,
+        after: Option<After>,
+        /// Display columns of the extra cursors on this row.
+        carets: Vec<usize>,
+    },
     /// A row past the last line, drawn as `~`.
     Past,
 }
@@ -42,6 +130,12 @@ pub struct Caret {
     /// Columns the char under it takes: 2 for a wide char.
     pub width: usize,
     pub shape: Shape,
+    /// The char under it, which a block cursor draws over itself.
+    pub ch: char,
+    /// The keymap is Vim: an Insert bar takes the Insert colour.
+    pub vim: bool,
+    /// Visual mode: a block takes the Visual colour.
+    pub visual: bool,
 }
 
 /// The mode pill's look.
@@ -79,15 +173,99 @@ pub struct Frame {
     pub rows: Vec<Row>,
     pub caret: Option<Caret>,
     pub gutter: usize,
+    /// The ruler's display column from the text's left edge.
+    pub ruler: Option<usize>,
     pub status: Status,
     pub bottom: Bottom,
     pub empty: bool,
 }
 
-/// Gutter width in columns: a sign, the numbers right-aligned, then 2 columns of space.
-pub fn gutter_cols(ed: &Editor) -> usize {
+/// An agent's note on lines of the active file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NoteMark<'a> {
+    pub first: usize,
+    pub last: usize,
+    pub text: &'a str,
+}
+
+/// What the text area shows beside the core's state: config.toml's look and the marks of the
+/// active file.
+#[derive(Clone, Copy, Debug)]
+pub struct Look<'a> {
+    /// `hybrid`, `relative`, `absolute` or `off`.
+    pub numbers: &'a str,
+    /// The Normal mode cursor: `block`, `bar` or `underline`.
+    pub cursor: &'a str,
+    pub cursorline: bool,
+    /// The ruler's column, 0 for none.
+    pub ruler: usize,
+    /// Show leading spaces as `·` and leading tabs as `→`.
+    pub whitespace: bool,
+    pub signs: &'a [GitSign],
+    pub diags: &'a [Diag],
+    /// Lines changed on disk from outside.
+    pub outside: &'a [usize],
+    pub note: Option<NoteMark<'a>>,
+    /// Draw no cursor: the tree has the keys.
+    pub hide_caret: bool,
+}
+
+impl Default for Look<'_> {
+    fn default() -> Self {
+        Look {
+            numbers: "hybrid",
+            cursor: "block",
+            cursorline: true,
+            ruler: 0,
+            whitespace: false,
+            signs: &[],
+            diags: &[],
+            outside: &[],
+            note: None,
+            hide_caret: false,
+        }
+    }
+}
+
+impl<'a> Look<'a> {
+    /// The look of the app's active file.
+    pub fn of(app: &'a App) -> Look<'a> {
+        let e = &app.cfg.editor;
+        let path = if app.ed.has_doc() { app.ed.buf().path.as_deref() } else { None };
+        let meta = path.and_then(|p| app.meta.get(p));
+        let note = app.note.as_ref().filter(|n| Some(n.path.as_path()) == path).map(|n| NoteMark {
+            first: n.first,
+            last: n.last,
+            text: n.text.as_str(),
+        });
+        Look {
+            numbers: e.numbers.as_str(),
+            cursor: e.cursor.as_str(),
+            cursorline: e.cursorline,
+            ruler: e.ruler as usize,
+            whitespace: e.whitespace,
+            signs: meta.map_or(&[], |m| m.signs.as_slice()),
+            diags: meta.map_or(&[], |m| m.diags.as_slice()),
+            outside: meta.map_or(&[], |m| m.outside.as_slice()),
+            note,
+            hide_caret: app.tree.focus,
+        }
+    }
+}
+
+/// The text area's frame for the app.
+pub fn app_frame(app: &App, rows: usize) -> Frame {
+    frame_with(&app.ed, &Look::of(app), rows)
+}
+
+/// Gutter width in columns: a sign, the numbers right-aligned, then 3 columns of space. Only
+/// the sign with numbers off.
+pub fn gutter_cols(ed: &Editor, numbers: &str) -> usize {
+    if numbers == "off" {
+        return SIGN_COLS;
+    }
     let lines = if ed.has_doc() { ed.buf().line_count() } else { 1 };
-    SIGN_COLS + lines.to_string().len().max(3) + 2
+    SIGN_COLS + lines.to_string().len().max(3) + 3
 }
 
 /// The display column of each char of `line`, and one past the end. Tabs go to the next
@@ -112,78 +290,292 @@ pub fn char_at_column(line: &str, tab: usize, col: usize) -> usize {
     cols.windows(2).position(|w| col < w[1]).unwrap_or(cols.len() - 1)
 }
 
-/// The frame for `rows` rows of text.
+/// Where each screen row of a line starts, as a char index, for a line wrapped at `width`
+/// columns. `cols` is the line's `columns`. A row holds at least one char.
+pub fn wrap_starts(cols: &[usize], width: usize) -> Vec<usize> {
+    let width = width.max(1);
+    let mut out = vec![0];
+    let mut start = 0;
+    for i in 0..cols.len().saturating_sub(1) {
+        if cols[i + 1] - cols[start] > width && i > start {
+            out.push(i);
+            start = i;
+        }
+    }
+    out
+}
+
+/// The screen rows of `line`: where each starts, as a char index.
+fn row_starts(ed: &Editor, line: usize) -> Vec<usize> {
+    let doc = ed.doc();
+    if !ed.opts.wrap {
+        return vec![doc.view.left];
+    }
+    wrap_starts(&columns(&doc.buf.line(line), ed.opts.tab_width), ed.cols.max(1))
+}
+
+/// The line and the first char shown on screen row `row` of the text area. Rows past the end
+/// give the last row of the last line.
+pub fn row_at(ed: &Editor, row: usize) -> Option<(usize, usize)> {
+    if !ed.has_doc() {
+        return None;
+    }
+    let doc = ed.doc();
+    let last = doc.buf.last_line();
+    let mut left = row;
+    let mut line = doc.view.top.min(last);
+    loop {
+        let starts = row_starts(ed, line);
+        if left < starts.len() || line == last {
+            return Some((line, starts[left.min(starts.len() - 1)]));
+        }
+        left -= starts.len();
+        line += 1;
+    }
+}
+
+/// The buffer position under display column `col` (in cells, with a fraction) of screen row
+/// `row`. Clicks past a line's end land on its end, or on its last char outside Insert mode.
+/// In Insert mode, a click on the right half of a char goes after it.
+pub fn pos_at(ed: &Editor, row: usize, col: f32) -> Option<Pos> {
+    let (line, from) = row_at(ed, row)?;
+    let doc = ed.doc();
+    let insert = ed.mode == Mode::Insert;
+    let cols = columns(&doc.buf.line(line), ed.opts.tab_width);
+    let len = cols.len() - 1;
+    let from = from.min(len);
+    let next = if ed.opts.wrap { row_starts(ed, line).into_iter().find(|&s| s > from).unwrap_or(len) } else { len };
+    let x = cols[from] as f32 + col.max(0.0);
+    let mut at = (from..next).find(|&i| x < cols[i + 1] as f32).unwrap_or(next);
+    if insert && at < next && 2.0 * x > (cols[at] + cols[at + 1]) as f32 {
+        at += 1;
+    }
+    Some(doc.buf.clamp(Pos::new(line, at), insert))
+}
+
+/// The frame for `rows` rows of text, with the default look.
 pub fn frame(ed: &Editor, rows: usize) -> Frame {
+    frame_with(ed, &Look::default(), rows)
+}
+
+/// The look of each char of a line: everything but its text.
+#[derive(Clone, Copy, Default, PartialEq)]
+struct Ink {
+    kind: Option<Kind>,
+    selected: bool,
+    matched: bool,
+    diag: Option<Level>,
+}
+
+/// The frame for `rows` rows of text with look `look`.
+pub fn frame_with(ed: &Editor, look: &Look, rows: usize) -> Frame {
     let status = status(ed);
     let bottom = bottom(ed);
-    let gutter = gutter_cols(ed);
+    let gutter = gutter_cols(ed, look.numbers);
     if !ed.has_doc() {
-        return Frame { rows: Vec::new(), caret: None, gutter, status, bottom, empty: true };
+        return Frame { rows: Vec::new(), caret: None, gutter, ruler: None, status, bottom, empty: true };
     }
     let doc = ed.doc();
     let buf = &doc.buf;
     let path = buf.path.as_deref();
     let top = doc.view.top.min(buf.last_line());
-    let left = if ed.opts.wrap { 0 } else { doc.view.left };
+    let wrap = ed.opts.wrap;
+    let left = if wrap { 0 } else { doc.view.left };
+    let width = ed.cols.max(4);
     let cur = doc.view.cursor;
     let count = rows.min(buf.line_count().saturating_sub(top));
     let runs = highlight::runs(buf, path, top, count);
     let tab = ed.opts.tab_width;
     let vim = ed.keymap == Keymap::Vim;
+    let numbers = match (vim, look.numbers) {
+        (true, n) => n,
+        (false, "off") => "off",
+        (false, _) => "absolute",
+    };
+    let search = if ed.search.pattern.is_empty() || !ed.vim.hlsearch {
+        Vec::new()
+    } else {
+        editor::vim::search_matches(buf, &ed.search.pattern, ed.case(), top, top + count)
+    };
+    let show_caret = ed.mode != Mode::Command && !look.hide_caret;
+    let shape = shape(ed, look.cursor);
     let mut out = Vec::with_capacity(rows);
     let mut caret = None;
     for (r, line_runs) in runs.iter().enumerate() {
+        if out.len() >= rows {
+            break;
+        }
         let line = top + r;
         let text = buf.line(line);
         let chars: Vec<char> = text.chars().collect();
+        let len = chars.len();
         let cols = columns(&text, tab);
-        let from = left.min(chars.len());
-        let sel = selected(ed, line, chars.len());
-        // The look of each char from `from` on: its kind and whether it is selected.
-        let mut kinds: Vec<Option<Kind>> = vec![None; chars.len()];
+        let mut ink = vec![Ink::default(); len];
         for (range, k) in line_runs {
-            for slot in kinds.iter_mut().take(range.end.min(chars.len())).skip(range.start) {
-                *slot = Some(*k);
+            for slot in ink.iter_mut().take(range.end.min(len)).skip(range.start) {
+                slot.kind = Some(*k);
             }
         }
-        let mut segs: Vec<Seg> = Vec::new();
-        for (i, &ch) in chars.iter().enumerate().skip(from) {
-            let on = sel.is_some_and(|(a, b, _)| i >= a && i < b);
-            let piece = if ch == '\t' { " ".repeat(cols[i + 1] - cols[i]) } else { ch.to_string() };
-            match segs.last_mut() {
-                Some(s) if s.kind == kinds[i] && s.selected == on => s.text.push_str(&piece),
-                _ => segs.push(Seg { text: piece, kind: kinds[i], selected: on }),
+        let sel = selected(ed, line, len);
+        let mut paint = |a: usize, b: usize, f: &dyn Fn(&mut Ink)| ink.iter_mut().take(b.min(len)).skip(a).for_each(f);
+        if let Some((a, b, _)) = sel {
+            paint(a, b, &|i| i.selected = true);
+        }
+        for c in &doc.extra {
+            if let Some((a, b)) = extra_range(c, line, len) {
+                paint(a, b, &|i| i.selected = true);
             }
         }
-        // A selection past the line end shows one selected space, as Vim does.
-        if sel.is_some_and(|(_, _, past)| past) {
-            segs.push(Seg { text: " ".into(), kind: None, selected: true });
+        for &(a, b) in &search {
+            let (pa, pb) = (buf.pos(a), buf.pos(b));
+            if pa.line == line {
+                paint(pa.col, if pb.line == line { pb.col } else { len }, &|i| i.matched = true);
+            }
         }
+        // Worst last, so it wins.
+        let mut diags: Vec<&Diag> = look.diags.iter().filter(|d| d.line <= line && d.end_line >= line).collect();
+        diags.sort_by_key(|d| std::cmp::Reverse(d.severity));
+        for d in &diags {
+            let a = if d.line == line { d.col } else { 0 };
+            let b = if d.end_line == line { d.end_col.max(a + 1) } else { len };
+            let level = Level::of(d.severity);
+            paint(a, b, &|i| i.diag = Some(level));
+        }
+        let lead = if look.whitespace { chars.iter().take_while(|c| **c == ' ' || **c == '\t').count() } else { 0 };
+        let full = sel.is_some_and(|(a, b, past)| a == 0 && b >= len && past);
+        let starts = if wrap { wrap_starts(&cols, width) } else { vec![left] };
+        let worst = diags.last().filter(|d| d.line == line).copied();
         let current = line == cur.line;
-        let number = if vim && !current { line.abs_diff(cur.line).to_string() } else { (line + 1).to_string() };
-        if current {
-            let col = cur.col.min(chars.len());
-            let width = chars.get(col).map_or(1, |c| c.width().unwrap_or(1).max(1));
-            let shown = cols[col].saturating_sub(cols[from]);
-            caret = Some(Caret { row: r, col: shown, width, shape: shape(ed) });
+        for (pi, &from) in starts.iter().enumerate() {
+            if out.len() >= rows {
+                break;
+            }
+            let last_piece = pi + 1 == starts.len();
+            let from = from.min(len);
+            let to = if wrap {
+                starts.get(pi + 1).copied().unwrap_or(len)
+            } else {
+                // Only the columns that fit, and one more.
+                (from..len).find(|&i| cols[i] > cols[from] + width + 1).unwrap_or(len)
+            };
+            let mut segs: Vec<Seg> = Vec::new();
+            for i in from..to {
+                let ch = chars[i];
+                let ws = i < lead;
+                let piece = match ch {
+                    '\t' if ws => format!("→{}", " ".repeat(cols[i + 1] - cols[i] - 1)),
+                    '\t' => " ".repeat(cols[i + 1] - cols[i]),
+                    ' ' if ws => "·".into(),
+                    ch => ch.to_string(),
+                };
+                let k = ink[i];
+                match segs.last_mut() {
+                    Some(s) if s.kind == k.kind && s.selected == k.selected && s.matched == k.matched && s.ws == ws && s.diag == k.diag => {
+                        s.text.push_str(&piece)
+                    }
+                    _ => segs.push(Seg { text: piece, kind: k.kind, selected: k.selected, matched: k.matched, ws, diag: k.diag }),
+                }
+            }
+            // A selection past the line end shows one selected space, as Vim does.
+            if last_piece && !full && sel.is_some_and(|(_, _, past)| past) {
+                segs.push(Seg { text: " ".into(), selected: true, ..Seg::default() });
+            }
+            let number = match numbers {
+                _ if pi > 0 => String::new(),
+                "off" => String::new(),
+                "relative" => line.abs_diff(cur.line).to_string(),
+                "absolute" => (line + 1).to_string(),
+                _ if current => (line + 1).to_string(),
+                _ => line.abs_diff(cur.line).to_string(),
+            };
+            let in_piece = |col: usize| col >= from && (col < to || last_piece);
+            if current && show_caret && in_piece(cur.col) {
+                let col = cur.col.min(len);
+                let ch = chars.get(col).copied().filter(|c| *c != '\t').unwrap_or(' ');
+                caret = Some(Caret {
+                    row: out.len(),
+                    col: cols[col] - cols[from],
+                    width: ch.width().unwrap_or(1).max(1),
+                    shape,
+                    ch,
+                    vim,
+                    visual: matches!(ed.mode, Mode::Visual(_)),
+                });
+            }
+            let carets = if show_caret {
+                doc.extra
+                    .iter()
+                    .filter(|c| c.pos.line == line && in_piece(c.pos.col))
+                    .map(|c| cols[c.pos.col.min(len)] - cols[from])
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            let noted = look.note.filter(|n| line >= n.first && line <= n.last);
+            let sign = if pi > 0 {
+                None
+            } else if let Some(d) = worst {
+                Some(Sign::Diag(Level::of(d.severity)))
+            } else if look.outside.binary_search(&line).is_ok() {
+                Some(Sign::Outside)
+            } else {
+                look.signs.iter().find(|s| s.line == line).map(|s| match s.kind {
+                    SignKind::Added => Sign::Added,
+                    SignKind::Modified => Sign::Modified,
+                    SignKind::Deleted => Sign::Deleted,
+                })
+            };
+            let after = match (noted, worst) {
+                (Some(n), _) if pi == 0 && n.first == line && !n.text.is_empty() => Some(After::Note(n.text.to_string())),
+                (_, Some(d)) if last_piece && d.severity <= 2 => {
+                    Some(After::Diag(Level::of(d.severity), d.message.lines().next().unwrap_or("").chars().take(MESSAGE_CHARS).collect()))
+                }
+                _ => None,
+            };
+            out.push(Row::Line {
+                number,
+                current: current && pi == 0,
+                segs,
+                cursorline: current && pi == 0 && look.cursorline && sel.is_none() && show_caret,
+                sign,
+                full,
+                tint: noted.is_some() && !full,
+                after,
+                carets,
+            });
         }
-        out.push(Row::Line { number, current, segs, cursorline: current && sel.is_none() });
     }
     out.resize(rows, Row::Past);
-    if ed.mode == Mode::Command {
-        caret = None;
-    }
-    Frame { rows: out, caret, gutter, status, bottom, empty: false }
+    let ruler = (look.ruler > left && !wrap).then(|| look.ruler - left);
+    Frame { rows: out, caret, gutter, ruler, status, bottom, empty: false }
 }
 
-fn shape(ed: &Editor) -> Shape {
+/// The chars an extra cursor's selection covers on `line`, as `[a, b)`.
+fn extra_range(c: &editor::editor::Cursor, line: usize, len: usize) -> Option<(usize, usize)> {
+    let anchor = c.anchor?;
+    let (s, e) = if anchor <= c.pos { (anchor, c.pos) } else { (c.pos, anchor) };
+    if line < s.line || line > e.line {
+        return None;
+    }
+    let a = if line == s.line { s.col } else { 0 };
+    let b = if line == e.line { e.col } else { len };
+    (b > a).then_some((a, b))
+}
+
+fn shape(ed: &Editor, normal: &str) -> Shape {
     let vim = ed.keymap == Keymap::Vim;
     if vim && editor::vim::replacing(&ed.vim) {
         Shape::Underline
     } else if ed.mode == Mode::Insert || !vim {
         Shape::Bar
-    } else {
+    } else if matches!(ed.mode, Mode::Visual(_)) {
         Shape::Block
+    } else {
+        match normal {
+            "bar" => Shape::Bar,
+            "underline" => Shape::Underline,
+            _ => Shape::Block,
+        }
     }
 }
 

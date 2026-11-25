@@ -6,7 +6,10 @@ pub mod chrome;
 pub mod overlays;
 pub mod popups;
 pub mod review_view;
+pub mod settings_controls;
+pub mod settings_preview;
 pub mod settings_view;
+pub mod setup_steps;
 pub mod setup_view;
 pub mod style;
 pub mod tabs;
@@ -32,7 +35,7 @@ pub fn palette(app: &App, system_dark: bool) -> Palette {
 /// The window's content. `keys` is the view that takes every key.
 pub fn shell(s: Session, keys: ElementRef) -> impl IntoElement {
     let in_setup = s.view(|a| matches!(a.screen, Screen::Setup(_)));
-    when(in_setup, move || setup_view::setup(s)).otherwise(move || editor(s, keys))
+    when(in_setup, move || setup_view::setup(s, keys)).otherwise(move || editor(s, keys))
 }
 
 /// The editor screen: the buffer line, the tree beside the text area (or Settings), the status
@@ -50,9 +53,9 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
                 .flex_1()
                 .min_h(px(0.0))
                 .child(when(tree_shows, move || tree_view::tree(s, keys)))
-                .child(when(on_settings, move || settings_view::settings(s)).otherwise(move || text_area::text_area(s, keys))),
+                .child(when(on_settings, move || settings_view::settings(s, keys)).otherwise(move || text_area::text_area(s, keys))),
         )
         .child(chrome::status_line(s))
         .child(chrome::command_line(s))
-        .child(overlays::overlays(s))
+        .child(overlays::overlays(s, keys))
 }
