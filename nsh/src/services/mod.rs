@@ -272,7 +272,6 @@ impl Services {
         let _ = self.grep.send(grep::Job { pattern, generation });
     }
 
-    /// Watches `path` (an open file outside the project) for outside changes.
     /// Copies the folders of the old name to the new one. The file worker runs it before any
     /// later job, so files open after the copy.
     pub fn migrate(&self, m: crate::migrate::Migration) {
@@ -298,6 +297,7 @@ impl Services {
         let _ = self.watch.send(watch::Job::Config(file));
     }
 
+    /// Watches `path` (an open file outside the project) for outside changes.
     pub fn watch(&self, path: PathBuf) {
         let _ = self.watch.send(watch::Job::Add(path));
     }
