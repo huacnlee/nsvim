@@ -19,7 +19,8 @@ const DESKTOP: &str = include_str!("../../../assets/editor.desktop");
 const ICON: &str = include_str!("../../../assets/editor.svg");
 pub const FONTS: &[&str] = &["JetBrains Mono", "IBM Plex Mono", "Fira Code"];
 pub const SIZES: &[f32] = &[12.0, 13.0, 14.0, 16.0];
-pub const LOOKS: &[&str] = &["light", "dark", "system", "omarchy"];
+/// The looks setup offers. System follows the Omarchy theme where there is one.
+pub const LOOKS: &[&str] = &["light", "dark", "system"];
 
 pub struct Setup {
     pub step: usize,
@@ -64,7 +65,7 @@ impl Setup {
         let mut cfg = Config::default();
         // On Omarchy, the look follows the desktop theme unless the user picks another.
         if omarchy.is_some() {
-            cfg.theme.mode = "omarchy".into();
+            cfg.theme.mode = "system".into();
         }
         Setup {
             step: 1,
@@ -199,7 +200,7 @@ impl Setup {
     pub fn check_name(&mut self) -> Vec<String> {
         let mut out = Vec::new();
         let n = self.cfg.cli.name.clone();
-        let names = self.name_valid().then_some(n).into_iter().chain(["edtr", "e", "edx", "ered", "medit"].map(String::from));
+        let names = self.name_valid().then_some(n).into_iter().chain(["editor", "edtr", "e", "edx", "ered", "medit"].map(String::from));
         for name in names {
             if self.asked.insert(name.clone()) {
                 out.push(name);
@@ -210,7 +211,7 @@ impl Setup {
 
     /// Up to three free names.
     pub fn suggestions(&self) -> Vec<&'static str> {
-        ["edtr", "e", "edx", "ered", "medit"]
+        ["editor", "edtr", "e", "edx", "ered", "medit"]
             .into_iter()
             .filter(|n| *n != self.cfg.cli.name && self.on_path.get(*n).is_some_and(|p| p.is_none()))
             .take(3)
@@ -519,11 +520,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_look_starts_on_omarchy_when_omarchy_is_found() {
+    fn the_look_starts_on_system_when_omarchy_is_found() {
         assert_eq!(Setup::new(None).cfg.theme.mode, Config::default().theme.mode);
         let o = Omarchy { name: "adventure".into(), palette: crate::theme::builtin("dark"), dir: "/themes/adventure".into() };
         let s = Setup::new(Some(&o));
-        assert_eq!(s.cfg.theme.mode, "omarchy");
+        assert_eq!(s.cfg.theme.mode, "system", "System follows Omarchy");
         assert_eq!(s.omarchy_name.as_deref(), Some("adventure"));
     }
 
@@ -552,11 +553,14 @@ mod tests {
         s.step = 4;
         assert!(!s.choices().contains(&Choice::Toggle("default")), "and no default-app choice");
 
-        // Installed as the README says: the binary is the command already, so no link replaces it.
+        // The README installs the binary as ~/.local/bin/editor. The command `edit` links to it.
         s.exe = dirs::home_dir().map(|h| h.join(".local/bin/editor"));
         let cmds = s.commands().join("\n");
-        assert!(!cmds.contains("ln -sf"), "{cmds}");
-        assert!(cmds.contains("export EDITOR=\"editor --wait\""), "{cmds}");
+        assert!(cmds.contains("ln -sf ") && cmds.contains(" ~/.local/bin/edit\n"), "{cmds}");
+        assert!(cmds.contains("export EDITOR=\"edit --wait\""), "{cmds}");
+        // A binary that is the command already needs no link.
+        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/edit"));
+        assert!(!s.commands().join("\n").contains("ln -sf"));
     }
 
     #[test]

@@ -1,5 +1,5 @@
-//! `editor ctl`: the command-line client of a running editor, for shells, scripts and agents.
-//! It also opens files in a running editor when `editor file` finds one for the project.
+//! `edit ctl`: the command-line client of a running editor, for shells, scripts and agents.
+//! It also opens files in a running editor when `edit file` finds one for the project.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -7,9 +7,9 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-const USAGE: &str = "editor ctl: talk to the running editor of this folder.
+const USAGE: &str = "edit ctl: talk to the running editor of this folder.
 
-Usage: editor ctl [--socket PATH] [--json] COMMAND [ARGS]
+Usage: edit ctl [--socket PATH] [--json] COMMAND [ARGS]
 
 Read:
   state                         the active file, cursor, selection, open buffers (JSON)
@@ -32,7 +32,7 @@ Act:
 Paths are relative to the project root. Lines and columns are 1-based.
 Exit status: 0 done, 1 the editor refused, 2 no editor or bad usage.";
 
-/// Runs `editor ctl ARGS` and returns the exit status.
+/// Runs `edit ctl ARGS` and returns the exit status.
 pub fn main(args: &[String]) -> i32 {
     let mut socket: Option<PathBuf> = None;
     let mut json_out = false;
@@ -65,13 +65,13 @@ pub fn main(args: &[String]) -> i32 {
     }
     let cwd = std::env::current_dir().unwrap_or_default();
     let Some(socket) = socket.or_else(|| super::find(&cwd)) else {
-        eprintln!("editor ctl: no editor is running for {}. Start one with `editor .`", cwd.display());
+        eprintln!("edit ctl: no editor is running for {}. Start one with `edit .`", cwd.display());
         return 2;
     };
     let (req, args_json, shape) = match build(&cmd, args) {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("editor ctl: {e}");
+            eprintln!("edit ctl: {e}");
             return 2;
         }
     };
@@ -87,7 +87,7 @@ pub fn main(args: &[String]) -> i32 {
             1
         }
         Err(e) => {
-            eprintln!("editor ctl: {e}");
+            eprintln!("edit ctl: {e}");
             2
         }
     }
@@ -231,11 +231,11 @@ fn build(cmd: &str, args: &[String]) -> Result<(String, Value, Shape), String> {
             }
             ("command".into(), json!({ "line": line }), Shape::Quiet)
         }
-        other => return Err(format!("unknown command `{other}`. Run `editor ctl --help`")),
+        other => return Err(format!("unknown command `{other}`. Run `edit ctl --help`")),
     })
 }
 
-/// `editor [files] [--wait]` with an editor already running for the project: opens the files
+/// `edit [files] [--wait]` with an editor already running for the project: opens the files
 /// there and returns the exit status. `None` when no editor runs for it, so this process
 /// opens the window.
 pub fn open_in_running(root: &Path, files: &[(PathBuf, Option<editor::buffer::Pos>)], wait: bool) -> Option<i32> {

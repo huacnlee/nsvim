@@ -389,6 +389,8 @@ pub fn resolve(source: Source, dark_id: &str, light_id: &str, system_dark: bool,
     match source {
         Source::Light => (builtin(light_id), light_id.to_string()),
         Source::Dark => (builtin(dark_id), dark_id.to_string()),
+        // On Omarchy, the system is the desktop theme.
+        Source::System if let Some(o) = omarchy => (o.palette, o.name.clone()),
         Source::System if system_dark => (builtin(dark_id), dark_id.to_string()),
         Source::System => (builtin(light_id), light_id.to_string()),
         Source::Omarchy => match omarchy {
@@ -401,6 +403,17 @@ pub fn resolve(source: Source, dark_id: &str, light_id: &str, system_dark: bool,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn system_follows_omarchy_where_there_is_one() {
+        let mut palette = builtin("light");
+        palette.bg = hex("#123456").unwrap();
+        let o = Omarchy { name: "adventure".into(), palette, dir: "/themes/adventure".into() };
+        let (p, id) = resolve(Source::System, "dark", "light", true, Some(&o));
+        assert_eq!((p.bg.to_hex(), id.as_str()), ("#123456".to_string(), "adventure"));
+        let (_, id) = resolve(Source::System, "dark", "light", true, None);
+        assert_eq!(id, "dark", "elsewhere System follows the OS");
+    }
 
     #[test]
     fn every_builtin_parses() {
