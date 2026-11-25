@@ -17,7 +17,7 @@ const WHEEL_LINES: f32 = 3.0;
 const MIN_W: f32 = 160.0;
 const MAX_W: f32 = 640.0;
 
-/// The tree's frame: its width, its font and the project it shows.
+/// The tree's frame: its width and its font.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct TreeFrame {
     /// The width of the tree, in points.
@@ -27,8 +27,6 @@ pub struct TreeFrame {
     /// The size of the interface text, in points. It follows config.toml, not the system
     /// text size.
     pub size: f32,
-    /// The project folder, with `~` for the home folder.
-    pub project: String,
 }
 
 /// One row of the tree on screen.
@@ -97,7 +95,6 @@ fn frame_of(app: &App) -> TreeFrame {
         width: app.tree.width,
         font: if app.cfg.ui.font == "system" { "system-ui".into() } else { app.font_family.into() },
         size: app.cfg.ui.size,
-        project: crate::app::tilde(&app.ed.root),
     }
 }
 

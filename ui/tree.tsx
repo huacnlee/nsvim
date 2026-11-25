@@ -9,7 +9,7 @@ import { signal, Text, View, type Signal } from "nsh";
 import { FileTree, Icon, Shell, type TreeFrame, type TreeItem } from "nsvim/native";
 
 /** The frame before Rust gives the first one. */
-const NO_FRAME: TreeFrame = { width: 260, font: "system-ui", size: 12.5, project: "" };
+const NO_FRAME: TreeFrame = { width: 260, font: "system-ui", size: 12.5 };
 
 /** The frame of the tree, as a signal that follows Rust. */
 function frameSignal(): Signal<TreeFrame> {
@@ -40,7 +40,7 @@ function nameClass(r: TreeItem): string {
   }
 }
 
-/** The class of a git mark: the letter of a file, or the dot of a folder. */
+/** The class of the git letter of a file. */
 function gitClass(r: TreeItem): string {
   switch (r.git) {
     case "U":
@@ -111,8 +111,8 @@ function Row(props: { item: () => TreeItem; frame: Signal<TreeFrame> }) {
       <View class="flex-1" />
       <If when={r().changes}>
         {/* A folder with changes inside shows a solid dot. */}
-        <View class={`pl-2 ${gitClass(r())}`}>
-          <Icon name="dot" strokeWidth={9} size={size()} testID="tree-changes" />
+        <View class="pl-2">
+          <View class="size-[7px] rounded-full bg-warning" testID="tree-changes" />
         </View>
       </If>
       <If when={r().git}>
@@ -142,18 +142,6 @@ function Edge(props: { frame: Signal<TreeFrame> }) {
       onResponderMove={(e) => resize(e.pageX, false)}
       onResponderRelease={(e) => resize(e.pageX, true)}
     />
-  );
-}
-
-/** The project folder over the tree, as wide as the tree. It goes first in the buffer line. */
-export function TreeHeader() {
-  const frame = frameSignal();
-  return (
-    <View class="flex-row shrink-0 self-stretch items-center px-3 border-r border-border" style={{ width: frame().width }} testID="project">
-      <Text class="truncate text-muted-foreground" style={font(frame)} allowFontScaling={false}>
-        {frame().project}
-      </Text>
-    </View>
   );
 }
 
