@@ -113,8 +113,6 @@ use std::time::{Duration, Instant};
 use nsh_app_editor::Session;
 use nsh_app_editor::app::App;
 use nsh_app_editor::app::fx::Tx;
-use nsh_core::KeyCapture;
-use nsh_core::element::desktop::window as app_window;
 use nsh_core::prelude::*;
 
 /// Work for the engine thread: a closure that gets the app's session.
@@ -135,12 +133,8 @@ pub struct ProbedProps {
     pub id: u64,
 }
 
-/// The editor's window, as `nsh_app_editor::App` makes it, with a task that runs probe jobs on
-/// the engine thread. Keep its body the same as `App`'s. After the merge with the runtime part,
-/// build the state with `nsh_app_editor::app_for(&launch)` and the window with
-/// `nsh_app_editor::window(s)`. Keep the `focused` flag: `flow_with` waits for it before the
-/// first key. Wrap `window(s)` in a view that hears `on_focus` and `on_blur`, or ask runtime
-/// for a hook.
+/// The editor's window, as `nsh_app_editor::App` makes it (`app_for` and `window`), with a task
+/// that runs probe jobs on the engine thread.
 #[component]
 pub fn Probed(props: ProbedProps) -> impl IntoElement {
     let (launch, mut jobs, focused) = {
@@ -149,67 +143,13 @@ pub fn Probed(props: ProbedProps) -> impl IntoElement {
         let (_, l, rx, focused) = all.remove(at);
         (l, rx, focused)
     };
-    let cfg = launch.config.as_deref().map(|t| toml::from_str(t).expect("config parses")).unwrap_or_default();
-    let mut a = App::new(cfg, launch.project.clone().unwrap_or_default(), launch.first_launch, None);
-    a.to_open = launch.files.iter().map(|f| (f.clone(), None)).collect();
-    let s = Session::new(a);
+    let s = Session::new(nsh_app_editor::app_for(&launch));
     spawn(async move {
         while let Some(job) = jobs.recv().await {
             job(s);
         }
     });
-    let light = s.view(|a| nsh_app_editor::ui::palette(a, false));
-    let dark_palette = s.view(|a| nsh_app_editor::ui::palette(a, true));
-    effect(move || {
-        let p = if dark() { dark_palette.get() } else { light.get() };
-        set_tokens(nsh_app_editor::ui::style::tokens(&p));
-    });
-    s.start();
-    let keys = element_ref();
-    let has_focus = stored(false);
-    spawn(async move {
-        for _ in 0..50 {
-            if has_focus.with(|f| *f) {
-                break;
-            }
-            keys.focus();
-            timer(Duration::from_millis(100)).await;
-        }
-    });
-    let content = move || {
-        view()
-            .flex_1()
-            .bg(move || nsh_app_editor::ui::style::color("background"))
-            .text_color(move || nsh_app_editor::ui::style::color("foreground"))
-            .child(
-                view()
-                    .flex_1()
-                    .element_ref(&keys)
-                    .focusable(true)
-                    .capture_keys(KeyCapture::All)
-                    .on_focus({
-                        let focused = focused.clone();
-                        move || {
-                            has_focus.with(|f| *f = true);
-                            focused.store(true, Ordering::SeqCst);
-                        }
-                    })
-                    .on_blur({
-                        let focused = focused.clone();
-                        move || {
-                            has_focus.with(|f| *f = false);
-                            focused.store(false, Ordering::SeqCst);
-                        }
-                    })
-                    .on_key_down(move |e: &KeyEvent| {
-                        if let Some(k) = nsh_app_editor::keys::convert(e, apple_keys()) {
-                            s.key(k);
-                        }
-                    })
-                    .child(nsh_app_editor::ui::shell(s, keys)),
-            )
-    };
-    app_window().id("main").title("editor").content(content)
+    nsh_app_editor::window(s, move |on| focused.store(on, Ordering::SeqCst))
 }
 
 /// The app under test and a probe into its state.

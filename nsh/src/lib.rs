@@ -111,7 +111,12 @@ pub fn opacity(cfg: &config::Config) -> f32 {
 }
 
 fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
-    let props = move || AppProps {
+    Root::new::<App>(move || props_for(&l, config_file.clone())).app_id("dev.editor.app")
+}
+
+/// The props for launch `l`.
+fn props_for(l: &Launch, config_file: Option<PathBuf>) -> AppProps {
+    AppProps {
         project: Prop::from(l.project.as_ref().map(|p| SharedString::from(p.to_string_lossy().into_owned()))),
         config: Prop::from(l.config.clone().map(SharedString::from)),
         files: Prop::from(
@@ -119,8 +124,12 @@ fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
         ),
         first_launch: Prop::from(l.first_launch),
         config_file: Prop::from(config_file.as_ref().map(|p| SharedString::from(p.to_string_lossy().into_owned()))),
-    };
-    Root::new::<App>(props).app_id("dev.editor.app")
+    }
+}
+
+/// The app state for launch `l`, as `App` makes it. For test roots.
+pub fn app_for(l: &Launch) -> app::App {
+    make_app(&props_for(l, None))
 }
 
 /// The app state the props ask for.
@@ -140,7 +149,12 @@ fn make_app(props: &AppProps) -> app::App {
 /// its own text and cursor.
 #[component]
 pub fn App(props: AppProps) -> impl IntoElement {
-    let s = Session::new(make_app(&props));
+    window(Session::new(make_app(&props)), |_| {})
+}
+
+/// The editor window for session `s`: the body of `App`, which test roots use too.
+/// `focus_changed` hears when the view that takes the keys gets or loses the focus.
+pub fn window(s: Session, focus_changed: impl Fn(bool) + Clone + 'static) -> impl IntoElement {
     // The colours follow config.toml's theme, the setup's pick and the system appearance.
     let light = s.view(|a| ui::palette(a, false));
     let dark_palette = s.view(|a| ui::palette(a, true));
@@ -188,8 +202,20 @@ pub fn App(props: AppProps) -> impl IntoElement {
                 .element_ref(&keys)
                 .focusable(true)
                 .capture_keys(KeyCapture::All)
-                .on_focus(move || has_focus.with(|f| *f = true))
-                .on_blur(move || has_focus.with(|f| *f = false))
+                .on_focus({
+                    let focus_changed = focus_changed.clone();
+                    move || {
+                        has_focus.with(|f| *f = true);
+                        focus_changed(true);
+                    }
+                })
+                .on_blur({
+                    let focus_changed = focus_changed.clone();
+                    move || {
+                        has_focus.with(|f| *f = false);
+                        focus_changed(false);
+                    }
+                })
                 .on_key_down(move |e: &KeyEvent| {
                     if let Some(k) = keys::convert(e, apple_keys()) {
                         s.key(k);
