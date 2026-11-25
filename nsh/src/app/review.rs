@@ -10,6 +10,16 @@ use similar::{DiffOp, TextDiff};
 
 use super::App;
 
+/// A line diff that gives up after `ms` milliseconds. The web has no clock for a deadline, so
+/// there the diff runs to its end.
+pub fn configure(ms: u64) -> similar::TextDiffConfig {
+    let mut c = TextDiff::configure();
+    if cfg!(not(target_arch = "wasm32")) {
+        c.timeout(std::time::Duration::from_millis(ms));
+    }
+    c
+}
+
 /// One changed block of a file that changed on disk.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hunk {
@@ -31,7 +41,7 @@ fn first<'a>(lines: &[&'a str], at: usize, n: usize) -> &'a str {
 
 /// The diff of `old` and `new` as hunks, with the new text's changed lines.
 pub fn hunks(path: &std::path::Path, old: &str, new: &str, at: f64) -> (Vec<Hunk>, Vec<usize>) {
-    let diff = TextDiff::configure().timeout(std::time::Duration::from_millis(200)).diff_lines(old, new);
+    let diff = configure(200).diff_lines(old, new);
     let new_lines: Vec<&str> = diff.new_slices().to_vec();
     let old_lines: Vec<&str> = diff.old_slices().to_vec();
     let mut out = Vec::new();
@@ -96,7 +106,7 @@ impl Proposal {
 
     /// Diffs the proposed text against `old`, the buffer at `version`.
     pub fn rediff(&mut self, old: &str, version: u64) {
-        let diff = TextDiff::configure().timeout(std::time::Duration::from_millis(500)).diff_lines(old, &self.text);
+        let diff = configure(500).diff_lines(old, &self.text);
         let olds = diff.old_slices();
         let news = diff.new_slices();
         let line = |s: &str| s.trim_end_matches('\n').to_string();
@@ -146,7 +156,7 @@ impl Proposal {
 
     /// The char-range edits that turn `old` into the proposed text, last first.
     pub fn edits(&self, old: &str) -> Vec<(usize, usize, String)> {
-        let diff = TextDiff::configure().timeout(std::time::Duration::from_millis(500)).diff_lines(old, &self.text);
+        let diff = configure(500).diff_lines(old, &self.text);
         let olds = diff.old_slices();
         let news = diff.new_slices();
         // Char offset where each old line starts, plus the end.

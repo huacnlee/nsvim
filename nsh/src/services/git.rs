@@ -2,10 +2,15 @@
 //! gutter signs of a buffer against `HEAD`. No full git UI: that is out of scope.
 
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
+use std::path::PathBuf;
+#[cfg(not(target_arch = "wasm32"))]
 use std::process::Command;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::{Event, Out};
 
 pub enum Job {
@@ -38,6 +43,7 @@ pub enum SignKind {
     Deleted,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     let (tx, rx) = channel::<Job>();
     std::thread::Builder::new()
@@ -76,6 +82,7 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
     tx
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
     // `--no-optional-locks`: `git status` would otherwise take the index lock to refresh it, and
     // a commit the user runs at that moment fails with "index.lock: File exists".
@@ -83,10 +90,12 @@ fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
     out.status.success().then_some(out.stdout)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn is_repo(root: &Path) -> bool {
     git(root, &["rev-parse", "--is-inside-work-tree"]).is_some()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn info(root: &Path) -> GitInfo {
     let branch =
         git(root, &["rev-parse", "--abbrev-ref", "HEAD"]).map(|b| String::from_utf8_lossy(&b).trim().to_string()).filter(|b| !b.is_empty());
@@ -125,6 +134,7 @@ pub fn info(root: &Path) -> GitInfo {
     GitInfo { branch, status, dirs }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The folders that hold the paths in `status`, at any depth.
 fn changed_dirs(status: &HashMap<String, char>) -> HashSet<String> {
     let mut dirs = HashSet::new();
@@ -141,6 +151,7 @@ fn changed_dirs(status: &HashMap<String, char>) -> HashSet<String> {
     dirs
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Signs for `text` (the buffer now) against the file at `HEAD`. `None` when git doesn't track
 /// the file.
 pub fn signs_for(root: &Path, path: &Path, text: &str) -> Option<Vec<Sign>> {
@@ -153,8 +164,8 @@ pub fn signs_for(root: &Path, path: &Path, text: &str) -> Option<Vec<Sign>> {
 }
 
 pub fn diff_signs(base: &str, text: &str) -> Vec<Sign> {
-    use similar::{DiffOp, TextDiff};
-    let diff = TextDiff::configure().timeout(std::time::Duration::from_millis(200)).diff_lines(base, text);
+    use similar::DiffOp;
+    let diff = crate::app::review::configure(200).diff_lines(base, text);
     let mut out = Vec::new();
     for op in diff.ops() {
         match *op {

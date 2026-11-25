@@ -73,13 +73,21 @@ fn source(lang: Lang) -> String {
                 .concat()
         }
         Lang::Go => tree_sitter_go::HIGHLIGHTS_QUERY.into(),
+        #[cfg(not(target_arch = "wasm32"))]
         Lang::C => tree_sitter_c::HIGHLIGHT_QUERY.into(),
+        #[cfg(not(target_arch = "wasm32"))]
         Lang::Cpp => [tree_sitter_cpp::HIGHLIGHT_QUERY, tree_sitter_c::HIGHLIGHT_QUERY].concat(),
+        // The web has no C grammar: C and C++ use the C++ grammar's colours.
+        #[cfg(target_arch = "wasm32")]
+        Lang::C | Lang::Cpp => tree_sitter_cpp::HIGHLIGHT_QUERY.into(),
         Lang::Java => tree_sitter_java::HIGHLIGHTS_QUERY.into(),
         Lang::Ruby => tree_sitter_ruby::HIGHLIGHTS_QUERY.into(),
         Lang::Bash => tree_sitter_bash::HIGHLIGHT_QUERY.into(),
         Lang::Json => tree_sitter_json::HIGHLIGHTS_QUERY.into(),
+        #[cfg(not(target_arch = "wasm32"))]
         Lang::Lua => tree_sitter_lua::HIGHLIGHTS_QUERY.into(),
+        #[cfg(target_arch = "wasm32")]
+        Lang::Lua => String::new(),
         Lang::Markdown => tree_sitter_md::HIGHLIGHT_QUERY_BLOCK.into(),
     }
 }

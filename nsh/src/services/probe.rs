@@ -3,8 +3,10 @@
 //! uses. Each answer needs the disk, so a worker finds it and sends an `Event::Setup`.
 
 use std::path::PathBuf;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
+#[cfg(not(target_arch = "wasm32"))]
 use super::{Event, Out};
 
 pub enum Job {
@@ -29,6 +31,7 @@ pub enum Answer {
     OnPath(Vec<(String, Option<String>)>),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn start(out: Out) -> Sender<Job> {
     let (tx, rx) = channel::<Job>();
     std::thread::Builder::new()
@@ -50,6 +53,7 @@ pub fn start(out: Out) -> Sender<Job> {
     tx
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Whether `~/.local/bin` is a folder on `$PATH`.
 fn bin_on_path() -> bool {
     let (Some(path), Some(home)) = (std::env::var_os("PATH"), dirs::home_dir()) else { return false };
@@ -57,6 +61,7 @@ fn bin_on_path() -> bool {
     std::env::split_paths(&path).any(|d| d == bin)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// `command -v name`: the first executable `name` on `$PATH`.
 pub fn command_v(name: &str) -> Option<String> {
     let path = std::env::var_os("PATH")?;
@@ -73,6 +78,7 @@ pub fn command_v(name: &str) -> Option<String> {
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// The leader key `~/.config/nvim` sets (`vim.g.mapleader` or `let mapleader`), if any. Reads
 /// `init.lua`, `init.vim` and the Lua files under `lua/`.
 fn nvim_leader() -> Option<char> {

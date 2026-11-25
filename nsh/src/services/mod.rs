@@ -5,15 +5,20 @@
 pub mod editorconfig;
 pub mod git;
 pub mod grep;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod index;
 pub mod io;
 pub mod ipc;
 pub mod lsp;
 pub mod probe;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod watch;
+pub mod web;
 
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::sync::mpsc::Sender;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::mpsc::{Receiver, channel};
 
 use editor::buffer::{Buffer, Pos};
 use std::sync::Arc;
@@ -150,7 +155,9 @@ pub enum Event {
     },
 }
 
-/// Handles to the workers. Built in `AppSpec::setup`, once the window's waker exists.
+/// Handles to the workers. Built in `AppSpec::setup`, once the window's waker exists. The web
+/// build has its own (`web::Services`).
+#[cfg(not(target_arch = "wasm32"))]
 pub struct Services {
     pub events: Receiver<Event>,
     io: Sender<io::Job>,
@@ -166,6 +173,7 @@ pub struct Services {
     pub socket: Option<PathBuf>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Services {
     /// Starts every worker. With `ipc`, also serves the project's control socket.
     pub fn start(root: PathBuf, waker: Waker, ipc: bool) -> Services {
@@ -295,11 +303,14 @@ impl Services {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+pub use web::Services;
+
 /// A worker's way back to the UI thread: send, then wake the window.
 #[derive(Clone)]
 pub struct Out {
-    tx: Sender<Event>,
-    waker: Waker,
+    pub(crate) tx: Sender<Event>,
+    pub(crate) waker: Waker,
 }
 
 impl Out {

@@ -2,3 +2,5 @@
 *.swp
 .impeccable/
 /.nsh
+# The web build of nsvim. nsh/web/build.sh makes it, and CI builds it for each deploy.
+/website/public/demo
