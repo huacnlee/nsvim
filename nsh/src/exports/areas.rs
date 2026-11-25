@@ -21,13 +21,6 @@ pub fn BufferLine() -> impl IntoElement {
     ui::tabs::buffer_line(current().0)
 }
 
-/// The file tree beside the text.
-#[component]
-pub fn Tree() -> impl IntoElement {
-    let (s, keys) = current();
-    ui::tree_view::tree(s, keys)
-}
-
 /// The Settings tab, in place of the text area.
 #[component]
 pub fn Settings() -> impl IntoElement {

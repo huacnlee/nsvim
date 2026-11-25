@@ -13,10 +13,10 @@ import {
   Shell,
   StatusLine,
   TextArea,
-  Tree,
   Workspace,
   type ScreenState,
 } from "nsvim/native";
+import { Tree } from "./ui/tree";
 
 /** The editor: the buffer line, the tree beside the text (or Settings), the status line and
  * the command line, with the overlays over them. */
