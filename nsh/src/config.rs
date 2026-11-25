@@ -1,4 +1,4 @@
-//! `~/.config/editor/config.toml`: every setting the Settings buffer and onboarding change.
+//! `~/.config/nsvim/config.toml`: every setting the Settings buffer and onboarding change.
 
 use std::path::PathBuf;
 
@@ -223,18 +223,48 @@ impl Default for IpcCfg {
     }
 }
 
-/// `~/.config/editor`.
+/// The name of the editor's folders: config, state and the control sockets.
+pub const NAME: &str = "nsvim";
+
+/// The name the folders had before the editor became nsvim. `crate::migrate` copies them.
+pub const OLD_NAME: &str = "editor";
+
+fn config_base() -> PathBuf {
+    dirs::config_dir().unwrap_or_else(|| PathBuf::from("."))
+}
+
+fn state_base() -> PathBuf {
+    dirs::state_dir().or_else(dirs::data_local_dir).unwrap_or_else(|| PathBuf::from("."))
+}
+
+/// `~/.config/nsvim`.
 pub fn config_dir() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("editor")
+    config_base().join(NAME)
+}
+
+/// `~/.config/editor`, the config folder before the rename.
+pub fn old_config_dir() -> PathBuf {
+    config_base().join(OLD_NAME)
 }
 
 pub fn config_path() -> PathBuf {
     config_dir().join("config.toml")
 }
 
-/// `~/.local/state/editor`: the session and other files the user doesn't edit.
+/// `~/.local/state/nsvim`: the session and other files the user doesn't edit.
 pub fn state_dir() -> PathBuf {
-    dirs::state_dir().or_else(dirs::data_local_dir).unwrap_or_else(|| PathBuf::from(".")).join("editor")
+    state_base().join(NAME)
+}
+
+/// `~/.local/state/editor`, the state folder before the rename.
+pub fn old_state_dir() -> PathBuf {
+    state_base().join(OLD_NAME)
+}
+
+/// The folder to read from at startup: the new one, or the old one while the copy to the new
+/// one has not run yet (`crate::migrate`).
+pub fn readable(new: PathBuf, old: PathBuf) -> PathBuf {
+    if !new.exists() && old.is_dir() { old } else { new }
 }
 
 /// What reading the config found.
@@ -248,7 +278,7 @@ pub enum Loaded {
 
 /// Reads config.toml. Runs once at startup, before the first frame.
 pub fn load() -> Loaded {
-    let path = config_path();
+    let path = readable(config_dir(), old_config_dir()).join("config.toml");
     match std::fs::read_to_string(&path) {
         Err(_) => Loaded::FirstLaunch,
         Ok(src) => match parse(&path, &src) {
