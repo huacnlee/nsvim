@@ -50,7 +50,7 @@ struct Builtin {
 const BUILTINS: &[Builtin] = &[
     Builtin {
         id: "dark",
-        name: "editor dark",
+        name: "nsvim dark",
         light: false,
         hex: [
             "#0E1016", "#0A0C11", "#151925", "#232838", "#D6DAE4", "#8B93A6", "#7C8497", "#6C9EFF", "#A7D46F", "#C39BFF", "#FFA266",
@@ -140,7 +140,7 @@ const BUILTINS: &[Builtin] = &[
     },
     Builtin {
         id: "light",
-        name: "editor light",
+        name: "nsvim light",
         light: true,
         hex: [
             "#FAFAF7", "#F0F0EB", "#ECEDF2", "#D9DAE0", "#1F2330", "#5B6273", "#626877", "#2F5FD0", "#39761D", "#7A3FC8", "#AB5019",

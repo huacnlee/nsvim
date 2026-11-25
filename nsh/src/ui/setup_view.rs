@@ -107,7 +107,7 @@ pub fn setup(s: Session, keys: ElementRef) -> impl IntoElement {
 fn header(model: Memo<Option<Model>>) -> impl IntoElement {
     let step = computed(move || model.with(|m| m.as_ref().map_or(1, |m| m.step)));
     view().flex_row().gap(px(14.0)).items_center().child(icon(34.0)).child(
-        view().gap(px(2.0)).child(text("editor").text_base().font_weight(FontWeight::BOLD).text_color(move || color("foreground"))).child(
+        view().gap(px(2.0)).child(text("nsvim").text_base().font_weight(FontWeight::BOLD).text_color(move || color("foreground"))).child(
             text(move || format!("setup {}/{} · {}", step.get(), STEPS.len(), STEPS[step.get() - 1]))
                 .text_xs()
                 .text_color(move || color("muted-foreground"))
@@ -129,7 +129,7 @@ pub fn icon(size: f32) -> impl IntoElement {
         .bg(move || color("muted"))
         .border_1()
         .border_color(move || color("border"))
-        .label("editor")
+        .label("nsvim")
         .child(bar(28.0, 32.0, 72.0, "primary"))
         .child(bar(28.0, 52.0, 50.0, "mode-insert"))
         .child(bar(40.0, 72.0, 60.0, "mode-visual"))
@@ -185,7 +185,7 @@ fn status(s: Session, keys: ElementRef, m: &Model) -> AnyElement {
     if m.step < last {
         line = line.child(btn("next →", true, 1));
     } else {
-        line = line.child(btn("open editor →", true, 99));
+        line = line.child(btn("open nsvim →", true, 99));
     }
     line.into_element()
 }

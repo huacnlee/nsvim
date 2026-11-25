@@ -200,7 +200,7 @@ impl Setup {
     pub fn check_name(&mut self) -> Vec<String> {
         let mut out = Vec::new();
         let n = self.cfg.cli.name.clone();
-        let names = self.name_valid().then_some(n).into_iter().chain(["editor", "edtr", "e", "edx", "ered", "medit"].map(String::from));
+        let names = self.name_valid().then_some(n).into_iter().chain(["nsvim", "edtr", "e", "edx", "ered", "medit"].map(String::from));
         for name in names {
             if self.asked.insert(name.clone()) {
                 out.push(name);
@@ -211,7 +211,7 @@ impl Setup {
 
     /// Up to three free names.
     pub fn suggestions(&self) -> Vec<&'static str> {
-        ["editor", "edtr", "e", "edx", "ered", "medit"]
+        ["nsvim", "edtr", "e", "edx", "ered", "medit"]
             .into_iter()
             .filter(|n| *n != self.cfg.cli.name && self.on_path.get(*n).is_some_and(|p| p.is_none()))
             .take(3)
@@ -269,8 +269,8 @@ impl Setup {
             out.push(format!("git config --global core.editor \"{cmd_ref} --wait\""));
         }
         if cli.default_app && !self.mac {
-            out.push("# write ~/.local/share/applications/editor.desktop and its icon".into());
-            out.push(format!("xdg-mime default editor.desktop {}", mime_types().join(" ")));
+            out.push("# write ~/.local/share/applications/nsvim.desktop and its icon".into());
+            out.push(format!("xdg-mime default nsvim.desktop {}", mime_types().join(" ")));
         }
         out
     }
@@ -409,7 +409,7 @@ impl App {
                 Some(' ') => self.cfg.keys.leader = "space".into(),
                 Some('\\') => self.cfg.keys.leader = "backslash".into(),
                 Some(c) => {
-                    note = format!("Neovim's leader is '{c}'. editor takes Space or backslash, so it keeps {}. ", self.cfg.keys.leader)
+                    note = format!("Neovim's leader is '{c}'. nsvim takes Space or backslash, so it keeps {}. ", self.cfg.keys.leader)
                 }
                 None => {}
             }
@@ -483,7 +483,7 @@ impl Integration {
             if !have.contains(&line) {
                 use std::io::Write;
                 if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&rc) {
-                    let _ = writeln!(f, "\n# Added by editor's setup\n{line}");
+                    let _ = writeln!(f, "\n# Added by nsvim's setup\n{line}");
                 }
             }
         };
@@ -502,9 +502,9 @@ impl Integration {
             let icons = home.join(".local/share/icons/hicolor/scalable/apps");
             let _ = std::fs::create_dir_all(&apps);
             let _ = std::fs::create_dir_all(&icons);
-            let _ = std::fs::write(icons.join("editor.svg"), ICON);
-            let _ = std::fs::write(apps.join("editor.desktop"), desktop_entry(&exe));
-            let _ = std::process::Command::new("xdg-mime").arg("default").arg("editor.desktop").args(mime_types()).status();
+            let _ = std::fs::write(icons.join("nsvim.svg"), ICON);
+            let _ = std::fs::write(apps.join("nsvim.desktop"), desktop_entry(&exe));
+            let _ = std::process::Command::new("xdg-mime").arg("default").arg("nsvim.desktop").args(mime_types()).status();
         }
     }
 }
@@ -512,7 +512,11 @@ impl Integration {
 /// The desktop entry with `Exec` set to this binary.
 fn desktop_entry(exe: &std::path::Path) -> String {
     let exe = exe.display().to_string().replace('\\', "\\\\").replace('"', "\\\"");
-    DESKTOP.replace("Exec=editor %F", &format!("Exec=\"{exe}\" %F"))
+    DESKTOP
+        .replace("Exec=editor %F", &format!("Exec=\"{exe}\" %F"))
+        .replace("Name=editor", "Name=nsvim")
+        .replace("Icon=editor", "Icon=nsvim")
+        .replace("StartupWMClass=editor", "StartupWMClass=dev.nsvim.app")
 }
 
 #[cfg(test)]
@@ -545,7 +549,7 @@ mod tests {
         let cmds = s.commands().join("\n");
         assert!(cmds.contains("mkdir -p ~/.local/bin && ln -sf"), "{cmds}");
         assert!(cmds.contains("export PATH=\"$HOME/.local/bin:$PATH\""), "a folder off $PATH is added: {cmds}");
-        assert!(cmds.contains("xdg-mime default editor.desktop text/plain text/x-rust"), "{cmds}");
+        assert!(cmds.contains("xdg-mime default nsvim.desktop text/plain text/x-rust"), "{cmds}");
         s.bin_on_path = true;
         assert!(!s.commands().join("\n").contains("export PATH"), "{cmds}");
         s.mac = true;
