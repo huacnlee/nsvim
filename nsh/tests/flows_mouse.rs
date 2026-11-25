@@ -82,6 +82,11 @@ fn a_middle_click_keeps_a_dirty_tab_open() {
     f.keys("x");
     f.settle("the active file has changes", |a| a.ed.buf().is_dirty());
     let active = f.read(|a| a.ed.active);
+    // The screen shows the change before the click.
+    f.ui.wait_until("the unsaved mark", std::time::Duration::from_secs(5), |s| {
+        s.accessibility(Some(&format!("id:tab-mark-{active}"))).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
+    })
+    .unwrap();
     f.middle_click(&format!("id:tab-{active}"), point(20.0, 10.0));
     f.settle("the editor tells why", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
     assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");

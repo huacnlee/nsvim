@@ -22,13 +22,19 @@ function frame(on: boolean) {
   return `flex-row shrink-0 self-stretch items-center cursor-pointer pl-3 ${on ? "bg-surface-raised" : "hover:bg-surface-raised/50"}`;
 }
 
-/** One line of interface text. */
-function Label(props: { font: () => Font; on?: boolean; text: string; class?: string }) {
+/** One line of interface text. With `cutStart`, text that does not fit loses its start, not
+ * its end. */
+function Label(props: { font: () => Font; on?: boolean; text: string; class?: string; cutStart?: boolean }) {
   return (
     <Text
       allowFontScaling={false}
       class={`${props.on ? "text-foreground" : "text-muted-foreground"} ${props.class ?? ""}`}
-      style={{ fontFamily: props.font().family, fontSize: Math.max(9, props.font().size), numberOfLines: 1 }}
+      style={{
+        fontFamily: props.font().family,
+        fontSize: Math.max(9, props.font().size),
+        numberOfLines: 1,
+        textOverflow: props.cutStart ? "ellipsis-start" : "ellipsis",
+      }}
     >
       {props.text}
     </Text>
@@ -119,12 +125,14 @@ export function BufferLine() {
     <View class="flex-row items-center h-7 shrink-0 overflow-hidden bg-muted" role="tablist" testID="buffer-line">
       <If when={project()}>
         {(p) => (
+          // As wide as the tree. The path keeps its end, which tells folders apart.
           <View
-            class="flex-row shrink-0 self-stretch items-center px-3 border-r border-border"
+            class="flex-row shrink-0 self-stretch items-center px-3 overflow-hidden border-r border-border"
             style={{ width: p().width }}
+            accessibilityLabel={p().path}
             testID="project"
           >
-            <Label font={font} text={p().path} class="truncate" />
+            <Label font={font} text={p().path} class="flex-1 min-w-0" cutStart />
           </View>
         )}
       </If>

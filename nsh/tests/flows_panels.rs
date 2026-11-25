@@ -323,3 +323,31 @@ fn the_terminal_step_offers_vi_and_vim_aliases() {
     assert!(!on(&f), "the press turns the aliases off");
     f.ui.wait_until("no alias line", std::time::Duration::from_secs(2), |s| !alias(s)).unwrap();
 }
+
+/// A long project path over a narrow tree stays inside its header, with padding before the
+/// divider. The header is as wide as the tree, and the full path is its accessibility name.
+#[test]
+fn a_long_project_path_fits_over_a_narrow_tree() {
+    let dir = scratch();
+    let deep = "a-long-folder-name-for-the-test/another-long-folder-name/and-one-more-long-name/project";
+    let file = write(&dir.path().join(deep), "main.rs", SRC);
+    let mut f = flow(&file, None);
+    f.wait_open(&file);
+    f.update(|a, _| {
+        a.tree.show = true;
+        a.tree.width = 160.0;
+    });
+    let full = f.read(|a| nsh_app_editor::app::tilde(&a.ed.root));
+    assert!(full.len() > 60, "the path is long: {full}");
+    f.ui.wait_until("the header is as wide as the tree", std::time::Duration::from_secs(5), |s| {
+        s.layout("id:project").unwrap().is_some_and(|l| (l.bounds.size.width.0 - 160.0).abs() < 1.0)
+    })
+    .unwrap();
+    let h = f.ui.screen().layout("id:project").unwrap().unwrap().bounds;
+    let text = f.ui.screen().layout("text:/one-more-long-name.project$/").unwrap().expect("the path shows").bounds;
+    let right = |b: nsh_engine::Bounds<nsh_engine::Points>| b.origin.x.0 + b.size.width.0;
+    assert!(text.origin.x.0 >= h.origin.x.0 + 11.0, "padding before the path");
+    assert!(right(text) <= right(h) - 11.0, "the path ends before the padding");
+    let name = f.ui.screen().accessibility(Some("id:project")).unwrap().map(|n| n.name);
+    assert_eq!(name.as_deref(), Some(full.as_str()));
+}
