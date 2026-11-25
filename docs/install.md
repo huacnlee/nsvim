@@ -101,6 +101,25 @@ menu shortcut. It adds the folder to the user `PATH`, so a new terminal runs `ns
 To upgrade, close nsvim and run the installer again. If the PowerShell policy stops scripts,
 download the Windows ZIP from the release page and extract it.
 
+
+## Updates
+
+nsvim looks for a new release on GitHub once a day. When there is one, it says so on the command
+line. Run `:Update` to install it: nsvim closes, the installer runs into the same folder, and
+nsvim starts again. Save your files first; `:Update` will not close unsaved buffers. With no
+release found yet, `:Update` checks first.
+
+This works for copies the installers put in place. A build from source or a copy from mise is
+left alone and updates the way it was installed. To turn off the daily check, set
+
+```toml
+[update]
+check = false
+```
+
+in `config.toml`. Close any other nsvim windows before `:Update` on Windows, which cannot replace
+a program that is running.
+
 ## mise
 
 mise can install the release archive, but it puts the program in a folder with the version in

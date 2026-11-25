@@ -19,6 +19,7 @@ pub struct Config {
     pub mouse: MouseCfg,
     pub cli: CliCfg,
     pub ipc: IpcCfg,
+    pub update: UpdateCfg,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -212,6 +213,19 @@ pub struct IpcCfg {
     pub enabled: bool,
     /// Let `edit` and `command` requests change buffers. `propose` works either way.
     pub allow_edits: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UpdateCfg {
+    /// Look for a new release on GitHub once a day. `:Update` checks and installs either way.
+    pub check: bool,
+}
+
+impl Default for UpdateCfg {
+    fn default() -> Self {
+        UpdateCfg { check: true }
+    }
 }
 
 impl Default for IpcCfg {

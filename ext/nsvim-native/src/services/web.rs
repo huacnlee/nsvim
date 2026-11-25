@@ -267,6 +267,7 @@ mod page {
 
         /// The web has no setup screen.
         pub fn probe_setup(&self) {}
+        pub fn check_update(&self, _manual: bool) {}
 
         /// The web has no files that change from outside.
         pub fn watch_config(&self, _file: PathBuf) {}

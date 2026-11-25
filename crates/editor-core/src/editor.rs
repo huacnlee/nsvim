@@ -157,6 +157,8 @@ pub enum Action {
     PrevBuffer,
     Diagnostics,
     Settings,
+    /// Check for a new release and install it (`:Update`).
+    Update,
     /// Open the leader (Space) key menu.
     LeaderMenu,
     /// Open the command palette (classic keymap).

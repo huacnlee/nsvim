@@ -19,6 +19,9 @@ pub mod session;
 pub mod settings;
 pub mod setup;
 pub mod tree;
+pub mod update;
+#[cfg(test)]
+mod update_tests;
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -183,6 +186,8 @@ pub struct App {
     pub key_focus: bool,
     /// The old folders to copy to the new names, once the workers start.
     pub migration: crate::migrate::Migration,
+    /// A newer release an update check found; `:Update` installs it.
+    pub update: Option<crate::services::update::Release>,
 }
 
 impl App {
@@ -286,6 +291,7 @@ impl App {
             exited: false,
             key_focus: false,
             migration: Default::default(),
+            update: None,
         }
     }
 
@@ -303,6 +309,9 @@ impl App {
         }
         if matches!(self.screen, Screen::Setup(_)) {
             svc.probe_setup();
+        }
+        if self.cfg.update.check && !crate::app::setup::dev_build(std::env::current_exe().ok().as_deref()) {
+            svc.check_update(false);
         }
         self.svc = Some(svc);
     }
@@ -469,6 +478,7 @@ impl App {
             }
             Event::Config(loaded) => self.config_reloaded(loaded),
             Event::Setup(answer) => self.setup_answer(answer),
+            Event::Update(checked) => self.update_checked(checked),
             Event::Migrated(line) => self.ed.message(line),
             Event::Omarchy(o) => {
                 if o.is_some() {
