@@ -1,6 +1,6 @@
 ---
-name: editor
-description: The promo site for editor, set as the datasheet of a precision part.
+name: nsvim
+description: The promo site for nsvim, set as the datasheet of a precision part.
 colors:
   ink: "#0e1016"
   ink-deep: "#0a0c11"
@@ -139,13 +139,13 @@ components:
     padding: "16px 18px"
 ---
 
-# Design System: editor
+# Design System: nsvim
 
 ## Overview
 
 **Creative North Star: "The Datasheet"**
 
-The site sells editor the way a maker sells a precision part. Each page is a datasheet. It shows real screen plates, measured characteristics in tables, a functional block diagram and ordering information. The world uses the app's own dark palette and the app's own panel form. The page looks like the product because the materials come from the product.
+The site sells nsvim the way a maker sells a precision part. Each page is a datasheet. It shows real screen plates, measured characteristics in tables, a functional block diagram and ordering information. The world uses the app's own dark palette and the app's own panel form. The page looks like the product because the materials come from the product.
 
 Density is high but calm. Hairline rules divide the content. Titled-border panels hold it. Numbers sit in a monospace face with tabular figures. Colour is functional coding. The four mode colours mean the four editor modes, and nothing else carries chroma.
 
@@ -285,6 +285,17 @@ A sticky header strip, 56px tall at least, on translucent Ink with a background 
 ### Signature: Plate 1 With Live Modes
 The hero plate is a frame that holds four real screens, one per mode, with the mode strip under them. The frame title shows the plate number, the file name and the current mode in the mode colour. The mode keys and the mode strip swap the screen at once. Only the colours fade. A polite live region announces each change.
 
+## The App
+
+This file is the site's design system. The app has its own rules, and the site's plates show
+the app as it is:
+
+- Corners are square. The app's radius is 2px (`rounded-(--radius)`, `nsh/theme.json`).
+- Choices are checkboxes, not switches.
+- Interface copy is in sentence case, per the NSH Design Guides. Vim's own text (`NORMAL`,
+  `E37: ...`) stays as Vim writes it.
+- Colours come only from theme tokens.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -300,7 +311,7 @@ The hero plate is a frame that holds four real screens, one per mode, with the m
 ### Don't:
 - **Don't** use a mode colour as decoration, as a gradient or as a background wash.
 - **Don't** show the product in a laptop mockup or in a drawn screen. Use a real render.
-- **Don't** set the product name in any case other than lowercase `editor`.
+- **Don't** set the product name in any case other than lowercase `nsvim`.
 - **Don't** separate panels from the page with shadows. The plate lift is for Plate 1 only.
 - **Don't** animate position, size or opacity of content. Content changes in the next frame.
 - **Don't** add light-mode colours to the site. The site uses the app's dark theme only.

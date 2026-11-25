@@ -50,7 +50,7 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 - **Safe.** Crash recovery, undo that survives a restart, changed lines marked when a git
   checkout or an agent changes a file, and atomic saves.
 - **Yours.** 16 themes. On [Omarchy](https://omarchy.org), the System look follows the desktop
-  theme live. Any monospace font. Settings is a buffer that writes `config.toml`.
+  theme live. Any monospace font. Settings writes each change to `config.toml` at once.
 
 ## Install
 
@@ -122,9 +122,9 @@ every key.
 
 ## Configuration
 
-Settings is a tab. Open it with `:Settings` or `SPC ,` in the Neovim keymap, or with `Ctrl ,`
-in the classic keymap. `:w` writes `~/.config/nsvim/config.toml`. Every change applies at
-once. [docs/configuration.md](docs/configuration.md) lists every option.
+Settings covers the window. Open it with `:Settings` or `SPC ,` in the Neovim keymap, or with
+`Ctrl ,` in the classic keymap. Every change applies at once and is written to
+`~/.config/nsvim/config.toml`. [docs/configuration.md](docs/configuration.md) lists every option.
 
 ## AI agents
 
@@ -141,14 +141,18 @@ nvim ctl reveal src/main.rs:10-14 --note "this is the bug"  # in your own shell,
 
 ## Development
 
+The core and all app state are Rust (`crates/editor-core`, `nsh/`). The screens are TSX
+(`App.tsx`, `ui/`) on [NSH](https://nsh.dev).
+
 ```sh
-cd nsh
-cargo run -- path/to/file.rs
-TMPDIR=~/.cache/editor-test-tmp cargo test
+nsh run                                       # the app in a window
+nsh check && nsh build                        # types, the crate and the TSX bundle
+TMPDIR=~/.cache/nsvim-test-tmp cargo test
 cargo clippy --all-targets -- -D warnings
 ```
 
-Read [AGENTS.md](AGENTS.md) and [nsh/README.md](nsh/README.md) before you change the code.
+Read [AGENTS.md](AGENTS.md), [docs/architecture.md](docs/architecture.md) and
+[docs/development.md](docs/development.md) before you change the code.
 
 ## License
 

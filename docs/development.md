@@ -3,14 +3,23 @@
 ## Build and run
 
 ```sh
-nsh run                  # the app in a window, rebuilt on each change (NSH 0.7 or later)
-cargo run -p nsh-app-editor -- path/to/file.rs   # the same app, without the NSH CLI
+nsh run                  # the app in a window. TSX edits apply at once (NSH 0.7 or later)
+nsh check                # cargo check, the nsvim/native types, and tsc over the TSX
+nsh build                # the crate and the TSX bundle. Read its warnings
 cargo build --release    # target/release/nsvim
 nsh build --release -o target/release/nsh   # its interface, next to it (docs/install.md)
 ```
 
-`nsh.json` at the root names the app's crate (`"rust": "nsh"`) and its root component
-(`"root": "App"`). Install the NSH CLI from [nsh.dev](https://nsh.dev/docs/installation).
+`nsh.json` at the root names the app's crate (`"rust": "nsh"`) and no root component, so
+`App.tsx` is the entry. Install the NSH CLI from [nsh.dev](https://nsh.dev/docs/installation).
+
+A window run uses your real home folder, and the setup screen writes to `~/.bashrc` and git's
+global config. For tests by hand, use a scratch home:
+
+```sh
+S=~/.cache/nsvim-scratch; mkdir -p $S/home
+HOME=$S/home XDG_CONFIG_HOME=$S/config XDG_STATE_HOME=$S/state nsh run
+```
 
 Linux needs GTK 4.14 or later (`libgtk-4-dev` on Debian and Ubuntu).
 
@@ -18,7 +27,10 @@ Linux needs GTK 4.14 or later (`libgtk-4-dev` on Debian and Ubuntu).
 
 ```text
 Cargo.toml            the workspace: nsh and crates/editor-core
-nsh.json              the NSH app: its crate, root component and theme
+nsh.json              the NSH app: its crate and theme
+App.tsx               the entry: the window and its screens
+ui/                   the TSX screens: tabs, tree, status and command lines, overlays,
+                      Settings, setup, shared controls
 crates/editor-core/   the core (library `editor`): no window code, no I/O
   src/buffer.rs       rope, undo, marks, saves
   src/editor.rs       Editor, Doc, Mode, Action, KeyInput
@@ -26,11 +38,13 @@ crates/editor-core/   the core (library `editor`): no window code, no I/O
   src/classic/        the classic keymap and multiple cursors
   src/syntax/         tree-sitter objects, motions and highlight queries
 nsh/                  the app (binary `nsvim`)
-  src/lib.rs          the root component and the window
+  src/lib.rs          the crate's exports and the launch
   src/store.rs        Session: the app state, updates and effects
+  src/bridge.rs       the join to TSX: listeners and commands
+  src/exports/        nsvim/native: Workspace, TextArea, Icon and the area modules
   src/model.rs        the text area's frame, from the Editor
   src/app/            state, key routing, mouse, pickers, Settings, setup, LSP glue
-  src/ui/             views and theme tokens
+  src/ui/             Rust views (text area, popups, diff review, menu), theme tokens
   src/services/       workers: io, index, git, grep, watch, lsp, probe, ipc
   src/ipc/            the ctl and mcp commands
   tests/              Headless tests of the real window
@@ -40,6 +54,15 @@ website/              the website (Astro)
 ```
 
 Keep files under 800 lines, and put tests in a sibling `*_tests.rs` file or in `nsh/tests/`.
+
+## Look and copy
+
+- The program is `nsvim`, in lower case.
+- Colours come only from theme tokens (`nsh/theme.json`, `nsh/src/ui/style.rs`).
+- Corners are square: the radius is 2px (`rounded-(--radius)`). Use checkboxes, not switches.
+- Interface copy follows the [NSH Design Guides](https://nsh.dev/docs/design-guides.md):
+  sentence case for labels, hints and states, with no final period on a short label. Vim's
+  own text (`NORMAL`, `E37: ...`) stays as Vim writes it.
 
 ## Tests
 
