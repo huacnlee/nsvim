@@ -15,12 +15,6 @@ pub fn TextArea() -> impl IntoElement {
     ui::text_area::text_area(s, keys)
 }
 
-/// The line of open buffers above the text.
-#[component]
-pub fn BufferLine() -> impl IntoElement {
-    ui::tabs::buffer_line(current().0)
-}
-
 /// The Settings tab, in place of the text area.
 #[component]
 pub fn Settings() -> impl IntoElement {

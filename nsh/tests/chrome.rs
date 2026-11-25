@@ -73,6 +73,31 @@ fn the_buffer_line_shows_the_project_folder_over_the_tree() -> Result<(), String
     Ok(())
 }
 
+/// The tab that shows has a raised background. The other tabs show the background of
+/// the line.
+#[test]
+fn the_tab_that_shows_has_its_own_background() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let mut app = start_files(&[&a, &b], None);
+    app.wait_for("text:/beta/")?;
+    let line = background(&app, "id:buffer-line");
+    assert!(line.is_some(), "the line has a background");
+    app.wait_until("the tab of b.txt has its own background", WAIT, |s| {
+        let bg = |sel: &str| s.view_style(sel).unwrap().and_then(|st| st.background_color);
+        bg("role:tab[b.txt]").is_some() && bg("role:tab[b.txt]") != line && bg("role:tab[a.txt]") != bg("role:tab[b.txt]")
+    })?;
+    let on = background(&app, "role:tab[b.txt]");
+    assert_eq!(background(&app, "role:tab[a.txt]"), None, "the other tab shows the line's background");
+    app.press("role:tab[a.txt]")?;
+    app.wait_until("the background goes to the tab of a.txt", WAIT, |s| {
+        s.view_style("role:tab[a.txt]").unwrap().and_then(|st| st.background_color) == on
+    })?;
+    assert_eq!(background(&app, "role:tab[b.txt]"), None, "the other tab loses the background");
+    Ok(())
+}
+
 #[test]
 fn a_dirty_file_shows_a_dot_on_its_tab_and_a_plus_in_the_status_line() -> Result<(), String> {
     let dir = scratch();
@@ -288,8 +313,8 @@ fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
     let mut app = start(&a);
     app.wait_for("text:/alpha/")?;
     type_text(&mut app, ":Settings\n");
-    app.wait_for("role:tab[settings]")?;
-    assert!(app.screen().selected("role:tab[settings]")?);
+    app.wait_for("role:tab[Settings]")?;
+    assert!(app.screen().selected("role:tab[Settings]")?);
     assert!(!app.screen().selected("role:tab[a.txt]")?);
     wait_text(&mut app, "id:mode", "SETTINGS")?;
     app.wait_for("text:config.toml")?;

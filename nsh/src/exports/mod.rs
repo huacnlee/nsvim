@@ -6,6 +6,7 @@
 //! - Modules (`Shell`, ...): listeners of parts of the app, and the changes TSX asks for.
 
 mod areas;
+mod buffer_line;
 mod icon;
 mod tree;
 mod workspace;
@@ -17,6 +18,7 @@ use nsh_core::prelude::*;
 use crate::store::Session;
 
 pub use areas::*;
+pub use buffer_line::*;
 pub use icon::*;
 pub use tree::*;
 pub use workspace::*;
@@ -27,14 +29,14 @@ pub fn register(registry: &mut Registry) {
         .register::<Workspace>()
         .register::<TextArea>()
         .register::<Icon>()
-        .register::<BufferLine>()
         .register::<Settings>()
         .register::<StatusLine>()
         .register::<CommandLine>()
         .register::<Overlays>()
         .register::<Setup>()
         .module::<Shell>()
-        .module::<FileTree>();
+        .module::<FileTree>()
+        .module::<Tabs>();
 }
 
 thread_local! {

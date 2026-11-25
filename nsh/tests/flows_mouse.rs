@@ -72,6 +72,70 @@ fn a_middle_click_closes_a_clean_tab() {
     f.settle("the tab closes", |a| a.ed.docs.len() == 1);
 }
 
+#[test]
+fn a_middle_click_keeps_a_dirty_tab_open() {
+    let dir = common::scratch();
+    let two = common::write(dir.path(), "two.rs", "two\n");
+    let main = common::write(dir.path(), "main.rs", SRC);
+    let mut f = common::flow_files(&[&main, &two], None);
+    f.settle("both files open", |a| a.ed.docs.len() == 2);
+    f.keys("x");
+    f.settle("the active file has changes", |a| a.ed.buf().is_dirty());
+    let active = f.read(|a| a.ed.active);
+    // The screen shows the change before the click.
+    f.ui.wait_until("the unsaved mark", std::time::Duration::from_secs(5), |s| {
+        s.accessibility(Some(&format!("id:tab-mark-{active}"))).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
+    })
+    .unwrap();
+    f.middle_click(&format!("id:tab-{active}"), point(20.0, 10.0));
+    f.settle("the editor tells why", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
+    assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");
+}
+
+/// After a click on a tab, the keys go to the editor again.
+#[test]
+fn a_click_on_a_tab_gives_the_keys_back_to_the_editor() {
+    let dir = common::scratch();
+    let two = common::write(dir.path(), "two.rs", "two\n");
+    let main = common::write(dir.path(), "main.rs", SRC);
+    let mut f = common::flow_files(&[&main, &two], None);
+    f.settle("both files open", |a| a.ed.docs.len() == 2);
+    let other = f.read(|a| 1 - a.ed.active);
+    f.ui.press(&format!("id:tab-{other}")).unwrap();
+    f.settle("the other file shows", move |a| a.ed.active == other);
+    f.settle("the editor has the keys", |a| a.key_focus);
+    let before = f.text();
+    f.keys("x");
+    f.settle("the key edits the file", move |a| a.ed.buf().text() != before);
+}
+
+/// The Settings tab: a click shows it, a click on a file goes back, and unsaved settings show
+/// a dot.
+#[test]
+fn the_settings_tab_takes_clicks_and_shows_unsaved_settings() {
+    let dir = common::scratch();
+    let main = common::write(dir.path(), "main.rs", SRC);
+    let mut f = common::flow(&main, None);
+    f.wait_open(&main);
+    f.update(|a, _| a.open_settings());
+    f.ui.wait_for("role:tab[Settings]").unwrap();
+    f.ui.press("role:tab[main.rs]").unwrap();
+    f.settle("the file shows", |a| !a.on_settings && a.ed.mode == Mode::Normal);
+    assert!(f.ui.screen().selected("role:tab[main.rs]").unwrap());
+    assert!(!f.ui.screen().selected("role:tab[Settings]").unwrap());
+    f.ui.press("role:tab[Settings]").unwrap();
+    f.settle("Settings shows", |a| a.on_settings);
+    f.ui.wait_for("text:Settings").unwrap();
+    assert!(!f.ui.screen().matches("id:tab-mark-1").unwrap(), "no mark while the settings are saved");
+    assert!(!f.ui.screen().matches("id:tab-close-1").unwrap(), "the Settings tab has no close button");
+    f.update(|a, _| a.cfg.ui.size += 1.0);
+    f.ui.wait_until("the unsaved mark", std::time::Duration::from_secs(5), |s| {
+        s.accessibility(Some("id:tab-mark-1")).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
+    })
+    .unwrap();
+    assert!(f.ui.screen().selected("role:tab[Settings]").unwrap());
+}
+
 /// The wheel over the tree scrolls it a row per 22 points, adds up a trackpad's small steps
 /// and leaves the keyboard row alone. Keys bring the keyboard row back on screen.
 #[test]

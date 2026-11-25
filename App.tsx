@@ -5,7 +5,6 @@
 import { mount, signal, View } from "nsh";
 import { currentWindow } from "nsh/desktop";
 import {
-  BufferLine,
   CommandLine,
   Overlays,
   Settings,
@@ -17,6 +16,7 @@ import {
   type ScreenState,
 } from "nsvim/native";
 import { Tree } from "./ui/tree";
+import { BufferLine } from "./ui/buffer-line";
 
 /** The editor: the buffer line, the tree beside the text (or Settings), the status line and
  * the command line, with the overlays over them. */

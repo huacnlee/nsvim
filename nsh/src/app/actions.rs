@@ -399,6 +399,17 @@ impl App {
         }
     }
 
+    /// Shows the file of tab `i` from the mouse: a click on its tab.
+    pub fn show_tab(&mut self, i: usize) {
+        if i >= self.ed.docs.len() {
+            return;
+        }
+        self.ed.active = i;
+        self.on_settings = false;
+        self.ed.mode = self.ed.rest_mode();
+        self.apply_doc_opts();
+    }
+
     /// Closes tab `i` from the mouse: the close button or a middle-click. A tab with unsaved
     /// changes stays open and shows why.
     pub fn close_tab(&mut self, i: usize) {

@@ -13,7 +13,6 @@ pub mod settings_view;
 pub mod setup_steps;
 pub mod setup_view;
 pub mod style;
-pub mod tabs;
 pub mod text_area;
 
 use nsh_core::prelude::*;
@@ -45,7 +44,6 @@ fn editor(s: Session, keys: ElementRef) -> impl IntoElement {
     view()
         .flex_1()
         .bg(move || color("background"))
-        .child(tabs::buffer_line(s))
         .child(
             view()
                 .flex_row()
