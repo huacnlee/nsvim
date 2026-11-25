@@ -5,7 +5,7 @@ import { platform, Text, View, type AccessibilityRole, type JSX } from "nsh";
 /** The text size of the overlays' rows, titles and queries. */
 export const SIZE = 12.5;
 
-/** True in a terminal (`nsvim --tui`). A terminal lays views out in cells of 8 x 16 points,
+/** True in a terminal (`nsvim` in a terminal). A terminal lays views out in cells of 8 x 16 points,
  * so the overlays use sizes that are whole cells there: a box that ends in half a cell does
  * not cover what is under it. */
 export const TERM = platform.idiom === "terminal";

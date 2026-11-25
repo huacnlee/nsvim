@@ -23,7 +23,7 @@ claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp
 ## Open files and folders
 
 ```text
-nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
+nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
 ```
 
 | Form | Does |
@@ -37,7 +37,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
 | `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
 | `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use nsvim as `$EDITOR`](#use-nsvim-as-editor). |
 | `nvim --new` | Opens a new window, also when nsvim runs for the project already. |
-| `nvim --tui src/main.rs` | Edits in this terminal, not in a window. See [The terminal editor](#the-terminal-editor). |
+| `nvim -g src/main.rs` | Opens a window from a terminal. See [The terminal editor](#the-terminal-editor). |
 | `nvim --help`, `nvim -h` | Prints the usage. |
 | `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.1`. |
 
@@ -57,15 +57,16 @@ this way:
 
 ### One window per project
 
-When nsvim already runs for the project, `nvim PATH` opens the file in that window,
+This applies to windows (`-g`, or a launcher). When nsvim already runs for the project, `nvim PATH` opens the file in that window,
 brings the window forward, and exits at once. On Wayland, the new process passes its
 `XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
 
 ### The terminal editor
 
-`--tui` runs nsvim in the terminal you start it from: over SSH, in tmux, or when you do not
-want a window. It is the same editor. It runs the same screens and the same Rust core, so
+Started in a terminal, nsvim edits in that terminal, as vim does: over SSH, in tmux, or
+anywhere you type `nvim`. Started from a launcher (Finder, the Start menu, a desktop entry),
+it opens a window. `-g` opens a window from a terminal, like `gvim`. It is the same editor. It runs the same screens and the same Rust core, so
 the keymaps, the finder, search, the file tree, git signs, the language servers, settings and
 the session all work as in the window. On Linux, nsvim also starts in the terminal when there
 is no display (`DISPLAY` and `WAYLAND_DISPLAY` are not set).

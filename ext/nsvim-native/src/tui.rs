@@ -1,5 +1,5 @@
 //! The editor in a terminal: the same App.tsx bundle, the same Rust state and keymaps, drawn
-//! as text cells by NSH's terminal host. `nsvim --tui` starts it. A Linux session with no
+//! as text cells by NSH's terminal host. `nsvim` in a terminal starts it. A Linux session with no
 //! display starts it too, so the editor works over SSH.
 
 use std::path::PathBuf;

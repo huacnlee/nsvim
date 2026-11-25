@@ -35,7 +35,7 @@ MACOS_MINIMUM = "14.0"
 
 def interface(nsh_dir, stage):
     """Copy the output of `nsh build` to `stage`, without the source maps. The window reads
-    `bundle.nshc`. The terminal editor (`nsvim --tui`) reads `bundle.js`."""
+    `bundle.nshc`. The terminal editor (`nsvim` in a terminal) reads `bundle.js`."""
     if not (nsh_dir / "bundle.nshc").is_file():
         raise SystemExit(f"{nsh_dir} has no bundle.nshc: run `nsh build --release -o {nsh_dir}`")
     if not (nsh_dir / "bundle.js").is_file():

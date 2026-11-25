@@ -1,4 +1,4 @@
-//! `nsvim-tui`: the editor in a terminal, as `nsvim --tui` runs it. Windows needs this second
+//! `nsvim-tui`: the editor in a terminal, as `nsvim` runs it in a terminal. Windows needs this second
 //! program: `nsvim.exe` is a window program and gets no console, so it cannot draw in one.
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]

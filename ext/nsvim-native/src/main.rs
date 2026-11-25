@@ -61,9 +61,11 @@ fn without_window() -> Option<i32> {
             println!("nsvim {}", env!("CARGO_PKG_VERSION"));
             return Some(0);
         }
-        Command::Open { tui: true, .. } => return None,
-        Command::Open { wait, new, tui: false } => (wait, new),
+        Command::Open { wait, new, .. } => (wait, new),
     };
+    if args::wants_tui() {
+        return None;
+    }
     if new {
         return None;
     }

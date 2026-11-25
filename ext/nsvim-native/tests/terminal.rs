@@ -1,4 +1,4 @@
-//! The terminal editor (`nsvim --tui`), headless: the same App.tsx and Rust state, with one row
+//! The terminal editor (`nsvim` in a terminal), headless: the same App.tsx and Rust state, with one row
 //! of code per terminal cell and icons drawn as text. A test binary of its own, because the
 //! terminal mode is set for the whole process.
 
