@@ -215,7 +215,7 @@ env PATH="$root/bin:$root/mock:$PATH" HOME="$root/home" FIXTURES="$root/fixtures
   TMPDIR="$root/tmp" "$shell" "$script" --dir "$dest" --bin-dir "$root/bin" > "$root/out" 2>&1 || status=$?
 check "$name" '[ "$status" -eq 0 ] && [ "$("$root/bin/nsvim")" = "nsvim $version" ]' &&
   check "$name" '[ ! -e "$root/home/.local/bin" ] && grep -qx "Run: nsvim ." "$root/out"' && ok "$name"
-rm -rf "$root/bin"
+rm -rf "${root:?}/bin"
 
 name='a foreign nsvim command stays'
 fresh
