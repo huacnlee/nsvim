@@ -7,6 +7,8 @@
 
 mod areas;
 mod icon;
+mod settings;
+mod setup;
 mod workspace;
 
 use std::cell::RefCell;
@@ -17,6 +19,8 @@ use crate::store::Session;
 
 pub use areas::*;
 pub use icon::*;
+pub use settings::*;
+pub use setup::*;
 pub use workspace::*;
 
 /// Registers every export in `registry`.
@@ -27,12 +31,12 @@ pub fn register(registry: &mut Registry) {
         .register::<Icon>()
         .register::<BufferLine>()
         .register::<Tree>()
-        .register::<Settings>()
         .register::<StatusLine>()
         .register::<CommandLine>()
         .register::<Overlays>()
-        .register::<Setup>()
-        .module::<Shell>();
+        .module::<Shell>()
+        .module::<SettingsPage>()
+        .module::<SetupFlow>();
 }
 
 thread_local! {

@@ -1,5 +1,5 @@
-//! Key routing. A key goes to the first of: setup, an open overlay (leader menu, picker), the
-//! command line, the focused file tree, the Settings tab, then the active keymap.
+//! Key routing. A key goes to the first of: setup, Settings while it shows, an open overlay
+//! (leader menu, picker), the command line, the focused file tree, then the active keymap.
 
 use super::fx::Tx;
 use editor::editor::{Action, KeyCode, KeyInput, Keymap, Mode};
@@ -30,7 +30,7 @@ pub const LEADER_GIT: &[(char, &str, bool)] =
 pub const LEADER_LSP: &[(char, &str, bool)] =
     &[('d', "definition", false), ('r', "references", false), ('h', "hover", false), ('n', "rename", false), ('a', "code actions", false)];
 
-/// The classic keymap's window shortcuts. They work with no file open and in the Settings tab.
+/// The classic keymap's window shortcuts. They work with no file open. Settings keeps them out.
 pub fn classic_window_key(k: &KeyInput) -> Option<Action> {
     if !k.cmd {
         return None;
@@ -62,6 +62,11 @@ impl App {
         }
         if self.ed.keymap == Keymap::Vim && k.ctrl && k.code == KeyCode::Char('[') {
             k = KeyInput::plain(KeyCode::Esc);
+        }
+        // Settings covers the whole window, so it takes every key while it shows.
+        if self.on_settings {
+            self.settings_key(k, tx);
+            return;
         }
         // F1 shows every key from anywhere, as Vim's F1 shows its help. F1 again closes it.
         if k.code == KeyCode::F(1) {
@@ -101,10 +106,6 @@ impl App {
             return;
         }
         if self.tree.focus && self.tree.show && self.tree_key(k, tx) {
-            return;
-        }
-        if self.on_settings {
-            self.settings_key(k, tx);
             return;
         }
         if !self.ed.has_doc() {

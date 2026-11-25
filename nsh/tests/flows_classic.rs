@@ -1,5 +1,5 @@
 //! The classic keymap, driven through the real app: typing, its shortcuts, multiple cursors,
-//! and the window shortcuts that pass through the tree and Settings.
+//! and the window shortcuts that pass through the tree. Settings keeps them out.
 
 mod common;
 
@@ -60,23 +60,26 @@ fn the_tree_keeps_its_keys_and_passes_ctrl_shortcuts_on() {
 }
 
 #[test]
-fn settings_take_the_classic_window_shortcuts_and_wq_closes_them() {
+fn settings_keeps_the_window_shortcuts_out_and_ctrl_w_closes_it() {
     let dir = common::scratch();
     let two = common::write(dir.path(), "two.rs", "two\n");
     let main = common::write(dir.path(), "main.rs", SRC);
     let mut f = common::flow_files(&[&main, &two], Some(&common::keymap_config("classic")));
     f.settle("both files open", |a| a.ed.docs.len() == 2);
     f.update(|a, _| a.open_settings());
+    let active = f.read(|a| a.ed.active);
+    // Settings covers the window, so no shortcut opens a panel or changes the tab under it.
     f.press("ctrl+p");
-    assert!(f.check(|a| picking(a, PickKind::Files)), "Ctrl P works in Settings");
-    f.keys("\x1b");
     f.press("ctrl+tab");
-    assert!(!f.read(|a| a.on_settings), "Ctrl Tab goes to the next tab, not the next section");
+    assert!(f.read(move |a| a.on_settings && matches!(a.overlay, Overlay::None) && a.ed.active == active));
+    f.press("ctrl+w");
+    assert!(f.read(|a| !a.on_settings && a.settings.is_none()), "Ctrl W closes Settings");
+    assert_eq!(f.read(|a| a.ed.docs.len()), 2, "Ctrl W closes no file");
 
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.update(|a, _| a.open_settings());
-    f.keys(":wq\n");
-    assert!(f.read(|a| !a.on_settings && a.settings.is_none()), ":wq writes and closes Settings");
+    f.press("ctrl+w");
+    assert!(f.read(|a| !a.on_settings && a.settings.is_none()), "Ctrl W closes Settings in the Neovim keymap too");
 }
 
 #[test]

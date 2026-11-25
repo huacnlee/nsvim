@@ -76,6 +76,6 @@ Each feature of your part has a test that fails if the feature breaks.
 | chrome | `ui/tabs.rs`, `ui/chrome.rs`, `ui/tree_view.rs`, `app/tree.rs`, `tests/chrome.rs` |
 | text | `ui/text_area.rs`, `ui/popups.rs`, `ui/review_view.rs`, `model.rs`, `model_tests.rs`, `app/mouse.rs`, `app/review.rs`, `app/lsp.rs`, `tests/text.rs` |
 | overlays | `ui/overlays.rs` (and new `ui/overlays_*.rs`), `app/picker.rs`, `app/key_list.rs`, `app/menu.rs`, `fuzzy.rs`, `tests/overlays.rs` |
-| settings | `ui/settings_view.rs`, `ui/setup_view.rs` (and new `ui/settings_*.rs`, `ui/setup_*.rs`), `app/settings.rs`, `app/setup.rs`, `tests/settings.rs` |
+| settings | `../ui/controls.tsx`, `../ui/settings/*.tsx`, `../ui/setup/*.tsx`, `exports/settings.rs`, `exports/setup.rs`, `app/settings.rs`, `app/setup.rs`, `tests/settings.rs` |
 | runtime | `main.rs`, `store.rs`, `lib.rs`, `app/mod.rs`, `app/actions.rs`, `app/keys.rs`, `app/ipc.rs`, `app/session.rs`, `services/`, `ipc/`, `args.rs`, `config.rs`, `theme.rs`, `tests/runtime.rs` |
 | flows | `tests/flows*.rs`: the Rune app's app tests (`port/tests.rs`, `port/live_tests.rs`, `port/bench_tests.rs`) as NSH tests |

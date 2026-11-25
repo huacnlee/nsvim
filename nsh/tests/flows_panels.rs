@@ -57,26 +57,30 @@ fn the_leader_menu_and_the_buffer_list_show_their_rows() {
 }
 
 #[test]
-fn colon_settings_opens_the_tab_and_w_writes_the_config() {
+fn colon_settings_opens_it_and_a_change_is_on_disk_at_once() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(":Settings\n");
     assert!(f.read(|a| a.on_settings), "{:?}", f.msg());
-    // The first row is the theme; `l` moves it from dark to system.
+    // The first row is the theme. `l` moves it from dark, the last, round to system.
     f.keys("l");
     assert_eq!(f.read(|a| a.cfg.theme.mode.clone()), "system");
-    assert!(f.read(|a| a.cfg != a.disk_cfg));
-    f.keys(":w\n");
-    assert!(f.read(|a| a.cfg == a.disk_cfg), "`:w` in Settings writes config.toml");
-    f.keys(":q\n");
+    let path = nsh_app_editor::config::config_path();
+    f.settle("config.toml has the change with no :w", move |_| {
+        std::fs::read_to_string(&path).is_ok_and(|t| t.contains("mode = \"system\""))
+    });
+    // `:` does nothing here. Esc closes Settings.
+    f.keys(":");
+    assert!(f.read(|a| a.on_settings && a.ed.mode != Mode::Command));
+    f.keys("\x1b");
     assert!(!f.read(|a| a.on_settings));
 }
 
 #[test]
-fn the_settings_tab_shows_its_sections_and_rows() {
+fn settings_shows_its_sections_and_rows() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys(":Settings\n");
-    f.ui.wait_for("text:appearance").unwrap();
-    f.ui.wait_for("text:/keys & mouse/").unwrap();
+    f.ui.wait_for("text:Appearance").unwrap();
+    f.ui.wait_for("text:/Keys & mouse/").unwrap();
     f.keys("J");
     f.ui.wait_for("text:/JetBrains Mono/").unwrap();
 }
@@ -162,11 +166,12 @@ fn settings_keys_pick_sections_and_change_rows() {
     assert_eq!(f.read(|a| a.cfg.editor.numbers.clone()), "relative");
     f.keys("hj\n");
     assert_eq!(f.read(|a| (a.cfg.editor.numbers.clone(), a.cfg.editor.cursor.clone())), ("hybrid".into(), "bar".into()));
-    // Space is the leader here too: it opens the menu and changes no option.
+    // Space is the leader: it changes no option, and no menu opens over Settings.
     f.keys(" ");
-    assert!(f.check(|a| matches!(a.overlay, Overlay::Leader(None))));
+    assert!(f.read(|a| matches!(a.overlay, Overlay::None) && a.on_settings));
     assert_eq!(f.read(|a| a.cfg.editor.cursor.clone()), "bar");
     f.keys("\x1b");
+    assert!(!f.read(|a| a.on_settings), "Esc closes Settings");
 }
 
 /// A proposal: Tab and ] go to the next change, [ to the one before, g to the top. Esc rejects,

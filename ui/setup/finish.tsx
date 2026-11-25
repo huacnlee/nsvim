@@ -1,0 +1,166 @@
+// The last two steps of setup: the terminal, and the summary before the editor opens.
+
+import { Text, View } from "nsh";
+import { Button } from "nsh/base";
+import { type SetupState, SetupFlow } from "nsvim/native";
+import { act, Kbd, Titled } from "../controls";
+import { Heading, SwitchBox, SwitchRow } from "./parts";
+
+type Step = { st: () => SetupState };
+
+export function ShellStep(props: Step) {
+  const st = props.st;
+  const name = () => st().command;
+  // The command the shell runs: vi and vim with the aliases, else the command's name.
+  const cmd = () => (st().on.includes("vim") ? "vi" : name());
+  // Another program has the command's name on $PATH. The user can put nsvim's link first.
+  const taken = () => (st().on.includes("path") ? st().taken : null);
+  return (
+    <View class="gap-5.5" testID="setup-step-4">
+      <Heading title="Use nsvim from the terminal" sub="Optional. Everything here can be undone by hand later." />
+      <View class="flex-row gap-4 flex-wrap items-start">
+        <SwitchBox title="Integrations" class="flex-1 min-w-90">
+          <SwitchRow
+            st={st}
+            choice="toggle:vim"
+            label="Open nsvim with vi and vim"
+            sub={`Shell aliases. \\vim still runs Vim. Off: type ${name()}`}
+          />
+          <SwitchRow st={st} choice="toggle:path" label={`Add the ${name()} command`} sub={`Open anything with ${cmd()} . or ${cmd()} file.rs`} />
+          <If when={taken()}>
+            {(t) => (
+              <View class="pl-2 gap-1" testID="command-taken">
+                <Text class="text-xs text-warning">{`${name()} is already ${t().split(",")[0]}.`}</Text>
+                <SwitchRow
+                  st={st}
+                  choice="shadow"
+                  label={`Put nsvim's ${name()} first on $PATH`}
+                  sub="Without it, the aliases and $EDITOR use the full path"
+                  on={st().shadow}
+                />
+              </View>
+            )}
+          </If>
+          <SwitchRow st={st} choice="toggle:env" label="Set as $EDITOR and $VISUAL" sub="For tools that open an editor, like crontab -e" />
+          <SwitchRow st={st} choice="toggle:git" label="Use for git commit messages" sub="git waits until you close the buffer" />
+          <If when={!st().mac}>
+            <SwitchRow
+              st={st}
+              choice="toggle:default"
+              label="Make nsvim the default for text files"
+              sub="A double-click opens code and text files"
+            />
+          </If>
+        </SwitchBox>
+        <Titled title="What runs" class="flex-1 min-w-90" bodyClass="pt-4 pb-3.5 px-4 gap-1" testID="setup-commands">
+          <If when={st().commands.length === 0}>
+            <Text class="text-xs text-muted-foreground">Nothing. nsvim stays inside its window.</Text>
+          </If>
+          <Each of={st().commands} key="index">
+            {(line) => {
+              // A `#` line says what a step writes, as a comment in a shell script does.
+              const note = () => line().startsWith("# ");
+              return (
+                <View class="flex-row w-full items-start">
+                  <Text class="text-xs text-text-faint">{note() ? "" : "$ "}</Text>
+                  <Text
+                    class="flex-1 min-w-0 text-xs"
+                    classList={{ "text-muted-foreground": note(), "text-foreground": !note() }}
+                  >
+                    {line()}
+                  </Text>
+                </View>
+              );
+            }}
+          </Each>
+        </Titled>
+      </View>
+    </View>
+  );
+}
+
+/** The names of the terminal switches, as the summary says them. */
+const SHELL: [string, string][] = [
+  ["path", "Command"],
+  ["vim", "vi and vim"],
+  ["env", "$EDITOR"],
+  ["git", "Git editor"],
+  ["default", "Default app"],
+];
+
+/** The theme modes, as the summary says them. */
+const LOOK: Record<string, string> = { system: "System", light: "Light", dark: "Dark" };
+
+export function ReadyStep(props: Step) {
+  const st = props.st;
+  const md = () => (st().mac ? "⌘" : "Ctrl");
+  const space = () => st().on.includes("leader");
+  const rows = (): [string, string][] => {
+    const s = st();
+    const shell = SHELL.filter(([k]) => s.on.includes(k) && (k !== "path" || s.installable)).map(([, v]) => v);
+    const theme = s.omarchy && s.themeMode === "system" ? `Omarchy (${s.omarchy} right now)` : (LOOK[s.themeMode] ?? s.themeMode);
+    return [
+      ["Keys", s.vim ? `Neovim motions, ${space() ? "Space" : "backslash"} leader` : `Classic shortcuts (${md()})`],
+      ["Mouse", s.mouse ? "On" : "Keyboard only"],
+      ["Theme", theme],
+      ["Font", `${s.font}, ${s.fontSize} pt`],
+      ["Terminal", shell.length ? shell.join(", ") : "None"],
+    ];
+  };
+  const tips = (): [string, string[]][] => {
+    const l = space() ? "SPC" : "\\";
+    return st().vim
+      ? [
+          ["Find a file", [l, "f"]],
+          ["Every key, in a popup", [l]],
+          ["Settings", [":Settings"]],
+        ]
+      : [
+          ["Find a file", [md(), "P"]],
+          ["Command palette", [md(), "⇧", "P"]],
+          ["Settings", [md(), ","]],
+        ];
+  };
+  return (
+    <View class="gap-5.5" testID="setup-step-5">
+      <Heading title="Ready" sub="Saved to ~/.config/nsvim/config.toml when you open nsvim." />
+      <View class="flex-row gap-4 flex-wrap items-start">
+        <Titled title="Your setup" class="flex-1 min-w-105" bodyClass="pt-3 pb-1.5 px-4" testID="setup-summary">
+          <Each of={rows()} key="index">
+            {(row, i) => {
+              const focus = () => st().focus === `change:${i()}`;
+              return (
+                <View class="flex-row min-h-8.5 w-full gap-4 items-center border-b border-border">
+                  <Text class="w-21 text-sm text-muted-foreground">{row()[0]}</Text>
+                  <Text class="flex-1 text-sm text-foreground">{row()[1]}</Text>
+                  <Button
+                    accessibilityLabel={`Change ${row()[0].toLowerCase()}`}
+                    onPress={act(() => SetupFlow.choose(`change:${i()}`))}
+                    class="px-1 rounded-[3px] hover:opacity-80"
+                    classList={{ "bg-surface-raised": focus(), "bg-background": !focus() }}
+                  >
+                    <Text class="text-xs text-primary">Change</Text>
+                  </Button>
+                </View>
+              );
+            }}
+          </Each>
+        </Titled>
+        <Titled title="Try first" class="flex-1 min-w-75" bodyClass="pt-3 pb-1.5 px-4">
+          <Each of={tips()} key="index">
+            {(tip) => (
+              <View class="flex-row min-h-8.5 w-full items-center border-b border-border">
+                <Text class="flex-1 text-sm text-foreground">{tip()[0]}</Text>
+                <View class="flex-row gap-1">
+                  <Each of={tip()[1]} key="index">
+                    {(k) => <Kbd>{k()}</Kbd>}
+                  </Each>
+                </View>
+              </View>
+            )}
+          </Each>
+        </Titled>
+      </View>
+    </View>
+  );
+}

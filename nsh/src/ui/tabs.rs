@@ -1,6 +1,5 @@
-//! The buffer line: the project folder over the tree, a tab per open file, and the Settings
-//! tab while it is open. A click on a tab shows its file, a click on its close button or a
-//! middle click closes it. A file with unsaved changes shows a dot in place of the close mark.
+//! The buffer line: the project folder over the tree and a tab per open file. A click on a tab
+//! shows its file, a click on its close button or a middle click closes it. A file with unsaved changes shows a dot in place of the close mark.
 
 use nsh_core::prelude::*;
 
@@ -27,12 +26,7 @@ pub struct TabInfo {
 
 /// The tabs of the open files, as the buffer line shows them.
 pub fn tabs_of(app: &App) -> Vec<TabInfo> {
-    app.ed
-        .docs
-        .iter()
-        .enumerate()
-        .map(|(i, d)| TabInfo { name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == app.ed.active && !app.on_settings })
-        .collect()
+    app.ed.docs.iter().enumerate().map(|(i, d)| TabInfo { name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == app.ed.active }).collect()
 }
 
 /// Shows the file of tab `i`.
@@ -41,16 +35,14 @@ pub fn switch_to(app: &mut App, i: usize) {
         return;
     }
     app.ed.active = i;
-    app.on_settings = false;
     app.ed.mode = app.ed.rest_mode();
     app.apply_doc_opts();
 }
 
 pub fn buffer_line(s: Session) -> impl IntoElement {
     let font = ui_font(s);
-    let tree = s.view(|a| (a.tree.show && !a.on_settings).then(|| (crate::app::tilde(&a.ed.root), a.tree.width)));
+    let tree = s.view(|a| a.tree.show.then(|| (crate::app::tilde(&a.ed.root), a.tree.width)));
     let tabs = s.view(tabs_of);
-    let settings = s.view(|a| a.settings.is_some().then(|| (a.on_settings, a.cfg != a.disk_cfg)));
     view()
         .flex_row()
         .items_center()
@@ -84,29 +76,6 @@ pub fn buffer_line(s: Session) -> impl IntoElement {
             move || (0..tabs.with(Vec::len)).collect::<Vec<usize>>(),
             |i: &usize| *i,
             move |i, _| tab(s, font, tabs, i.get_untracked()),
-        ))
-        .child(when(
-            move || settings.with(Option::is_some),
-            move || {
-                let on = move || settings.with(|t| t.is_some_and(|t| t.0));
-                let dirty = move || settings.with(|t| t.is_some_and(|t| t.1));
-                accent_line(view(), on)
-                    .flex_row()
-                    .flex_shrink_0()
-                    .self_stretch()
-                    .items_center()
-                    .pr_3()
-                    .bg(move || if on() { color("background") } else { clear() })
-                    .cursor(Cursor::Pointer)
-                    .role(AccessibilityRole::Tab)
-                    .label("settings")
-                    .accessibility_state(move || AccessibilityState { selected: on(), ..AccessibilityState::default() })
-                    .on_press(move || s.update(|a, _| a.on_settings = true))
-                    .child(
-                        ui_text(font, 0.0, move || if dirty() { "settings [+]" } else { "settings" })
-                            .text_color(move || color(if on() { "foreground" } else { "muted-foreground" })),
-                    )
-            },
         ))
 }
 

@@ -12,7 +12,7 @@ use super::{App, Screen};
 use crate::config::Config;
 use crate::theme::Omarchy;
 
-pub const STEPS: &[&str] = &["keys", "mouse", "look", "terminal", "ready"];
+pub const STEPS: &[&str] = &["Keys", "Mouse", "Look", "Terminal", "Ready"];
 
 /// The desktop entry and icon the default-app choice installs on Linux.
 const DESKTOP: &str = include_str!("../../../assets/editor.desktop");
@@ -21,7 +21,7 @@ const ICON: &str = include_str!("../../../assets/editor.svg");
 pub const FONTS: &[&str] = &["JetBrains Mono", "IBM Plex Mono", "Fira Code"];
 pub const SIZES: &[f32] = &[12.0, 13.0, 14.0, 16.0];
 /// The looks setup offers. System follows the Omarchy theme where there is one.
-pub const LOOKS: &[&str] = &["light", "dark", "system"];
+pub const LOOKS: &[&str] = &["system", "light", "dark"];
 
 pub struct Setup {
     pub step: usize,
