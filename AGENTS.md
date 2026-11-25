@@ -55,7 +55,7 @@ HOME=$S/home XDG_CONFIG_HOME=$S/config XDG_STATE_HOME=$S/state nsh run
 
 ## Rules
 
-- The core (`ext/editor-core`: buffer, editor, vim, classic, syntax) has no window code and
+- The core (`crates/editor-core`: buffer, editor, vim, classic, syntax) has no window code and
   no I/O. A keymap returns `Action`s. The app carries them out.
 - No file I/O, process spawning or LSP traffic on the engine thread. Workers in
   `ext/nsvim-native/src/services` do it and send `Event`s back.

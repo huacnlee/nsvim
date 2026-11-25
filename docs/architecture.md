@@ -1,7 +1,7 @@
 # How nsvim works
 
 nsvim is a TSX app with its own Rust, in NSH's recommended layout. The **core**
-(`ext/editor-core`, library `editor`) is the text and the rules for changing it. It knows
+(`crates/editor-core`, library `editor`) is the text and the rules for changing it. It knows
 nothing about windows. The **app** (`ext/nsvim-native`, an nshm crate and the binary `nsvim`)
 owns all app state, routes input to the core, and runs every slow job on a worker thread. The
 **screens** (`App.tsx` and `src/`) show that state with [NSH](https://nsh.dev). NSH draws with the native views of each
@@ -35,7 +35,7 @@ flowchart LR
     IO & IX & G & RG & FW & L & C -->|Event, then wake| P
 ```
 
-## The core: `ext/editor-core`
+## The core: `crates/editor-core`
 
 | Module | Holds |
 | --- | --- |

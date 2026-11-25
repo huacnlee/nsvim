@@ -30,7 +30,7 @@ back to editor. Report nsvim issues here, not to editor.
 The main change: nsvim draws its UI with [NSH](https://nsh.dev), which uses the native views of
 each platform (GTK 4 on Linux, AppKit on macOS, WinUI on Windows). The screens are
 [`App.tsx`](App.tsx) and [`src/`](src). The app's Rust is in [`ext/nsvim-native`](ext/nsvim-native). The editing core (buffer, Vim and classic keymaps, tree-sitter) is the crate
-`editor-core` in [`ext/editor-core`](ext/editor-core).
+`editor-core` in [`crates/editor-core`](crates/editor-core).
 
 ## What it is
 
@@ -141,7 +141,7 @@ nvim ctl reveal src/main.rs:10-14 --note "this is the bug"  # in your own shell,
 
 ## Development
 
-The core and all app state are Rust (`ext/editor-core`, `ext/nsvim-native`). The screens are TSX
+The core and all app state are Rust (`crates/editor-core`, `ext/nsvim-native`). The screens are TSX
 (`App.tsx`, `src/`) on [NSH](https://nsh.dev).
 
 ```sh

@@ -26,14 +26,14 @@ Linux needs GTK 4.14 or later (`libgtk-4-dev` on Debian and Ubuntu).
 ## Code layout
 
 ```text
-Cargo.toml            the workspace: ext/nsvim-native and ext/editor-core
+Cargo.toml            the workspace: ext/nsvim-native and crates/editor-core
 nsh.json              the NSH app: its theme and its Rust dependency
 nsh.lock              the resolved dependencies, written by nsh
 theme.json            the theme tokens
 App.tsx               the entry: the window and its screens
 src/                  the TSX screens: tabs, tree, status and command lines, overlays,
                       Settings, setup, shared controls
-ext/editor-core/      the core (library `editor`): no window code, no I/O
+crates/editor-core/   the core (library `editor`): no window code, no I/O
   src/buffer.rs       rope, undo, marks, saves
   src/editor.rs       Editor, Doc, Mode, Action, KeyInput
   src/vim/            the Neovim keymap, Ex commands, search, regex

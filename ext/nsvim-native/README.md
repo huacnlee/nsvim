@@ -4,7 +4,7 @@ This crate is the Rust of the nsvim app, as an nshm. `nsh.json` at the repositor
 as a path dependency, and `App.tsx` imports it from `"nsvim-native"`. The crate also builds the
 program `nsvim`. It draws the editor with [NSH](https://nsh.dev), on the native
 views of each platform: GTK 4 on Linux, AppKit on macOS and WinUI on Windows. The editing core
-is the crate `editor-core` in `../editor-core`.
+is the crate `editor-core` in `../../crates/editor-core`.
 
 Build, test and run it from the repository root. See [docs/development.md](../../docs/development.md)
 and [docs/architecture.md](../../docs/architecture.md).

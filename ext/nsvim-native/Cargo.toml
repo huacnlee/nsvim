@@ -14,7 +14,7 @@ name = "nsvim"
 path = "src/main.rs"
 
 [dependencies]
-editor = { package = "editor-core", path = "../editor-core" }
+editor = { package = "editor-core", path = "../../crates/editor-core" }
 nsh-core = "0.7.0"
 nsh-base = "0.7.0"
 unicode-width = "0.2"
