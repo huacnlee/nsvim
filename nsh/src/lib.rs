@@ -19,10 +19,13 @@ pub mod timing;
 pub mod ui;
 
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use nsh_core::KeyCapture;
+use nsh_core::desktop::{QuitMode, WindowAttributes};
 use nsh_core::element::Root;
-use nsh_core::element::desktop::window as app_window;
+use nsh_core::element::desktop::{current_window, on_app_quit, on_quit_request, set_quit_mode, window as app_window};
+use nsh_core::geometry::{Points, Size};
 use nsh_core::prelude::*;
 
 pub use store::Session;
@@ -45,6 +48,8 @@ pub struct AppProps {
     /// Show first-launch setup, with `project`.
     #[prop(default)]
     pub first_launch: Prop<bool>,
+    /// The config file to read again when it changes, with `project`. None: no reload.
+    pub config_file: Prop<Option<SharedString>>,
 }
 
 /// What a root opens: the editor as the command line asks, or a set project for tests.
@@ -56,13 +61,56 @@ pub struct Launch {
     pub first_launch: bool,
 }
 
-/// The root for `cargo run`: the app as the command line and config.toml ask.
+/// How the window of a real launch opens: at the size it had when it last closed, where the
+/// user left it. Tests open at the default size.
+#[derive(Clone, Copy, Debug)]
+struct Opening {
+    size: (f32, f32),
+}
+
+static OPENING: OnceLock<Opening> = OnceLock::new();
+
+/// The window's size in points when no size is kept.
+pub const DEFAULT_SIZE: (f32, f32) = (1440.0, 900.0);
+
+/// The least size of the window in points.
+pub const MIN_SIZE: (f32, f32) = (640.0, 420.0);
+
+/// The root for `cargo run`: the app as the command line and config.toml ask. Reads the size
+/// the window had when it last closed.
 pub fn root() -> Root {
+    let size = app::session::load_window().map_or(DEFAULT_SIZE, |f| (f.w, f.h));
+    let _ = OPENING.set(Opening { size });
     root_with(Launch::default())
 }
 
 /// A root for a set project, config and files.
 pub fn root_with(l: Launch) -> Root {
+    root_inner(l, None)
+}
+
+/// `root_with`, and the app reads `config_file` again each time it changes on disk, as a
+/// real launch does with config.toml.
+pub fn root_with_config_file(l: Launch, config_file: PathBuf) -> Root {
+    root_inner(l, Some(config_file))
+}
+
+/// The window's attributes for `cfg`: its least size, a transparent background when
+/// `[window] opacity` is below 100, and a close button that asks the app first.
+pub fn window_attributes(cfg: &config::Config) -> WindowAttributes {
+    let mut a = WindowAttributes::default();
+    a.min_size = Some(Some(Size::new(Points(MIN_SIZE.0), Points(MIN_SIZE.1))));
+    a.transparent = Some(opacity(cfg) < 1.0);
+    a.close_on_press = Some(false);
+    a
+}
+
+/// The background's opacity from `[window] opacity`: 0.7 to 1.
+pub fn opacity(cfg: &config::Config) -> f32 {
+    (cfg.window.opacity as f32 / 100.0).clamp(0.7, 1.0)
+}
+
+fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
     let props = move || AppProps {
         project: Prop::from(l.project.as_ref().map(|p| SharedString::from(p.to_string_lossy().into_owned()))),
         config: Prop::from(l.config.clone().map(SharedString::from)),
@@ -70,6 +118,7 @@ pub fn root_with(l: Launch) -> Root {
             (!l.files.is_empty()).then(|| SharedString::from(l.files.iter().map(|f| f.to_string_lossy()).collect::<Vec<_>>().join("\n"))),
         ),
         first_launch: Prop::from(l.first_launch),
+        config_file: Prop::from(config_file.as_ref().map(|p| SharedString::from(p.to_string_lossy().into_owned()))),
     };
     Root::new::<App>(props).app_id("dev.editor.app")
 }
@@ -81,6 +130,9 @@ fn make_app(props: &AppProps) -> app::App {
     let mut a = app::App::new(cfg, PathBuf::from(project.as_str()), props.first_launch.get_untracked(), None);
     let files = props.files.get_untracked().unwrap_or_default();
     a.to_open = files.lines().filter(|l| !l.is_empty()).map(|l| (PathBuf::from(l), None)).collect();
+    a.config_file = props.config_file.get_untracked().map(|f| PathBuf::from(f.as_str()));
+    // The tests' projects are new folders, so only a test that saved a session restores one.
+    a.restore_session();
     a
 }
 
@@ -92,9 +144,22 @@ pub fn App(props: AppProps) -> impl IntoElement {
     // The colours follow config.toml's theme, the setup's pick and the system appearance.
     let light = s.view(|a| ui::palette(a, false));
     let dark_palette = s.view(|a| ui::palette(a, true));
+    let alpha = s.view(|a| opacity(&a.cfg));
     effect(move || {
-        let p = if dark() { dark_palette.get() } else { light.get() };
+        let mut p = if dark() { dark_palette.get() } else { light.get() };
+        // Below full opacity, the background lets the desktop and its blur show through.
+        p.bg = p.bg.alpha(p.bg.a * alpha.get());
         set_tokens(ui::style::tokens(&p));
+    });
+    let attributes = s.view(|a| window_attributes(&a.cfg));
+    // The editor quits when its window closes, on macOS too, as it did before.
+    set_quit_mode(QuitMode::LastWindowClosed);
+    // The platform's quit key and Quit item ask first, as the close button does.
+    on_quit_request(move || s.close_requested());
+    // However the app ends (the system logs out), the session is written once.
+    on_app_quit(move || {
+        s.update(|a, _| a.exit());
+        async {}
     });
     s.start();
     let keys = element_ref();
@@ -110,9 +175,14 @@ pub fn App(props: AppProps) -> impl IntoElement {
             timer(std::time::Duration::from_millis(100)).await;
         }
     });
-    // The window's root paints the background. The view inside it takes the keys.
+    // The window's root paints the background once: a translucent one painted twice would be
+    // darker. The view inside it takes the keys.
     let content = move || {
-        view().flex_1().bg(move || ui::style::color("background")).text_color(move || ui::style::color("foreground")).child(
+        s.attach(current_window());
+        let root_bg = move || {
+            if alpha.get() < 1.0 { ui::style::swatch(color::Color::TRANSPARENT) } else { ui::style::color("background") }
+        };
+        view().flex_1().bg(root_bg).text_color(move || ui::style::color("foreground")).child(
             view()
                 .flex_1()
                 .element_ref(&keys)
@@ -128,5 +198,9 @@ pub fn App(props: AppProps) -> impl IntoElement {
                 .child(ui::shell(s, keys)),
         )
     };
-    app_window().id("main").title("editor").content(content)
+    let mut w = app_window().id("main").title("editor").attributes(move || attributes.get()).on_close_press(move |_| s.close_requested());
+    if let Some(o) = OPENING.get() {
+        w = w.default_size(Size::new(Points(o.size.0), Points(o.size.1))).restore_bounds(true);
+    }
+    w.content(content)
 }

@@ -249,11 +249,16 @@ pub fn load() -> Loaded {
     let path = config_path();
     match std::fs::read_to_string(&path) {
         Err(_) => Loaded::FirstLaunch,
-        Ok(src) => match toml::from_str::<Config>(&src) {
+        Ok(src) => match parse(&path, &src) {
             Ok(cfg) => Loaded::Ok(cfg),
-            Err(e) => Loaded::Broken(Config::default(), format!("{}: {}", path.display(), e.message())),
+            Err(e) => Loaded::Broken(Config::default(), e),
         },
     }
+}
+
+/// Reads the text of the config file at `path`. The error names the file.
+pub fn parse(path: &std::path::Path, src: &str) -> Result<Config, String> {
+    toml::from_str::<Config>(src).map_err(|e| format!("{}: {}", path.display(), e.message()))
 }
 
 impl Config {

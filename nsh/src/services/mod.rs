@@ -87,6 +87,8 @@ pub enum Event {
     FsChanged(Vec<PathBuf>),
     /// Omarchy's theme changed (or went away).
     Omarchy(Option<Omarchy>),
+    /// The config file changed on disk, read again: the config, or why it does not parse.
+    Config(Result<crate::config::Config, String>),
     /// The start of a file, for the finder's preview.
     Preview {
         path: PathBuf,
@@ -256,6 +258,11 @@ impl Services {
     }
 
     /// Watches `path` (an open file outside the project) for outside changes.
+    /// Reads `file` again each time it changes and sends `Event::Config`.
+    pub fn watch_config(&self, file: PathBuf) {
+        let _ = self.watch.send(watch::Job::Config(file));
+    }
+
     pub fn watch(&self, path: PathBuf) {
         let _ = self.watch.send(watch::Job::Add(path));
     }
