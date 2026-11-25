@@ -2,7 +2,7 @@
 // status line shows where you are and moves on. The keys work as the hint line says: Rust owns
 // them and the state (`SetupFlow`).
 
-import { signal, Text, View, Scroll } from "nsh";
+import { signal, Text, token, View, Scroll } from "nsh";
 import { Button } from "nsh/base";
 import { Icon, type SetupState, SetupFlow } from "nsvim/native";
 import { act } from "../controls";
@@ -81,13 +81,16 @@ function Body(props: { st: () => SetupState }) {
 /** The app's icon: four lines in the mode colours, on a 128 unit grid. */
 export function AppIcon(props: { size: number }) {
   const k = props.size / 128;
-  // assets/editor.svg on a 128 grid: an N in the mode colours. The bars are Normal and Insert,
-  // and the stroke between them, under the bars, is Visual. The stroke is a round bar turned 45
-  // degrees about the middle of the tile.
+  // assets/editor.svg on a 128 grid: an N whose bars take the theme's primary colour, with a
+  // light stroke between them, under the bars. The stroke is a round bar turned 45 degrees about
+  // the middle of the tile.
   const bar = (x: number, fill: string) => (
     <View class={`absolute ${fill}`} style={{ left: x * k, top: 24 * k, width: 24 * k, height: 80 * k, borderRadius: 8 * k }} />
   );
   const stroke = 56 * Math.SQRT2 + 16;
+  // The stroke stands out from every tile: the border colour on a light tile, as on the website,
+  // and the text colour on a dark one.
+  const dark = () => luminance(token("muted")) < 0.5;
   return (
     <View
       class="bg-muted border border-border"
@@ -97,13 +100,23 @@ export function AppIcon(props: { size: number }) {
       accessibilityLabel="nsvim"
     >
       <View
-        class="absolute bg-mode-visual"
+        class="absolute"
+        classList={{ "bg-border": !dark(), "bg-foreground": dark() }}
         style={{ left: (64 - stroke / 2) * k, top: 56 * k, width: stroke * k, height: 16 * k, borderRadius: 8 * k, rotate: "45deg" }}
       />
       {bar(24, "bg-primary")}
-      {bar(80, "bg-mode-insert")}
+      {bar(80, "bg-primary")}
     </View>
   );
+}
+
+/** The relative luminance of a `#rrggbb` or `#rrggbbaa` colour, from 0 to 1. */
+function luminance(hex: string): number {
+  const c = (i: number) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * c(1) + 0.7152 * c(3) + 0.0722 * c(5);
 }
 
 /** The status line: SETUP, the steps, and skip, back and next. */

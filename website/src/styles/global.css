@@ -4,12 +4,12 @@
 :root, [data-theme='dark'] {
   color-scheme: dark;
   --bg: #0e1016; --deep: #0a0c11; --surface: #151925; --text: #d6dae4; --secondary: #a3abbd; --muted: #8b93a6;
-  --border: #2e3448; --subtle: #232838; --brand: #6c9eff; --brand-ink: #0a0c11; --selection: #2a3150; --mark-normal: #6c9eff; --mark-visual: #c39bff; --mark-insert: #a7d46f;
+  --border: #2e3448; --subtle: #232838; --brand: #6c9eff; --brand-ink: #0a0c11; --selection: #2a3150; --mark-diagonal: #ffffff;
 }
 [data-theme='light'] {
   color-scheme: light;
   --bg: #fafaf7; --deep: #f1f0ea; --surface: #e6e4dc; --text: #14161c; --secondary: #484d5a; --muted: #5a5f6b;
-  --border: #bdbbb2; --subtle: #dddbd3; --brand: #2f5fd0; --brand-ink: #fafaf7; --selection: #d3dcf3; --mark-normal: #2f5fd0; --mark-visual: #7a3fc8; --mark-insert: #39761d;
+  --border: #bdbbb2; --subtle: #dddbd3; --brand: #2f5fd0; --brand-ink: #fafaf7; --selection: #d3dcf3; --mark-diagonal: #d3cfc3;
 }
 
 * { box-sizing: border-box; }
@@ -61,15 +61,8 @@ h1 span { display: inline-block; white-space: nowrap; }
 
 /* The mark keeps the app's dark surface in both color schemes. */
 .mark { margin: 0; min-width: 0; background: #0e1016; padding: 18px 20px 20px; border: 1px solid var(--subtle); }
-.mark-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 0 0 12px; padding: 0; font-size: 11px; color: #8b93a6; }
-.mark-legend li, .mark-art .stroke { animation: mark-on 6s step-end infinite; animation-delay: calc(var(--index) * 2s - 6s); }
-.mark-legend li { display: flex; align-items: center; gap: 6px; }
-.mark-legend li::before { content: ''; width: 8px; height: 8px; background: var(--part); }
 .mark-art { aspect-ratio: 16 / 10; display: grid; place-items: center; }
 .mark-art svg { height: 68%; overflow: visible; }
-/* Each stroke of the N and its legend item show in turn, 2 seconds each, and the other two dim.
-   With reduced motion, all three show at full strength. */
-@keyframes mark-on { 0% { opacity: 1; } 33.334%, 100% { opacity: .35; } }
 
 .quick-install { padding: 0 0 44px; }
 .install-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }

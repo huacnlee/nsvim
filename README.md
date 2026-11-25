@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/editor.svg" width="96" alt="nsvim icon: an N drawn in the Normal, Visual and Insert mode colours">
+<img src="assets/editor.svg" width="96" alt="nsvim icon: a black N on a light tile, its diagonal white">
 
 # nsvim
 

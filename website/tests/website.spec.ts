@@ -42,15 +42,17 @@ test('the origin section credits the original authors in both languages', async 
   }
 });
 
-test('hero legend names the three mode colors of the mark', async ({ page }) => {
-  await page.goto('./');
-  await expect(page.locator('.mark-legend li')).toHaveText(['NORMAL', 'VISUAL', 'INSERT']);
-  await expect(page.locator('.mark-art .stroke')).toHaveCount(3);
-  // The Normal stroke and its legend item show first. The other two dim.
-  await expect(page.locator('.mark-art .stroke[data-mode="normal"]')).toHaveCSS('opacity', '1');
-  await expect(page.locator('.mark-legend li[data-mode="normal"]')).toHaveCSS('opacity', '1');
-  await expect(page.locator('.mark-art .stroke[data-mode="insert"]')).toHaveCSS('opacity', '0.35');
-  await expect(page.locator('.mark-legend li[data-mode="visual"]')).toHaveCSS('opacity', '0.35');
+test('the hero and the header draw the N with bars in the brand color', async ({ page }) => {
+  for (const [colorScheme, fill] of [['dark', 'rgb(108, 158, 255)'], ['light', 'rgb(47, 95, 208)']] as const) {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('./');
+    await expect(page.locator('.mark-legend')).toHaveCount(0);
+    for (const mark of ['.mark-art svg', '.brand-mark']) {
+      await expect(page.locator(`${mark} rect`)).toHaveCount(2);
+      await expect(page.locator(`${mark} rect`).first()).toHaveCSS('fill', fill);
+      await expect(page.locator(`${mark} line`)).toHaveCount(1);
+    }
+  }
 });
 
 test('the editor slot changes mode with keys and buttons', async ({ page }) => {
@@ -187,8 +189,7 @@ for (const width of [360, 768, 1440]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await expect(page.locator('h1')).toBeVisible();
       if (width > 680) {
-        // With reduced motion, the three strokes show at full strength.
-        for (const mode of ['normal', 'visual', 'insert']) await expect(page.locator(`.mark-art .stroke[data-mode="${mode}"]`)).toHaveCSS('opacity', '1');
+        await expect(page.locator('.mark-art svg')).toBeVisible();
       }
     }
   });
