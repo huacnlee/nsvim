@@ -54,11 +54,43 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 
 ## Install
 
+nsvim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
+or later, and Windows x86_64.
+
+**macOS / Linux**
+
 ```sh
-cargo install --locked --git https://github.com/huacnlee/nsvim nsh-app-editor
+curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh
 ```
 
-This installs the program `nsvim`. On Linux, the build needs the GTK 4 development packages.
+**Windows PowerShell**
+
+```powershell
+irm https://huacnlee.github.io/nsvim/install.ps1 | iex
+```
+
+**mise**
+
+```sh
+mise use -g github:huacnlee/nsvim
+```
+
+On macOS, use `mise use -g 'github:huacnlee/nsvim[bin_path=nsvim.app/Contents/MacOS]'`.
+
+**From source**
+
+The program reads its interface from `nsh/bundle.nshc` next to it, so `cargo install` alone does
+not make a program that runs. Build with Rust and the [NSH CLI](https://nsh.dev/docs/installation)
+0.7. On Linux, the build also needs the GTK 4 development packages.
+
+```sh
+git clone https://github.com/huacnlee/nsvim && cd nsvim
+cargo build --release --locked
+nsh build --release -o target/release/nsh   # on macOS: -o target/Resources/nsh
+ln -sf "$PWD/target/release/nsvim" ~/.local/bin/nsvim
+```
+
+[docs/install.md](docs/install.md) tells how to pick a version or a folder, upgrade and uninstall.
 
 ## Quick start
 

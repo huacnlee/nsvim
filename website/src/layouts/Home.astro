@@ -11,9 +11,12 @@ const repo = 'https://github.com/huacnlee/nsvim';
 const origin = 'https://github.com/bjarneo/editor';
 const sponsorUrl = 'https://github.com/sponsors/huacnlee';
 const canonical = new URL(asset(language === 'en' ? '' : 'zh-CN/'), Astro.site);
+const site = 'https://huacnlee.github.io/nsvim';
+const sourceCommand = `git clone ${repo} && cd nsvim && cargo build --release --locked && nsh build --release -o target/release/nsh`;
 const commands = [
-  { id: 'cargo', label: t.cargo, command: `cargo install --locked --git ${repo} nsh-app-editor`, note: t.cargoNote, href: `${repo}#install`, link: t.readSetup },
-  { id: 'clone', label: t.clone, command: `git clone ${repo} && cd nsvim && cargo install --locked --path nsh`, note: t.cloneNote, href: `${repo}/blob/main/docs/development.md`, link: t.devGuide },
+  { id: 'linux', label: 'macOS / Linux', command: `curl -fsSL ${site}/install.sh | sh`, note: t.installNote, href: `${repo}/blob/main/install.sh`, link: t.script },
+  { id: 'windows', label: 'Windows', command: `irm ${site}/install.ps1 | iex`, note: t.installNote, href: `${repo}/blob/main/install.ps1`, link: t.script },
+  { id: 'source', label: t.fromSource, command: sourceCommand, note: t.sourceNote, href: `${repo}/blob/main/docs/install.md#build-from-source`, link: t.installGuide },
 ];
 const relatedProjects = [
   { name: 'Disktree', href: 'https://huacnlee.github.io/disktree/', description: t.relatedDescriptions.disktree },

@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-const cargoCommand = 'cargo install --locked --git https://github.com/huacnlee/nsvim nsh-app-editor';
-const cloneCommand = 'git clone https://github.com/huacnlee/nsvim && cd nsvim && cargo install --locked --path nsh';
+const shellCommand = 'curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh';
+const windowsCommand = 'irm https://huacnlee.github.io/nsvim/install.ps1 | iex';
+const sourceCommand = 'git clone https://github.com/huacnlee/nsvim && cd nsvim && cargo build --release --locked && nsh build --release -o target/release/nsh';
 const live = existsSync(new URL('../public/demo/index.html', import.meta.url));
 
 test('English and Chinese routes keep correct links, language and metadata', async ({ page }) => {
@@ -25,7 +26,9 @@ test('English and Chinese routes keep correct links, language and metadata', asy
   await expect(page.locator('h1')).toHaveText('Vim 的按键原生的窗口');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://huacnlee.github.io/nsvim/zh-CN/');
   await expect(page.getByRole('link', { name: 'GitHub', exact: true })).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim');
-  await expect(page.locator('#command-cargo')).toHaveText(cargoCommand);
+  await expect(page.locator('#command-linux')).toHaveText(shellCommand);
+  await expect(page.locator('#command-windows')).toHaveText(windowsCommand);
+  await expect(page.locator('#command-source')).toHaveText(sourceCommand);
   expect(errors).toEqual([]);
 });
 
@@ -119,25 +122,42 @@ test('language menu handles keyboard selection, escape and outside click', async
 test('tabs switch with mouse and keyboard and copy only the active command', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('./');
-  const cargo = page.getByRole('tab', { name: 'Cargo', exact: true });
-  const clone = page.getByRole('tab', { name: 'From a clone', exact: true });
-  await expect(cargo).toHaveAttribute('aria-selected', 'true');
+  const unix = page.getByRole('tab', { name: 'macOS / Linux', exact: true });
+  const windows = page.getByRole('tab', { name: 'Windows', exact: true });
+  const source = page.getByRole('tab', { name: 'From source', exact: true });
+  await expect(unix).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tabpanel')).toHaveCount(1);
-  await cargo.focus();
+  await unix.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(clone).toBeFocused();
-  await expect(page.getByRole('tabpanel')).toHaveAttribute('id', 'panel-clone');
+  await expect(windows).toBeFocused();
+  await expect(page.getByRole('tabpanel')).toHaveAttribute('id', 'panel-windows');
   await page.getByRole('button', { name: 'Copy', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Copied');
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(cloneCommand);
-  await clone.focus();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(windowsCommand);
+  await windows.focus();
+  await page.keyboard.press('End');
+  await expect(source).toBeFocused();
   await page.keyboard.press('Home');
-  await expect(cargo).toBeFocused();
+  await expect(unix).toBeFocused();
   await page.keyboard.press('ArrowLeft');
-  await expect(clone).toBeFocused();
-  await cargo.click();
+  await expect(source).toBeFocused();
+  await unix.click();
   await page.getByRole('button', { name: 'Copy', exact: true }).click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(cargoCommand);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shellCommand);
+});
+
+test('the installers are served next to the pages', async ({ page }) => {
+  await page.goto('./');
+  const shell = await page.request.get('/nsvim/install.sh');
+  expect(shell.ok()).toBe(true);
+  expect(await shell.text()).toContain('NSVIM_INSTALL_DIR');
+  const powershell = await page.request.get('/nsvim/install.ps1');
+  expect(powershell.ok()).toBe(true);
+  expect(await powershell.text()).toContain('NSVIM_INSTALL_DIR');
+  await expect(page.locator('#panel-linux .script-link')).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/install.sh');
+  await page.goto('./zh-CN/');
+  await expect(page.getByRole('tab', { name: '从源码构建', exact: true })).toBeVisible();
+  await expect(page.locator('#panel-linux .script-link')).toHaveText('查看安装脚本 ↗');
 });
 
 for (const [width, height] of [[360, 640], [1440, 900]]) {
@@ -146,7 +166,7 @@ for (const [width, height] of [[360, 640], [1440, 900]]) {
     for (const route of ['./', './zh-CN/']) {
       await page.goto(route);
       expect(await page.locator('.hero').evaluate(element => element.nextElementSibling?.id)).toBe('install');
-      const bounds = await page.locator('#command-cargo').boundingBox();
+      const bounds = await page.locator('#command-linux').boundingBox();
       expect(bounds).not.toBeNull();
       expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(height);
     }

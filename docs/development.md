@@ -6,6 +6,7 @@
 nsh run                  # the app in a window, rebuilt on each change (NSH 0.7 or later)
 cargo run -p nsh-app-editor -- path/to/file.rs   # the same app, without the NSH CLI
 cargo build --release    # target/release/nsvim
+nsh build --release -o target/release/nsh   # its interface, next to it (docs/install.md)
 ```
 
 `nsh.json` at the root names the app's crate (`"rust": "nsh"`) and its root component
@@ -80,7 +81,19 @@ git tag v0.4.0
 git push origin v0.4.0
 ```
 
-`.github/workflows/release.yml` builds `nsvim` for Linux, macOS and Windows, packs each binary
-with the README, the license, the icon and the desktop entry, and attaches the archives to a
-GitHub release. `.github/workflows/ci.yml` runs the format check, clippy and the tests on every
-push and pull request.
+The tag must be the version in `nsh.json` and `nsh/Cargo.toml`, with a `v` in front.
+
+`.github/workflows/release.yml` builds `nsvim` for Linux, macOS and Windows. Each job compiles
+App.tsx with `nsh build --release`. `scripts/package-release.py` packs the program with its
+interface (`nsh/bundle.nshc`) into the archive that `install.sh` and `install.ps1` read. The
+publish job joins the checksums into one `SHA256SUMS` and attaches everything to a GitHub release.
+[docs/install.md](install.md) lists the archives.
+
+`.github/workflows/ci.yml` runs the format check, clippy and the tests on every push and pull
+request. It also tests the installers against local release fixtures:
+
+```sh
+TMPDIR=~/.cache/nsvim-test-tmp scripts/test-install.sh
+```
+
+`scripts/test-install.ps1` does the same for `install.ps1` on Windows.

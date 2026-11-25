@@ -6,70 +6,205 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
-    name: ${{ matrix.name }}
+    name: Build ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
-        # `builds` lists target:archive-name pairs. Both macOS targets build in one job, so a
-        # release waits for one macOS runner, not two.
+        # Both macOS targets build in one job, so a release waits for one macOS runner, not two.
+        # The Intel build is cross-compiled on the Apple silicon runner, so it does not run here.
         include:
-          - { os: ubuntu-24.04, name: x86_64-linux, targets: x86_64-unknown-linux-gnu, builds: "x86_64-unknown-linux-gnu:x86_64-linux" }
-          - { os: ubuntu-24.04-arm, name: aarch64-linux, targets: aarch64-unknown-linux-gnu, builds: "aarch64-unknown-linux-gnu:aarch64-linux" }
-          - { os: macos-latest, name: macos, targets: "aarch64-apple-darwin,x86_64-apple-darwin", builds: "aarch64-apple-darwin:aarch64-macos x86_64-apple-darwin:x86_64-macos" }
-          - { os: windows-latest, name: x86_64-windows, targets: x86_64-pc-windows-msvc, builds: "x86_64-pc-windows-msvc:x86_64-windows" }
+          - { os: ubuntu-24.04, name: x86_64-linux, targets: "x86_64-unknown-linux-gnu", rust-targets: "x86_64-unknown-linux-gnu", run: "x86_64-unknown-linux-gnu" }
+          - { os: ubuntu-24.04-arm, name: aarch64-linux, targets: "aarch64-unknown-linux-gnu", rust-targets: "aarch64-unknown-linux-gnu", run: "aarch64-unknown-linux-gnu" }
+          - { os: macos-latest, name: macos, targets: "aarch64-apple-darwin x86_64-apple-darwin", rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin", run: "aarch64-apple-darwin" }
+          - { os: windows-latest, name: x86_64-windows, targets: "x86_64-pc-windows-msvc", rust-targets: "x86_64-pc-windows-msvc", run: "" }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: always
+      # NSH 0.7 needs macOS 14.
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Linux packages
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev pkg-config
+
+      # rsvg-convert makes the macOS icon from assets/editor.svg.
+      - name: macOS packages
+        if: runner.os == 'macOS'
+        run: brew install librsvg
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.99.1"
-          targets: ${{ matrix.targets }}
+          targets: ${{ matrix.rust-targets }}
+
       - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.name }}
-      - name: Build and package
-        shell: bash
+          key: release-${{ matrix.name }}
+
+      - name: Check the version
+        id: version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          for pair in ${{ matrix.builds }}; do
-            target="${pair%%:*}"
-            name="${pair##*:}"
-            cargo build --release --locked --target "$target"
-            dir="nsvim-${GITHUB_REF_NAME}-$name"
-            mkdir "$dir"
-            exe=nsvim
-            if [ "$RUNNER_OS" = Windows ]; then exe=nsvim.exe; fi
-            cp "target/$target/release/$exe" "$dir/"
-            cp README.md LICENSE assets/editor.svg "$dir/"
-            if [ "$RUNNER_OS" = Linux ]; then cp assets/editor.desktop "$dir/"; fi
-            tar -czf "$dir.tar.gz" "$dir"
-            shasum -a 256 "$dir.tar.gz" > "$dir.tar.gz.sha256"
+          python - <<'PY'
+          import json, os, tomllib
+          from pathlib import Path
+          version = json.loads(Path('nsh.json').read_text())['version']
+          crate = tomllib.loads(Path('nsh/Cargo.toml').read_text())['package']['version']
+          if crate != version:
+              raise SystemExit(f'nsh/Cargo.toml has {crate}, nsh.json has {version}')
+          if os.environ['RELEASE_REF'].startswith('refs/tags/') and os.environ['RELEASE_TAG'] != f'v{version}':
+              raise SystemExit(f'The release tag must be v{version}, as in nsh.json')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write(f'version={version}\n')
+          PY
+
+      - name: Test the Unix installer
+        if: runner.os != 'Windows'
+        run: scripts/test-install.sh
+
+      - name: Check the PowerShell installer syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($file in 'install.ps1', 'scripts/test-install.ps1') {
+            $parseErrors = $null
+            $tokens = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors) {
+              $parseErrors | ForEach-Object { Write-Error "${file}: $($_.Message)" }
+              exit 1
+            }
+          }
+
+      - name: Test the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/test-install.ps1
+
+      # The NSH CLI compiles App.tsx to the bytecode the program reads (nsh/bundle.nshc).
+      - name: Install the NSH CLI
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL https://nsh.dev/install.sh | NSH_VERSION=v0.7.0 sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install the NSH CLI on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:NSH_VERSION = 'v0.7.0'
+          irm https://nsh.dev/install.ps1 | iex
+          Join-Path $env:LOCALAPPDATA 'nsh\bin' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Build the interface
+        run: |
+          nsh --version
+          nsh build --release -o .nsh/release
+
+      - name: Build and package
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          TARGETS: ${{ matrix.targets }}
+        run: |
+          for target in $TARGETS; do
+            cargo build --release --locked -p nsh-app-editor --bin nsvim --target "$target"
+            binary="target/$target/release/nsvim"
+            if [ "$RUNNER_OS" = Windows ]; then binary="$binary.exe"; fi
+            python scripts/package-release.py --target "$target" --version "$RELEASE_VERSION" \
+              --binary "$binary" --nsh .nsh/release --output dist
           done
+
+      - name: Check the archives
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          TARGETS: ${{ matrix.targets }}
+          RUN_TARGET: ${{ matrix.run }}
+        run: |
+          for target in $TARGETS; do
+            case "$target" in
+              *windows*) archive="dist/nsvim-$RELEASE_VERSION-$target.zip"; need="nsvim.exe nsh/bundle.nshc nsh/app.json" ;;
+              *apple-darwin) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"
+                need="nsvim.app/Contents/MacOS/nsvim nsvim.app/Contents/Info.plist nsvim.app/Contents/Resources/nsh/bundle.nshc" ;;
+              *) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"; need="nsvim nsh/bundle.nshc packaging/nsvim.desktop packaging/nsvim.svg" ;;
+            esac
+            python - "$archive" $need <<'PY'
+          import sys, tarfile, zipfile
+          archive, need = sys.argv[1], sys.argv[2:]
+          if archive.endswith('.zip'):
+              names = zipfile.ZipFile(archive).namelist()
+          else:
+              names = tarfile.open(archive).getnames()
+          missing = [name for name in need if name not in names]
+          if missing:
+              raise SystemExit(f'{archive} is missing {missing}')
+          PY
+            if [ "$target" = "$RUN_TARGET" ]; then
+              rm -rf check && mkdir check
+              tar -xzf "dist/nsvim-$RELEASE_VERSION-$target.tar.gz" -C check
+              program=check/nsvim
+              if [ "$RUNNER_OS" = macOS ]; then program=check/nsvim.app/Contents/MacOS/nsvim; fi
+              test "$("$program" --version)" = "nsvim $RELEASE_VERSION"
+            fi
+          done
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: nsvim-*.tar.gz*
+          name: release-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
 
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
+  publish:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      actions: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: dist
+          pattern: release-*
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          generate_release_notes: true
+          path: dist
+
+      - name: Join and check the checksums
+        run: |
+          cd dist
+          cat *.sha256 | sort -k2 > SHA256SUMS
+          test "$(wc -l < SHA256SUMS)" -eq 5
+          sha256sum --check SHA256SUMS
+          rm -- *.sha256
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          prerelease=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then prerelease+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" --verify-tag --generate-notes \
+            --title "nsvim $RELEASE_TAG" "${prerelease[@]}" dist/*
