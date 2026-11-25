@@ -1,6 +1,6 @@
 {
-  "name": "editor",
-  "id": "dev.editor.app",
+  "name": "nsvim",
+  "id": "dev.nsvim.app",
   "version": "0.3.2",
   "build": 1,
   "nsh": ">=0.7",

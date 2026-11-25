@@ -30,8 +30,8 @@ fn main() -> impl std::process::Termination {
     platform::run_app(
         platform::AppSource::Rust(nsh_app_editor::root()),
         platform::AppOptions {
-            title: "editor".to_owned(),
-            app_id: "dev.editor.app".to_owned(),
+            title: "nsvim".to_owned(),
+            app_id: "dev.nsvim.app".to_owned(),
             size: (DEFAULT_SIZE.0 as i32, DEFAULT_SIZE.1 as i32),
             ..Default::default()
         },
@@ -54,7 +54,7 @@ fn without_window() -> Option<i32> {
             return Some(0);
         }
         Command::Version => {
-            println!("editor {}", env!("CARGO_PKG_VERSION"));
+            println!("nsvim {}", env!("CARGO_PKG_VERSION"));
             return Some(0);
         }
         Command::Open { wait, new } => (wait, new),
@@ -67,4 +67,4 @@ fn without_window() -> Option<i32> {
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-compile_error!("editor runs on macOS, Windows and Linux.");
+compile_error!("nsvim runs on macOS, Windows and Linux.");

@@ -1,6 +1,6 @@
 //! `edit mcp`: a Model Context Protocol server over stdio, so AI agents (Claude Code, Codex,
 //! opencode) can see and drive the running editor. Each tool call is a request on the
-//! project's control socket. Connect it with, for example, `claude mcp add editor -- edit mcp`.
+//! project's control socket. Connect it with, for example, `claude mcp add nsvim -- edit mcp`.
 
 use std::io::{BufRead, Write};
 use std::path::PathBuf;
@@ -80,7 +80,7 @@ pub fn handle(msg: &Value, cwd: &std::path::Path) -> Option<Value> {
             json!({
                 "protocolVersion": version,
                 "capabilities": { "tools": { "listChanged": false } },
-                "serverInfo": { "name": "editor", "version": env!("CARGO_PKG_VERSION") },
+                "serverInfo": { "name": "nsvim", "version": env!("CARGO_PKG_VERSION") },
                 "instructions": INSTRUCTIONS,
             })
         }
@@ -102,7 +102,7 @@ fn call_tool(params: &Value, cwd: &std::path::Path) -> Value {
     let Some(cmd) = command_for(name) else { return text(format!("unknown tool {name}"), true) };
     let socket: Option<PathBuf> = super::find(cwd);
     let Some(socket) = socket else {
-        return text(format!("No editor is running for {}. Ask the user to start one with `edit .` in the project.", cwd.display()), true);
+        return text(format!("No nsvim is running for {}. Ask the user to start one with `edit .` in the project.", cwd.display()), true);
     };
     let args = params.get("arguments").cloned().unwrap_or(json!({}));
     match super::call(&socket, cmd, args, Some(Duration::from_secs(30))) {
@@ -128,7 +128,7 @@ mod tests {
         let init =
             handle(&json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-03-26"}}), &cwd).unwrap();
         assert_eq!(init["result"]["protocolVersion"], "2025-03-26");
-        assert_eq!(init["result"]["serverInfo"]["name"], "editor");
+        assert_eq!(init["result"]["serverInfo"]["name"], "nsvim");
         assert!(handle(&json!({"jsonrpc": "2.0", "method": "notifications/initialized"}), &cwd).is_none());
         let list = handle(&json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}), &cwd).unwrap();
         let names: Vec<&str> = list["result"]["tools"].as_array().unwrap().iter().filter_map(|t| t["name"].as_str()).collect();

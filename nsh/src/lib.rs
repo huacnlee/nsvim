@@ -120,7 +120,7 @@ fn root_inner(l: Launch, config_file: Option<PathBuf>) -> Root {
         first_launch: Prop::from(l.first_launch),
         config_file: Prop::from(config_file.as_ref().map(|p| SharedString::from(p.to_string_lossy().into_owned()))),
     };
-    Root::new::<App>(props).app_id("dev.editor.app")
+    Root::new::<App>(props).app_id("dev.nsvim.app")
 }
 
 /// The app state the props ask for.
@@ -218,7 +218,7 @@ pub fn window(s: Session) -> impl IntoElement {
                 .child(ui::shell(s, keys)),
         )
     };
-    let mut w = app_window().id("main").title("editor").attributes(move || attributes.get()).on_close_press(move |_| s.close_requested());
+    let mut w = app_window().id("main").title("nsvim").attributes(move || attributes.get()).on_close_press(move |_| s.close_requested());
     if let Some(o) = OPENING.get() {
         w = w.default_size(Size::new(Points(o.size.0), Points(o.size.1))).restore_bounds(true);
     }

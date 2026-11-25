@@ -65,7 +65,7 @@ pub fn main(args: &[String]) -> i32 {
     }
     let cwd = std::env::current_dir().unwrap_or_default();
     let Some(socket) = socket.or_else(|| super::find(&cwd)) else {
-        eprintln!("edit ctl: no editor is running for {}. Start one with `edit .`", cwd.display());
+        eprintln!("edit ctl: no nsvim is running for {}. Start one with `edit .`", cwd.display());
         return 2;
     };
     let (req, args_json, shape) = match build(&cmd, args) {
@@ -83,7 +83,7 @@ pub fn main(args: &[String]) -> i32 {
             0
         }
         Ok(r) => {
-            eprintln!("editor: {}", r.error.unwrap_or_default());
+            eprintln!("nsvim: {}", r.error.unwrap_or_default());
             1
         }
         Err(e) => {
@@ -260,12 +260,12 @@ pub fn open_in_running(root: &Path, files: &[(PathBuf, Option<editor::buffer::Po
         let timeout = if wait && last { None } else { Some(Duration::from_secs(10)) };
         match super::call(&socket, "open", args, timeout) {
             Ok(r) if !r.ok => {
-                eprintln!("editor: {}", r.error.unwrap_or_default());
+                eprintln!("nsvim: {}", r.error.unwrap_or_default());
                 return Some(1);
             }
             Ok(_) => {}
             Err(e) => {
-                eprintln!("editor: {e}");
+                eprintln!("nsvim: {e}");
                 return Some(1);
             }
         }

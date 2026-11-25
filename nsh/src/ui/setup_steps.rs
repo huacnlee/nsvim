@@ -252,10 +252,8 @@ fn step_mouse(k: Keys, m: &Model) -> View {
     );
     let off_body =
         view().child(krow("move", if vim { "h j k l" } else { "← ↑ ↓ →" })).child(krow("select", if vim { "v" } else { "⇧ arrows" }));
-    let mut out = view()
-        .gap(px(22.0))
-        .child(heading("Use the mouse?", "editor is keyboard-first. This only changes the text area and panes."))
-        .child(
+    let mut out =
+        view().gap(px(22.0)).child(heading("Use the mouse?", "nsvim is keyboard-first. This only changes the text area and panes.")).child(
             view()
                 .flex_row()
                 .gap(px(16.0))
@@ -410,7 +408,7 @@ fn kind_color(p: &Palette, k: Kind) -> Color {
 
 fn step_shell(k: Keys, m: &Model) -> View {
     let mut out =
-        view().gap(px(22.0)).child(heading("Use editor from the terminal", "Optional. Everything here can be undone by hand later."));
+        view().gap(px(22.0)).child(heading("Use nsvim from the terminal", "Optional. Everything here can be undone by hand later."));
     let cli = &m.cfg.cli;
     if cli.path {
         out = out.child(name_box(k, m));
@@ -421,7 +419,7 @@ fn step_shell(k: Keys, m: &Model) -> View {
         ("path", "Add a terminal command".to_string(), format!("Open anything with {name} . or {name} file.rs")),
         ("env", "Set as $EDITOR and $VISUAL".into(), "For tools that open an editor, like crontab -e".into()),
         ("git", "Use for git commit messages".into(), "git waits until you close the buffer".into()),
-        ("default", "Make editor the default for text files".into(), "A double-click opens code and text files".into()),
+        ("default", "Make nsvim the default for text files".into(), "A double-click opens code and text files".into()),
     ] {
         if key == "default" && m.mac {
             continue;
@@ -432,7 +430,7 @@ fn step_shell(k: Keys, m: &Model) -> View {
     let mut runs =
         titled("what runs").flex_1().min_w(px(360.0)).pt(px(16.0)).pb(px(14.0)).px(px(16.0)).gap(px(4.0)).test_id("setup-commands");
     if m.commands.is_empty() {
-        runs = runs.child(text("nothing. editor stays inside its window").text_xs().text_color(move || color("muted-foreground")));
+        runs = runs.child(text("nothing. nsvim stays inside its window").text_xs().text_color(move || color("muted-foreground")));
     }
     for cmd in &m.commands {
         // A `#` line says what a step writes, as a comment in a shell script does.
@@ -523,7 +521,7 @@ fn name_box(k: Keys, m: &Model) -> impl IntoElement {
         sug = sug.child(view().w(px(260.0)).child(switch_row(k, Choice::Shadow, &shadow, "", m.shadow, m.focused(Choice::Shadow))));
         b = b
             .child(
-                text(format!("{} is already {t}. Pick a free name, or keep this one and put editor's copy first on $PATH.", cli.name))
+                text(format!("{} is already {t}. Pick a free name, or keep this one and put nsvim's copy first on $PATH.", cli.name))
                     .text_xs()
                     .text_color(move || color("muted-foreground")),
             )
@@ -617,6 +615,6 @@ fn step_ready(k: Keys, m: &Model) -> View {
     }
     view()
         .gap(px(22.0))
-        .child(heading("Ready", "Saved to ~/.config/editor/config.toml when you open the editor."))
+        .child(heading("Ready", "Saved to ~/.config/editor/config.toml when you open nsvim."))
         .child(view().flex_row().gap(px(16.0)).flex_wrap().items_start().child(summary).child(tips_box))
 }

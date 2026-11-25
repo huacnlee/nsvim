@@ -1,6 +1,6 @@
-# editor on NSH
+# nsvim on NSH
 
-This crate draws editor with [NSH](https://nsh.dev). NSH uses the native views of each
+This crate draws nsvim with [NSH](https://nsh.dev). NSH uses the native views of each
 platform: GTK 4 on Linux, AppKit on macOS and WinUI on Windows. The core does not change. It is
 the crate `editor-core` in `../crates/editor-core`.
 

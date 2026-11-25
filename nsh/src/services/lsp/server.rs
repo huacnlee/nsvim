@@ -72,7 +72,7 @@ impl Server {
                 },
                 "workspace": { "workspaceFolders": true }
             },
-            "clientInfo": { "name": "editor" }
+            "clientInfo": { "name": "nsvim" }
         });
         s.send_raw(json!({ "jsonrpc": "2.0", "id": 0, "method": "initialize", "params": params }));
         Some(s)

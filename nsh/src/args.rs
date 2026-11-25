@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use editor::buffer::Pos;
 
-pub const USAGE: &str = "editor: a modal code editor. Read fast. Edit quick.
+pub const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
   edit [PATH[:LINE]]... [+LINE] [--wait] [--new]
@@ -33,7 +33,7 @@ Docs: https://github.com/bjarneo/editor/blob/main/docs/cli.md
 pub const MCP_USAGE: &str = "edit mcp: a Model Context Protocol server, over stdio, for the editor
 running in the current folder. An agent starts it. You do not run it by hand.
 
-  claude mcp add editor -- edit mcp
+  claude mcp add nsvim -- edit mcp
 
 Tools and setup for Codex and opencode: https://github.com/bjarneo/editor/blob/main/docs/agents.md
 ";

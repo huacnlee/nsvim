@@ -101,7 +101,7 @@ fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     app.press("label:back")?;
     app.wait_for("Use the mouse?")?;
     typ(&mut app, &["tab", "tab"]);
-    app.wait_for("Use editor from the terminal")?;
+    app.wait_for("Use nsvim from the terminal")?;
     assert!(app.shows("setup 4/5 · terminal"));
     typ(&mut app, &["shift+tab"]);
     app.wait_for("Pick a look")?;
@@ -110,7 +110,7 @@ fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     app.press("label:skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("setup 5/5 · ready"));
-    assert!(app.screen().matches("label:open editor →")?);
+    assert!(app.screen().matches("label:open nsvim →")?);
     assert!(!app.screen().matches("label:next →")?, "the last step has no next");
     Ok(())
 }
@@ -172,7 +172,7 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
     typ(&mut app, &["tab", "tab", "tab"]);
-    app.wait_for("Use editor from the terminal")?;
+    app.wait_for("Use nsvim from the terminal")?;
     let git = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.starts_with("git config --global core.editor"));
     assert!(git(app.screen()), "git is on by default: {:?}", app.screen().texts());
     assert!(app.shows("command name"), "the command's name shows while the command is on");
@@ -181,7 +181,7 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.press("label:Add a terminal command")?;
     app.wait_for_gone("command name", Duration::from_secs(2))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
-    app.wait_for("nothing. editor stays inside its window")?;
+    app.wait_for("nothing. nsvim stays inside its window")?;
     Ok(())
 }
 
@@ -194,7 +194,7 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     app.press("label:skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
-    app.press("label:open editor →")?;
+    app.press("label:open nsvim →")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
     let cfg =
