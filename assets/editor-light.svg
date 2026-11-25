@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="nsvim">
   <rect width="128" height="128" rx="28" fill="#F4F2EC"/>
   <rect x="0.5" y="0.5" width="127" height="127" rx="27.5" fill="none" stroke="#DDD9CE"/>
-  <line x1="36" y1="36" x2="92" y2="92" stroke="#8A93AD" stroke-width="16" stroke-linecap="round"/>
-  <rect x="24" y="24" width="24" height="80" rx="8" fill="#1F2330"/>
-  <rect x="80" y="24" width="24" height="80" rx="4" fill="#C8641E"/>
+  <line x1="36" y1="36" x2="92" y2="92" stroke="#7A3FC8" stroke-width="16" stroke-linecap="round"/>
+  <rect x="24" y="24" width="24" height="80" rx="8" fill="#2F5FD0"/>
+  <rect x="80" y="24" width="24" height="80" rx="8" fill="#39761D"/>
 </svg>

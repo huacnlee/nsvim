@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/editor.svg" width="96" alt="nsvim icon: a letter N whose right bar is an orange block cursor">
+<img src="assets/editor.svg" width="96" alt="nsvim icon: an N drawn in the Normal, Visual and Insert mode colours">
 
 # nsvim
 

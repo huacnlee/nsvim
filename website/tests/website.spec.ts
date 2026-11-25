@@ -42,14 +42,15 @@ test('the origin section credits the original authors in both languages', async 
   }
 });
 
-test('hero legend names the four modes the cursor of the mark cycles through', async ({ page }) => {
+test('hero legend names the three mode colors of the mark', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('.mark-legend li')).toHaveText(['NORMAL', 'INSERT', 'VISUAL', 'COMMAND']);
-  await expect(page.locator('.mark-art .mark-cursor')).toHaveCount(1);
-  // The cursor starts in the Normal color, and the legend marks Normal.
-  await expect(page.locator('.mark-cursor')).toHaveCSS('fill', 'rgb(108, 158, 255)');
+  await expect(page.locator('.mark-legend li')).toHaveText(['NORMAL', 'VISUAL', 'INSERT']);
+  await expect(page.locator('.mark-art .stroke')).toHaveCount(3);
+  // The Normal stroke and its legend item show first. The other two dim.
+  await expect(page.locator('.mark-art .stroke[data-mode="normal"]')).toHaveCSS('opacity', '1');
   await expect(page.locator('.mark-legend li[data-mode="normal"]')).toHaveCSS('opacity', '1');
-  await expect(page.locator('.mark-legend li[data-mode="insert"]')).toHaveCSS('opacity', '0.45');
+  await expect(page.locator('.mark-art .stroke[data-mode="insert"]')).toHaveCSS('opacity', '0.35');
+  await expect(page.locator('.mark-legend li[data-mode="visual"]')).toHaveCSS('opacity', '0.35');
 });
 
 test('the editor slot changes mode with keys and buttons', async ({ page }) => {
@@ -186,9 +187,8 @@ for (const width of [360, 768, 1440]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await expect(page.locator('h1')).toBeVisible();
       if (width > 680) {
-        // With reduced motion, the cursor stays orange and the legend marks Command.
-        await expect(page.locator('.mark-cursor')).toHaveCSS('fill', 'rgb(255, 162, 102)');
-        await expect(page.locator('.mark-legend li[data-mode="command"]')).toHaveCSS('opacity', '1');
+        // With reduced motion, the three strokes show at full strength.
+        for (const mode of ['normal', 'visual', 'insert']) await expect(page.locator(`.mark-art .stroke[data-mode="${mode}"]`)).toHaveCSS('opacity', '1');
       }
     }
   });
