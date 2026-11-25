@@ -39,7 +39,7 @@ flowchart LR
 | `editor` | `Editor`: open documents, the active one, the mode, registers, the command line, search, options, and the `Action`s a keymap returns. |
 | `vim` | The Neovim keymap: Normal, Insert, Replace, Visual and Command modes, operators, motions, text objects, Ex commands, search and a small regex engine. |
 | `classic` | The classic keymap: no modes, Shift to select, Ctrl or ⌘ shortcuts, and multiple cursors. |
-| `syntax` | Tree-sitter text objects and motions, and syntax colours from each grammar's highlight query, for 13 languages. |
+| `syntax` | Tree-sitter text objects and motions, and syntax colours from each grammar's highlight query, for 23 languages. |
 
 A keymap is a function from a key to changes:
 

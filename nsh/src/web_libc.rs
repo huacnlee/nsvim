@@ -121,6 +121,22 @@ pub unsafe extern "C" fn strcmp(a: *const c_char, b: *const c_char) -> c_int {
     unsafe { strncmp(a, b, usize::MAX) }
 }
 
+/// Copies `src` into `dest` up to its zero, and fills the rest of the `n` bytes with zeros. The
+/// HTML scanner calls it.
+///
+/// # Safety
+/// `dest` holds `n` bytes. `src` ends with a zero, or holds `n` bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strncpy(dest: *mut c_char, src: *const c_char, n: usize) -> *mut c_char {
+    let mut end = false;
+    for i in 0..n {
+        let c = if end { 0 } else { unsafe { *src.add(i) } };
+        end = c == 0;
+        unsafe { *dest.add(i) = c };
+    }
+    dest
+}
+
 fn wide(c: u32, test: fn(char) -> bool) -> c_int {
     char::from_u32(c).is_some_and(test) as c_int
 }

@@ -38,6 +38,8 @@ pub fn kind(name: &str) -> Kind {
     match head {
         "keyword" if name == "keyword.operator" => Kind::Punct,
         "keyword" | "tag" | "conditional" | "repeat" | "include" | "exception" => Kind::Keyword,
+        // CSS's at-rules: `@media`, `@import`, ...
+        "media" | "import" | "charset" | "keyframes" | "supports" => Kind::Keyword,
         "function" | "method" => Kind::Function,
         "type" | "constructor" | "namespace" | "module" => Kind::Type,
         "string" | "escape" | "character" => Kind::String,
@@ -89,13 +91,64 @@ fn source(lang: Lang) -> String {
         #[cfg(target_arch = "wasm32")]
         Lang::Lua => String::new(),
         Lang::Markdown => tree_sitter_md::HIGHLIGHT_QUERY_BLOCK.into(),
+        Lang::Toml => TOML_QUERY.into(),
+        Lang::Yaml => tree_sitter_yaml::HIGHLIGHTS_QUERY.into(),
+        Lang::Html => tree_sitter_html::HIGHLIGHTS_QUERY.into(),
+        Lang::Css => tree_sitter_css::HIGHLIGHTS_QUERY.into(),
+        Lang::Xml => tree_sitter_xml::XML_HIGHLIGHT_QUERY.into(),
+        Lang::Make => tree_sitter_make::HIGHLIGHTS_QUERY.into(),
+        #[cfg(not(target_arch = "wasm32"))]
+        Lang::Dockerfile => tree_sitter_containerfile::HIGHLIGHTS_QUERY.into(),
+        #[cfg(target_arch = "wasm32")]
+        Lang::Dockerfile => String::new(),
+        // The query is Neovim's. Its `lua-match?` patterns are plain regular expressions, and
+        // tree-sitter checks only `match?`. Without the change, every name is a type.
+        Lang::Zig => tree_sitter_zig::HIGHLIGHTS_QUERY.replace("#lua-match?", "#match?"),
+        #[cfg(not(target_arch = "wasm32"))]
+        Lang::Php => tree_sitter_php::HIGHLIGHTS_QUERY.into(),
+        #[cfg(target_arch = "wasm32")]
+        Lang::Php => String::new(),
     }
+}
+
+/// TOML's colours. The grammar's own query captures a whole pair as a property, and a key
+/// as a type, so keys showed as types.
+const TOML_QUERY: &str = r#"
+(bare_key) @property
+(quoted_key) @property
+(table [(bare_key) (quoted_key)] @type)
+(table (dotted_key [(bare_key) (quoted_key)] @type))
+(table_array_element [(bare_key) (quoted_key)] @type)
+(table_array_element (dotted_key [(bare_key) (quoted_key)] @type))
+(boolean) @boolean
+(comment) @comment
+(string) @string
+[(integer) (float)] @number
+[(offset_date_time) (local_date_time) (local_date) (local_time)] @string.special
+["." ","] @punctuation.delimiter
+"=" @operator
+["[" "]" "[[" "]]" "{" "}"] @punctuation.bracket
+"#;
+
+/// Whether a later pattern of the query wins over an earlier one for the same node. Queries
+/// written for Neovim put general patterns first and specific ones after them. The queries of
+/// the tree-sitter project put specific patterns first.
+fn later_wins(lang: Lang) -> bool {
+    matches!(lang, Lang::Toml | Lang::Yaml | Lang::Xml | Lang::Make | Lang::Dockerfile | Lang::Zig)
 }
 
 /// A compiled query and the kind of each of its captures.
 struct Compiled {
     query: Query,
     kinds: Vec<Kind>,
+    later_wins: bool,
+}
+
+impl Compiled {
+    /// The rank of a pattern: for the same node, the lower rank wins.
+    fn rank(&self, pattern: usize) -> usize {
+        if self.later_wins { usize::MAX - 1 - pattern } else { pattern }
+    }
 }
 
 thread_local! {
@@ -112,7 +165,7 @@ fn compiled(lang: Lang) -> Option<std::rc::Rc<Compiled>> {
             .or_insert_with(|| {
                 let query = Query::new(&lang.language(), &source(lang)).ok()?;
                 let kinds = query.capture_names().iter().map(|n| kind(n)).collect();
-                Some(std::rc::Rc::new(Compiled { query, kinds }))
+                Some(std::rc::Rc::new(Compiled { query, kinds, later_wins: later_wins(lang) }))
             })
             .clone()
     })
@@ -133,7 +186,7 @@ pub fn runs(buf: &Buffer, path: Option<&Path>, first: usize, count: usize) -> Ve
     let first = first.min(rope.len_lines());
     let end = (first + count).min(rope.len_lines());
     let (a, b) = (rope.line_to_byte(first), rope.line_to_byte(end));
-    // Captures as byte ranges, the pattern that made each, and its kind.
+    // Captures as byte ranges, the rank of the pattern that made each, and its kind.
     let found = with_tree(buf, path, |doc| {
         let mut cursor = QueryCursor::new();
         cursor.set_byte_range(a..b);
@@ -144,7 +197,7 @@ pub fn runs(buf: &Buffer, path: Option<&Path>, first: usize, count: usize) -> Ve
             for c in m.captures {
                 let k = q.kinds[c.index as usize];
                 if k != Kind::Text {
-                    out.push((c.node.byte_range(), m.pattern_index, k));
+                    out.push((c.node.byte_range(), q.rank(m.pattern_index), k));
                 }
             }
         }
@@ -156,7 +209,7 @@ pub fn runs(buf: &Buffer, path: Option<&Path>, first: usize, count: usize) -> Ve
     });
     let Some(mut found) = found else { return empty() };
     // Paint wide nodes first, so a node inside another (an escape in a string) wins. For the
-    // same node, the earlier pattern wins, as tree-sitter's own highlighter does.
+    // same node, the pattern of lower rank wins (`Compiled::rank`).
     found.sort_by_key(|x| std::cmp::Reverse((x.0.len(), x.1)));
     let mut out = Vec::with_capacity(count);
     for line in first..first + count {
@@ -221,7 +274,7 @@ fn code_captures(root: Node, rope: &ropey::Rope, range: Range<usize>, out: &mut 
         while let Some(m) = matches.next() {
             for c in m.captures {
                 let r = c.node.byte_range();
-                out.push((base + r.start..base + r.end, m.pattern_index, q.kinds[c.index as usize]));
+                out.push((base + r.start..base + r.end, q.rank(m.pattern_index), q.kinds[c.index as usize]));
             }
         }
         // Code the query leaves alone shows as plain text.
@@ -242,7 +295,7 @@ fn inline_captures(root: Node, rope: &ropey::Rope, range: Range<usize>, out: &mu
                 parser.set_language(&lang).ok()?;
                 let query = Query::new(&lang, tree_sitter_md::HIGHLIGHT_QUERY_INLINE).ok()?;
                 let kinds = query.capture_names().iter().map(|n| kind(n)).collect();
-                Some((parser, Compiled { query, kinds }))
+                Some((parser, Compiled { query, kinds, later_wins: false }))
             })
             .as_mut()
         else {
