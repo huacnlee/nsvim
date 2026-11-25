@@ -3,7 +3,8 @@
   "id": "dev.editor.app",
   "version": "0.3.2",
   "build": 1,
-  "rust": ".",
+  "nsh": ">=0.7",
+  "rust": "nsh",
   "root": "App",
-  "theme": "theme.json"
+  "theme": "nsh/theme.json"
 }
