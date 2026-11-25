@@ -45,7 +45,7 @@ nsvim is for opening code, reading it, finding your way around it and making qui
 - **Find anything.** A fuzzy file finder, project search through ripgrep, a file tree with git
   status, and a list of every key with search: `F1`.
 - **Works with your AI agent.** No AI inside. Claude Code, Codex or any CLI agent sees what you
-  look at and drives nsvim over `nsvim mcp` or `nsvim ctl`. It reads your selection and unsaved
+  look at and drives nsvim over its `mcp` or `ctl` command. It reads your selection and unsaved
   text, points you at code, and proposes changes that you accept with `y`.
 - **Safe.** Crash recovery, undo that survives a restart, changed lines marked when a git
   checkout or an agent changes a file, and atomic saves.
@@ -87,7 +87,7 @@ not make a program that runs. Build with Rust and the [NSH CLI](https://nsh.dev/
 git clone https://github.com/huacnlee/nsvim && cd nsvim
 cargo build --release --locked
 nsh build --release -o target/release/nsh   # on macOS: -o target/Resources/nsh
-ln -sf "$PWD/target/release/nsvim" ~/.local/bin/nsvim
+target/release/nsvim .                      # the first launch sets up nvim
 ```
 
 [docs/install.md](docs/install.md) tells how to pick a version or a folder, upgrade and uninstall.
@@ -95,15 +95,16 @@ ln -sf "$PWD/target/release/nsvim" ~/.local/bin/nsvim
 ## Quick start
 
 ```sh
-nsvim .                 # this folder as the project
-nsvim src/main.rs:42    # a file, at line 42
+nvim .                  # this folder as the project
+nvim src/main.rs:42     # a file, at line 42
 ```
 
-The first launch runs a five-step setup: keys, mouse, look, terminal and ready. The terminal
-step makes `vi` and `vim` open nsvim (on by default, `\vim` still runs Vim), adds the command
-`nsvim`, sets `$EDITOR` and sets git's editor. On Linux, it can also make nsvim the default app
-for text files. It shows every command before it runs, and it runs only the ones you leave on.
-After setup, `vim .` opens nsvim. Turn the aliases off to keep Vim, and use `nsvim .`.
+The installer puts no command on `PATH`. Open nsvim the first time from the app launcher, or
+with the path the installer prints. The first launch runs a five-step setup: keys, mouse, look,
+terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open nsvim
+(on by default). `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor to
+nsvim's full path. On Linux, it can make nsvim the default app for text files. It shows every
+command before it runs, and it runs only the ones you leave on.
 
 ## Keys
 
@@ -135,10 +136,13 @@ once. [docs/configuration.md](docs/configuration.md) lists every option.
 
 ## AI agents
 
+Agents and scripts do not see shell aliases, so they run nsvim by its full path. `nvim --help`
+prints it. On Linux, the installer puts it at `~/.local/share/nsvim/nsvim`:
+
 ```sh
-claude mcp add nsvim -- nsvim mcp     # Claude Code: nsvim as tools
-nsvim ctl state                       # any agent or script: what you look at
-nsvim ctl reveal src/main.rs:10-14 --note "this is the bug"
+claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp     # Claude Code: nsvim as tools
+~/.local/share/nsvim/nsvim ctl state                       # any agent or script: what you look at
+nvim ctl reveal src/main.rs:10-14 --note "this is the bug"  # in your own shell, the alias works
 ```
 
 [docs/agents.md](docs/agents.md) has the setup for Claude Code, Codex and opencode.

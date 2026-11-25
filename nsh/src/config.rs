@@ -125,13 +125,14 @@ pub struct MouseCfg {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CliCfg {
-    /// The terminal command's name, `nsvim` by default.
+    /// Not used: setup no longer adds a terminal command. The setup view still reads `name` and
+    /// `path`. Old config files keep them.
     pub name: String,
     pub path: bool,
     pub editor_env: bool,
     pub git: bool,
     pub default_app: bool,
-    /// `vi` and `vim` in the shell open nsvim (aliases in the shell's startup file).
+    /// `nvim`, `vim` and `vi` in the shell open nsvim (aliases in the shell's startup file).
     pub vim_aliases: bool,
 }
 
@@ -199,7 +200,7 @@ impl Default for MouseCfg {
 
 impl Default for CliCfg {
     fn default() -> Self {
-        CliCfg { name: "nsvim".into(), path: true, editor_env: true, git: true, default_app: false, vim_aliases: true }
+        CliCfg { name: "nsvim".into(), path: false, editor_env: true, git: true, default_app: false, vim_aliases: true }
     }
 }
 

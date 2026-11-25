@@ -22,8 +22,8 @@ die() { printf 'nsvim: %s\n' "$*" >&2; exit 1; }
 for tool in curl tar awk; do command -v "$tool" >/dev/null || die "Required command missing: $tool"; done
 [ -n "${HOME:-}" ] || die 'HOME is not set.'
 case "$(uname -s)" in
-  Darwin) platform=macos; suffix=apple-darwin; destination="${destination:-$HOME/Applications}"; bin_dir="$HOME/.local/bin" ;;
-  Linux) platform=linux; suffix=unknown-linux-gnu; destination="${destination:-$HOME/.local}"; bin_dir="$destination/bin" ;;
+  Darwin) platform=macos; suffix=apple-darwin; destination="${destination:-$HOME/Applications}" ;;
+  Linux) platform=linux; suffix=unknown-linux-gnu; destination="${destination:-$HOME/.local}" ;;
   *) die 'Use install.ps1 on Windows. This script supports macOS and Linux.' ;;
 esac
 case "$(uname -m)" in
@@ -31,11 +31,6 @@ case "$(uname -m)" in
   arm64|aarch64) arch=aarch64 ;;
   *) die 'Unsupported CPU architecture (requires x86_64 or arm64).' ;;
 esac
-# The command nsvim is a symbolic link. Do not replace a file that another program put there.
-link="$bin_dir/nsvim"
-if [ -e "$link" ] && [ ! -L "$link" ]; then
-  die "$link is a file, not a link. Remove it, then run the installer again."
-fi
 download() { curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location "$@"; }
 repo=https://github.com/huacnlee/nsvim
 if [ "$version" = latest ]; then
@@ -115,18 +110,14 @@ else
   install -m644 "$source_dir/packaging/nsvim.svg" "$destination/share/icons/hicolor/scalable/apps/nsvim.svg"
   if command -v update-desktop-database >/dev/null; then update-desktop-database "$destination/share/applications" >/dev/null 2>&1 || true; fi
 fi
-mkdir -p "$bin_dir"
-ln -sfn "$program" "$link"
+# Nothing goes on PATH. The first launch runs a short setup. It can make nvim, vim and vi open
+# nsvim through shell aliases to the full program path.
 if [ "$platform" = macos ]; then
-  printf 'Installed %s/nsvim.app\n' "$destination"
+  printf 'Installed %s/nsvim.app\nOpen it from Finder, or run: %s .\n' "$destination" "$program"
 else
-  printf 'Installed %s\n' "$destination/share/nsvim"
+  printf 'Installed %s/share/nsvim\nOpen nsvim from the app launcher, or run: %s .\n' "$destination" "$program"
 fi
-printf 'Linked %s\n' "$link"
-case ":${PATH:-}:" in
-  *":$bin_dir:"*) printf '%s\n' 'Run nsvim . in a project folder. The first launch runs a short setup.' ;;
-  *) printf 'Add %s to PATH, then run nsvim . in a project folder.\n' "$bin_dir" ;;
-esac
+printf '%s\n' 'The first launch runs a short setup. It can make nvim, vim and vi open nsvim.'
 if [ "$platform" = linux ]; then
   printf '%s\n' 'nsvim needs GTK 4.14 or later.'
 fi

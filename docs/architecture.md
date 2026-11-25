@@ -25,7 +25,7 @@ flowchart LR
         RG[ripgrep]
         FW[File watcher]
         L[LSP manager]
-        C[Control socket<br/>nsvim ctl, nsvim mcp]
+        C[Control socket<br/>ctl, mcp]
     end
     A -->|job| IO & IX & G & RG & L
     IO & IX & G & RG & FW & L & C -->|Event, then wake| P
@@ -73,7 +73,7 @@ undo step.
 | `src/model.rs` | `frame`: what the text area shows, from the `Editor`. Plain Rust, with no NSH code. |
 | `src/ui` | Views, one module for each area. Colours come only from theme tokens (`ui/style.rs`). |
 | `src/services` | The worker threads, each with a job channel in and an `Event` channel out. |
-| `src/ipc` | The control socket protocol, `nsvim ctl` and `nsvim mcp`. |
+| `src/ipc` | The control socket protocol, and the `ctl` and `mcp` commands. |
 | `config.rs`, `theme.rs` | `config.toml`, the 16 built-in palettes, and the Omarchy theme reader. |
 
 ### One change
@@ -124,7 +124,7 @@ agent's request or a file reload never waits for you to look.
 | `editor-watch` | Watches the project, open files outside it, `config.toml` and Omarchy's theme folder. |
 | `editor-lsp` | Starts language servers, keeps documents in step, and turns answers into events. |
 | `editor-probe` | Finds facts the setup needs: this program's path, `$PATH`, free command names, the Neovim leader. |
-| `editor-ipc` | Serves the project's control socket for `nsvim ctl`, `nsvim mcp` and agents. See [agents.md](agents.md). |
+| `editor-ipc` | Serves the project's control socket for the `ctl` and `mcp` commands and agents. See [agents.md](agents.md). |
 
 A save shows the pattern. The engine thread trims the text as one undo step and takes its
 bytes. The file worker writes them to a temporary file and renames it over the old one. The

@@ -209,7 +209,7 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
             out.push(tog("mouse.scroll", "The wheel scrolls", cfg.mouse.scroll));
             out.push(tog("mouse.right_click", "Right-click opens a context menu", cfg.mouse.right_click));
             out.push(Item::Head("-- agents"));
-            out.push(tog("ipc.enabled", "Serve nsvim ctl and nsvim mcp for agents and scripts (next launch)", cfg.ipc.enabled));
+            out.push(tog("ipc.enabled", "Serve the ctl and mcp commands for agents and scripts (next launch)", cfg.ipc.enabled));
             out.push(tog("ipc.allow_edits", "Agents may edit buffers and run commands. Proposals work either way", cfg.ipc.allow_edits));
         }
     }

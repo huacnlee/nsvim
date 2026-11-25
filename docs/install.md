@@ -34,8 +34,8 @@ To upgrade, run the installer again. Close nsvim first.
 
 ### What the installer puts on macOS
 
-- `~/Applications/nsvim.app`: the app. Open it from Finder or Launchpad.
-- `~/.local/bin/nsvim`: a link to the program in the app, for the terminal.
+- `~/Applications/nsvim.app`: the app. Open it from Finder or Launchpad. The program is
+  `~/Applications/nsvim.app/Contents/MacOS/nsvim`.
 
 The release app has an ad hoc signature. It does not have a Developer ID signature, and Apple did
 not notarize it. `curl` does not mark the download as quarantined, so macOS opens the app. The
@@ -46,25 +46,36 @@ installer does not change Gatekeeper.
 `--dir` is a prefix. With the default prefix `~/.local`:
 
 - `~/.local/share/nsvim/`: the program `nsvim` and its interface in `nsh/`.
-- `~/.local/bin/nsvim`: a link to `~/.local/share/nsvim/nsvim`.
 - `~/.local/share/applications/nsvim.desktop`: the entry for the app launcher.
 - `~/.local/share/icons/hicolor/scalable/apps/nsvim.svg`: the icon.
 
-Put `~/.local/bin` on `PATH`. With another prefix, also put its `share` folder on
-`XDG_DATA_DIRS`, so that launchers find the desktop entry. Install GTK 4.14 or later from your
-distribution. The installer does not change your package manager or your shell configuration.
+With another prefix, put its `share` folder on `XDG_DATA_DIRS`, so that launchers find the
+desktop entry. Install GTK 4.14 or later from your distribution. The installer does not change
+your package manager or your shell configuration.
 
-If `bin/nsvim` is a file and not a link, the installer stops and changes nothing. Remove the file,
-then run the installer again.
+The program reads its interface from `nsh/bundle.nshc` next to it. Keep the folder whole.
 
 ### The first launch
 
-The program reads its interface from `nsh/bundle.nshc`. The runner finds it next to the real
-program, also when you start nsvim through the link in `~/.local/bin`. Keep the folder whole.
+The installer puts no command on `PATH`. Open nsvim the first time from the app launcher (Finder
+on macOS), or run the program by the path that the installer prints:
 
-The first launch runs a short setup. Its terminal step can make `vi` and `vim` open nsvim, set
-`$EDITOR` and set git's editor. The installer already made the command `nsvim`, so the step keeps
-that link.
+```sh
+~/.local/share/nsvim/nsvim .
+```
+
+The first launch runs a short setup. Its terminal step adds shell aliases, so `nvim`, `vim` and
+`vi` open nsvim. `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor. Each
+of them names the program by its full path, so an upgrade in the same folder keeps them working.
+Open a new terminal after setup, then:
+
+```sh
+nvim .                  # this folder as the project
+nvim src/main.rs:42     # a file, at line 42
+```
+
+Scripts and AI agents do not see shell aliases. They run the program by its full path.
+`nvim --help` prints it.
 
 ## Windows
 
@@ -81,7 +92,7 @@ Invoke-WebRequest https://huacnlee.github.io/nsvim/install.ps1 -OutFile "$env:TE
 
 `NSVIM_VERSION` and `NSVIM_INSTALL_DIR` set the same defaults. The default folder is
 `%LOCALAPPDATA%\Programs\nsvim`. The installer replaces the folder as one unit and adds a Start
-menu shortcut. To open nsvim from a terminal, add the folder to `PATH`.
+menu shortcut. It does not change `PATH`. The program is `nsvim.exe` in that folder.
 
 To upgrade, close nsvim and run the installer again. If the PowerShell policy stops scripts,
 download the Windows ZIP from the release page and extract it.
@@ -100,8 +111,10 @@ On macOS, point mise at the program in the app:
 mise use -g 'github:huacnlee/nsvim[bin_path=nsvim.app/Contents/MacOS]'
 ```
 
-mise installs only the program and its interface. It does not add the Linux desktop entry and
-icon, or put `nsvim.app` in Applications. Upgrade with `mise upgrade`.
+mise installs only the program and its interface, and it puts the program on `PATH` as `nsvim`.
+It does not add the Linux desktop entry and icon, or put `nsvim.app` in Applications. The setup's
+aliases and `$EDITOR` name the program in the folder of one mise version. After `mise upgrade`,
+change that path in your shell startup file and in `git config --global core.editor`.
 
 ## Build from source
 
@@ -112,7 +125,7 @@ development packages (`libgtk-4-dev` on Debian and Ubuntu).
 git clone https://github.com/huacnlee/nsvim && cd nsvim
 cargo build --release --locked
 nsh build --release -o target/release/nsh
-ln -sf "$PWD/target/release/nsvim" ~/.local/bin/nsvim
+target/release/nsvim .
 ```
 
 `cargo build` makes the program `target/release/nsvim`. `nsh build` compiles the interface
@@ -141,11 +154,12 @@ To install by hand, download the archive for your system, check its SHA-256 agai
 
 Close nsvim, then remove what the installer added:
 
-- macOS: `~/Applications/nsvim.app` and the link `~/.local/bin/nsvim`.
-- Linux: under the prefix, `share/nsvim/`, `bin/nsvim`, `share/applications/nsvim.desktop` and
+- macOS: `~/Applications/nsvim.app`.
+- Linux: under the prefix, `share/nsvim/`, `share/applications/nsvim.desktop` and
   `share/icons/hicolor/scalable/apps/nsvim.svg`.
 - Windows: the install folder and the nsvim Start menu shortcut.
 
 Your settings, session, undo history and recovery files stay. On Linux, they are in
-`~/.config/nsvim` and `~/.local/state/nsvim`. The first-run setup can add lines to your shell startup file and
-set git's editor. Remove those lines yourself if you no longer want them.
+`~/.config/nsvim` and `~/.local/state/nsvim`. The first-run setup can add lines to your shell startup file
+(after `# Added by nsvim's setup`) and set git's editor. Remove them yourself if you no longer
+want them.

@@ -124,8 +124,9 @@ check "$name" '[ "$status" -eq 0 ]' &&
   check "$name" '[ "$status" -eq 0 ]' &&
   check "$name" '[ -x "$dest/share/nsvim/nsvim" ] && [ -f "$dest/share/nsvim/nsh/bundle.nshc" ]' &&
   check "$name" '[ -f "$dest/share/nsvim/nsh/app.json" ] && [ -f "$dest/share/nsvim/LICENSE" ]' &&
-  check "$name" '[ -L "$dest/bin/nsvim" ] && [ "$(readlink "$dest/bin/nsvim")" = "$dest/share/nsvim/nsvim" ]' &&
-  check "$name" '[ "$("$dest/bin/nsvim")" = "nsvim $version" ]' &&
+  check "$name" '[ ! -e "$dest/bin" ] && [ ! -e "$root/home/.local/bin" ]' &&
+  check "$name" '[ "$("$dest/share/nsvim/nsvim")" = "nsvim $version" ]' &&
+  check "$name" 'grep -q "run: $dest/share/nsvim/nsvim \." "$root/out" && grep -q "make nvim, vim and vi open nsvim" "$root/out"' &&
   check "$name" 'grep -qxF "Exec=\"$dest/share/nsvim/nsvim\" %F" "$dest/share/applications/nsvim.desktop"' &&
   check "$name" '[ -f "$dest/share/icons/hicolor/scalable/apps/nsvim.svg" ]' &&
   check "$name" '[ -z "$(ls -A "$dest/share" | grep nsvim-install || true)" ]' &&
@@ -145,14 +146,14 @@ release x86_64-unknown-linux-gnu
 status=0
 env PATH="$root/mock:$PATH" HOME="$root/home" FIXTURES="$root/fixtures" MOCK_LATEST="$version" \
   TMPDIR="$root/tmp" NSVIM_INSTALL_DIR="$dest" "$shell" < "$script" > "$root/out" 2>&1 || status=$?
-check "$name" '[ "$status" -eq 0 ] && [ -L "$dest/bin/nsvim" ]' && ok "$name"
+check "$name" '[ "$status" -eq 0 ] && [ -x "$dest/share/nsvim/nsvim" ]' && ok "$name"
 
 name='default prefix is ~/.local'
 fresh
 release x86_64-unknown-linux-gnu
 run_install
-check "$name" '[ "$status" -eq 0 ] && [ -L "$root/home/.local/bin/nsvim" ] && [ -x "$root/home/.local/share/nsvim/nsvim" ]' &&
-  check "$name" 'grep -q "Add $root/home/.local/bin to PATH" "$root/out"' && ok "$name"
+check "$name" '[ "$status" -eq 0 ] && [ -x "$root/home/.local/share/nsvim/nsvim" ] && [ ! -e "$root/home/.local/bin" ]' &&
+  check "$name" '[ -f "$root/home/.local/share/applications/nsvim.desktop" ]' && ok "$name"
 
 name='bad checksum installs nothing'
 fresh
@@ -186,21 +187,6 @@ release x86_64-unknown-linux-gnu no-bundle
 run_install --dir "$dest"
 check "$name" '[ "$status" -ne 0 ] && grep -q "missing nsh/bundle.nshc" "$root/out" && [ ! -e "$dest" ]' && ok "$name"
 
-name='a file at bin/nsvim stays'
-fresh
-release x86_64-unknown-linux-gnu
-mkdir -p "$dest/bin" && echo mine > "$dest/bin/nsvim"
-run_install --dir "$dest"
-check "$name" '[ "$status" -ne 0 ] && grep -q "is a file, not a link" "$root/out"' &&
-  check "$name" '[ "$(cat "$dest/bin/nsvim")" = mine ] && [ ! -e "$dest/share" ]' && ok "$name"
-
-name='an old link at bin/nsvim is replaced'
-fresh
-release x86_64-unknown-linux-gnu
-mkdir -p "$dest/bin" && ln -s /nonexistent/nsvim "$dest/bin/nsvim"
-run_install --dir "$dest"
-check "$name" '[ "$status" -eq 0 ] && [ "$(readlink "$dest/bin/nsvim")" = "$dest/share/nsvim/nsvim" ]' && ok "$name"
-
 name='release without installer assets'
 fresh
 release x86_64-unknown-linux-gnu
@@ -216,7 +202,8 @@ check "$name" '[ "$status" -eq 0 ]' &&
   run_install --dir "$dest" &&
   check "$name" '[ "$status" -eq 0 ] && [ -f "$dest/nsvim.app/Contents/Resources/nsh/bundle.nshc" ]' &&
   check "$name" '[ "$(ls -A "$dest")" = nsvim.app ]' &&
-  check "$name" '[ "$(readlink "$root/home/.local/bin/nsvim")" = "$dest/nsvim.app/Contents/MacOS/nsvim" ]' && ok "$name"
+  check "$name" '[ ! -e "$root/home/.local/bin" ]' &&
+  check "$name" 'grep -q "run: $dest/nsvim.app/Contents/MacOS/nsvim \." "$root/out"' && ok "$name"
 
 name='invalid version downloads nothing'
 fresh
@@ -242,7 +229,7 @@ if command -v python3 >/dev/null; then
     --binary "$root/stage/build/nsvim" --nsh "$root/stage/build/nsh" --output "$root/fixtures" > "$root/out" 2>&1
   mv "$root/fixtures/nsvim-$version-x86_64-unknown-linux-gnu.tar.gz.sha256" "$root/fixtures/SHA256SUMS"
   run_install --dir "$dest"
-  check "$name" '[ "$status" -eq 0 ] && [ "$("$dest/bin/nsvim")" = packaged ]' &&
+  check "$name" '[ "$status" -eq 0 ] && [ "$("$dest/share/nsvim/nsvim")" = packaged ]' &&
     check "$name" '[ -f "$dest/share/nsvim/nsh/bundle.nshc" ] && [ ! -e "$dest/share/nsvim/nsh/bundle.js" ]' &&
     check "$name" 'grep -q "\"name\":\"nsvim\"" "$dest/share/nsvim/nsh/app.json"' &&
     check "$name" 'grep -qx "StartupWMClass=dev.nsvim.app" "$dest/share/applications/nsvim.desktop"' &&

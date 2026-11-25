@@ -281,10 +281,10 @@ fn the_look_cards_in_a_row_have_one_height() {
     }
 }
 
-/// The terminal step offers `vi` and `vim` aliases, shows the line it adds, and drops it when
+/// The terminal step offers `nvim`, `vim` and `vi` aliases, shows the line it adds, and drops it when
 /// the switch goes off.
 #[test]
-fn the_terminal_step_offers_vi_and_vim_aliases() {
+fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     let dir = scratch();
     let mut f = common::flow_with(nsh_app_editor::Launch {
         project: Some(dir.path().to_path_buf()),
@@ -295,12 +295,12 @@ fn the_terminal_step_offers_vi_and_vim_aliases() {
     f.update(|a, _| a.setup_go(3));
     f.ui.wait_for("text:Use nsvim from the terminal").unwrap();
     f.ui.wait_for("label:Open nsvim with vi and vim").unwrap();
-    // The step builds again as each $PATH lookup answers. Press after the last one.
-    f.settle("the $PATH lookups answer", |a| match &a.screen {
-        Screen::Setup(s) => s.exe.is_some() && s.on_path.contains_key("nsvim"),
+    // The step builds again when the probe answers. Press after it.
+    f.settle("the probe answers", |a| match &a.screen {
+        Screen::Setup(s) => s.exe.is_some(),
         _ => false,
     });
-    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias vi=") && t.contains("vim="));
+    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias nvim=") && t.contains(" vim=") && t.contains(" vi="));
     assert!(alias(f.ui.screen()), "the alias line shows: {:?}", f.ui.screen().texts());
     let on = |f: &common::Flow| {
         f.read(|a| match &a.screen {

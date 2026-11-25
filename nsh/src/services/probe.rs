@@ -1,6 +1,5 @@
-//! What the first-launch setup must know about this machine: this binary, whether
-//! `~/.local/bin` is on `$PATH`, which command names are taken, and the leader key Neovim
-//! uses. Each answer needs the disk, so a worker finds it and sends an `Event::Setup`.
+//! What the first-launch setup must know about this machine: this binary, which command
+//! names are taken, and the leader key Neovim uses. Each answer needs the disk, so a worker finds it and sends an `Event::Setup`.
 
 use std::path::PathBuf;
 #[cfg(not(target_arch = "wasm32"))]
@@ -22,8 +21,6 @@ pub enum Answer {
     Facts {
         /// This binary, with links resolved.
         exe: Option<PathBuf>,
-        /// `~/.local/bin` is a folder on `$PATH`.
-        bin_on_path: bool,
         /// The leader key `~/.config/nvim` sets, if any.
         nvim_leader: Option<char>,
     },
@@ -39,11 +36,9 @@ pub fn start(out: Out) -> Sender<Job> {
         .spawn(move || {
             for job in rx {
                 let answer = match job {
-                    Job::Facts => Answer::Facts {
-                        exe: std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()),
-                        bin_on_path: bin_on_path(),
-                        nvim_leader: nvim_leader(),
-                    },
+                    Job::Facts => {
+                        Answer::Facts { exe: std::env::current_exe().ok().and_then(|e| e.canonicalize().ok()), nvim_leader: nvim_leader() }
+                    }
                     Job::LookUp(names) => Answer::OnPath(names.into_iter().map(|n| (n.clone(), command_v(&n))).collect()),
                 };
                 out.send(Event::Setup(answer));
@@ -51,14 +46,6 @@ pub fn start(out: Out) -> Sender<Job> {
         })
         .expect("start the probe worker");
     tx
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-/// Whether `~/.local/bin` is a folder on `$PATH`.
-fn bin_on_path() -> bool {
-    let (Some(path), Some(home)) = (std::env::var_os("PATH"), dirs::home_dir()) else { return false };
-    let bin = home.join(".local/bin");
-    std::env::split_paths(&path).any(|d| d == bin)
 }
 
 #[cfg(not(target_arch = "wasm32"))]

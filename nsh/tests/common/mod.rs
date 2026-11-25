@@ -24,8 +24,8 @@ pub fn isolate_home() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
         let base = std::env::var_os("TMPDIR").map(PathBuf::from).unwrap_or_else(std::env::temp_dir).join("editor-nsh-home");
-        // Setup's terminal step writes under $HOME (a link in ~/.local/bin, a line in the shell's
-        // rc file, git's global config). Tests must never touch the user's own.
+        // Setup's terminal step writes under $HOME (lines in the shell's rc file, git's global
+        // config). Tests must never touch the user's own.
         let home = base.join("home");
         std::fs::create_dir_all(&home).unwrap();
         // SAFETY: set once, before any test starts the app.

@@ -32,7 +32,7 @@ nsh/                  the app (binary `nsvim`)
   src/app/            state, key routing, mouse, pickers, Settings, setup, LSP glue
   src/ui/             views and theme tokens
   src/services/       workers: io, index, git, grep, watch, lsp, probe, ipc
-  src/ipc/            nsvim ctl and nsvim mcp
+  src/ipc/            the ctl and mcp commands
   tests/              Headless tests of the real window
 docs/                 this documentation
 assets/               the icon and the Linux desktop entry

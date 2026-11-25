@@ -175,12 +175,12 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.wait_for("Use nsvim from the terminal")?;
     let git = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.starts_with("git config --global core.editor"));
     assert!(git(app.screen()), "git is on by default: {:?}", app.screen().texts());
-    let link = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("ln -sf ") && t.ends_with("/nsvim"));
-    assert!(link(app.screen()), "the command is nsvim: {:?}", app.screen().texts());
+    let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias nvim=") && t.contains(" vi="));
+    assert!(alias(app.screen()), "nvim, vim and vi open nsvim: {:?}", app.screen().texts());
+    // Setup puts no command on $PATH.
+    assert!(!app.screen().texts().iter().any(|t| t.contains("ln -s") || t.contains("export PATH")), "{:?}", app.screen().texts());
     app.press("label:Use for git commit messages")?;
     app.wait_until("no git command", Duration::from_secs(2), |s| !git(s))?;
-    app.press("label:Add the nsvim command")?;
-    app.wait_until("no link", Duration::from_secs(2), |s| !link(s))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
     app.press("label:Open nsvim with vi and vim")?;
     app.wait_for("nothing. nsvim stays inside its window")?;

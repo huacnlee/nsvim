@@ -1,9 +1,10 @@
 //! editor: a lightweight modal editor for opening code fast, reading it, finding your way
 //! around it and making quick edits, drawn with each platform's native views.
 //!
-//! `nsvim [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
-//! already running for the project when there is one. `nsvim ctl` and `nsvim mcp` talk to a
-//! running editor (see `docs/agents.md`).
+//! `nvim [path[:line]] [+line] [--wait] [--new]` opens a folder or files, in the editor
+//! already running for the project when there is one. `nvim` is the shell alias the first-run
+//! setup makes. `PROGRAM ctl` and `PROGRAM mcp`, with the binary's full path, talk to a running
+//! editor (see `docs/agents.md`).
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
@@ -43,11 +44,11 @@ fn without_window() -> Option<i32> {
         Command::Ctl(rest) => return Some(ipc::client::main(&rest)),
         Command::Mcp => return Some(ipc::mcp::main()),
         Command::McpHelp => {
-            print!("{}", args::MCP_USAGE);
+            print!("{}", args::mcp_usage(&args::program()));
             return Some(0);
         }
         Command::Help => {
-            print!("{}", args::USAGE);
+            print!("{}", args::usage(&args::program()));
             return Some(0);
         }
         Command::Version => {

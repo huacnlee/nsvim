@@ -9,6 +9,7 @@ use super::fx::Tx;
 use editor::editor::{KeyCode, KeyInput};
 
 use super::{App, Screen};
+use crate::args::shell_word;
 use crate::config::Config;
 use crate::theme::Omarchy;
 
@@ -31,9 +32,7 @@ pub struct Setup {
     /// The focused choice on this step.
     pub focus: usize,
     pub shadow: bool,
-    /// Whether `~/.local/bin` is on `$PATH`. When it is not, the terminal step adds it.
-    pub bin_on_path: bool,
-    /// This binary, with links resolved. The command link is not made when it is the binary.
+    /// This binary, with links resolved. The aliases, `$EDITOR` and git name it by its full path.
     pub exe: Option<PathBuf>,
     /// `command -v` answers by name, so each name is looked up once.
     pub on_path: HashMap<String, Option<String>>,
@@ -72,8 +71,7 @@ impl Setup {
             mac: cfg!(target_os = "macos"),
             focus: 0,
             shadow: false,
-            // The probe worker answers these from the disk (`App::setup_answer`).
-            bin_on_path: true,
+            // The probe worker answers this from the disk (`App::setup_answer`).
             exe: None,
             on_path: HashMap::new(),
             asked: HashSet::new(),
@@ -114,11 +112,8 @@ impl Setup {
                 c.extend((0..SIZES.len()).map(Choice::Size));
             }
             4 => {
-                c.extend([Choice::Toggle("vim"), Choice::Toggle("path")]);
-                if self.cfg.cli.path && self.taken().is_some() {
-                    c.push(Choice::Shadow);
-                }
-                c.extend([Choice::Toggle("env"), Choice::Toggle("git")]);
+                // Setup puts no command on $PATH. The aliases open this binary by its full path.
+                c.extend([Choice::Toggle("vim"), Choice::Toggle("env"), Choice::Toggle("git")]);
                 // The release ships no macOS app bundle, so only Linux can be the default app.
                 if !self.mac {
                     c.push(Choice::Toggle("default"));
@@ -200,28 +195,11 @@ impl Setup {
         if self.name_valid() && self.asked.insert(n.clone()) { vec![n] } else { Vec::new() }
     }
 
-    /// Whether the terminal command can be installed under its name.
+    /// Whether setup can install a terminal command under the name. It never does now: the
+    /// aliases `nvim`, `vim` and `vi` open the binary by its full path. The setup view still
+    /// reads this, `taken` and `check_name` for its command row. Remove them with that row.
     pub fn installable(&self) -> bool {
-        self.name_valid() && (self.taken().is_none() || self.shadow)
-    }
-
-    /// The folder for the terminal command. `/usr/local/bin` needs root on a new Mac, so both
-    /// systems use the user's own folder.
-    pub fn bin_dir(&self) -> String {
-        "~/.local/bin".into()
-    }
-
-    /// Whether this binary is the terminal command already: `~/.local/bin/<name>`, as the README
-    /// installs it. A link there would replace the binary with a link to itself.
-    pub fn in_bin(&self) -> bool {
-        let (Some(exe), Some(home)) = (&self.exe, dirs::home_dir()) else { return false };
-        *exe == home.join(".local/bin").join(&self.cfg.cli.name)
-    }
-
-    /// Whether the terminal step adds `~/.local/bin` to the front of `$PATH`: when it is not on
-    /// `$PATH`, or when editor's command must come before a program with the same name.
-    pub fn adds_path(&self) -> bool {
-        !self.bin_on_path || (self.taken().is_some() && self.shadow)
+        false
     }
 
     pub fn rc_file(&self) -> String {
@@ -229,29 +207,26 @@ impl Setup {
         if shell.ends_with("zsh") { "~/.zshrc".into() } else { "~/.bashrc".into() }
     }
 
+    /// This binary as the shell names it: its full path, quoted when it needs quotes.
+    pub fn program(&self) -> String {
+        let exe = self.exe.clone().or_else(|| std::env::current_exe().ok());
+        exe.map(|p| shell_word(&p.display().to_string())).unwrap_or_else(|| "nsvim".into())
+    }
+
     /// The commands the terminal step runs, as the user reads them.
     pub fn commands(&self) -> Vec<String> {
-        let exe = std::env::current_exe().map(|p| crate::app::tilde(&p)).unwrap_or_else(|_| "editor".into());
-        let name = &self.cfg.cli.name;
         let cli = &self.cfg.cli;
-        let cmd_ref = if cli.path && self.installable() { name.clone() } else { exe.clone() };
+        let rc = self.rc_file();
+        let program = self.program();
         let mut out = Vec::new();
-        if cli.path && self.installable() {
-            if !self.in_bin() {
-                out.push(format!("mkdir -p {0} && ln -sf {exe} {0}/{name}", self.bin_dir()));
-            }
-            if self.adds_path() {
-                out.push(format!("echo 'export PATH=\"{}:$PATH\"' >> {}", self.bin_dir().replace('~', "$HOME"), self.rc_file()));
-            }
-        }
         if cli.vim_aliases {
-            out.push(format!("echo '{}' >> {}", vim_aliases(&cmd_ref), self.rc_file()));
+            out.push(append_line(&vim_aliases(&program), &rc));
         }
         if cli.editor_env {
-            out.push(format!("echo 'export EDITOR=\"{cmd_ref} --wait\" VISUAL=\"{cmd_ref} --wait\"' >> {}", self.rc_file()));
+            out.push(append_line(&editor_env(&program), &rc));
         }
         if cli.git {
-            out.push(format!("git config --global core.editor \"{cmd_ref} --wait\""));
+            out.push(format!("git config --global core.editor \"{}\"", in_double_quotes(&format!("{program} --wait"))));
         }
         if cli.default_app && !self.mac {
             out.push("# write ~/.local/share/applications/nsvim.desktop and its icon".into());
@@ -261,10 +236,27 @@ impl Setup {
     }
 }
 
-/// The shell line that makes `vi` and `vim` open nsvim through `cmd`. `\\vim` or `command vim`
-/// still runs the real Vim.
-fn vim_aliases(cmd: &str) -> String {
-    format!("alias vi=\"{cmd}\" vim=\"{cmd}\"")
+/// `text` escaped for a place inside double quotes in the shell.
+fn in_double_quotes(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('"', "\\\"").replace('$', "\\$").replace('`', "\\`")
+}
+
+/// The shell command that adds `line` to the startup file `rc`, as the user reads it.
+fn append_line(line: &str, rc: &str) -> String {
+    format!("echo {} >> {rc}", shell_word(line))
+}
+
+/// The startup-file line that sets `$EDITOR` and `$VISUAL` to `program`.
+fn editor_env(program: &str) -> String {
+    let value = in_double_quotes(&format!("{program} --wait"));
+    format!("export EDITOR=\"{value}\" VISUAL=\"{value}\"")
+}
+
+/// The shell line that makes `nvim`, `vim` and `vi` open nsvim, the binary `program` (a shell
+/// word). `\nvim` or `command nvim` still runs the real Neovim.
+fn vim_aliases(program: &str) -> String {
+    let p = in_double_quotes(program);
+    format!("alias nvim=\"{p}\" vim=\"{p}\" vi=\"{p}\"")
 }
 
 /// The file types the desktop entry opens: its `MimeType=` line.
@@ -300,26 +292,14 @@ impl App {
         let next = (s.step as isize + by).clamp(1, STEPS.len() as isize) as usize;
         s.step = next;
         s.focus = 0;
-        if next == 4 {
-            let names = s.check_name();
-            self.look_up(names);
-        }
-    }
-
-    /// Asks the probe worker where `names` are on `$PATH`.
-    fn look_up(&self, names: Vec<String>) {
-        if let Some(svc) = &self.svc {
-            svc.look_up(names);
-        }
     }
 
     /// The probe worker answered: keep what it found for the setup screen.
     pub fn setup_answer(&mut self, answer: crate::services::probe::Answer) {
         let Screen::Setup(s) = &mut self.screen else { return };
         match answer {
-            crate::services::probe::Answer::Facts { exe, bin_on_path, nvim_leader } => {
+            crate::services::probe::Answer::Facts { exe, nvim_leader } => {
                 s.exe = exe;
-                s.bin_on_path = bin_on_path;
                 s.nvim_leader = nvim_leader;
             }
             crate::services::probe::Answer::OnPath(found) => s.on_path.extend(found),
@@ -365,10 +345,7 @@ impl App {
         let cmds = s.commands();
         #[cfg(not(target_arch = "wasm32"))]
         let integrate = Integration {
-            name: s.cfg.cli.name.clone(),
-            link: s.cfg.cli.path && s.installable() && !s.in_bin(),
-            by_name: s.cfg.cli.path && s.installable(),
-            add_path: s.cfg.cli.path && s.installable() && s.adds_path(),
+            program: s.program(),
             env: s.cfg.cli.editor_env,
             vim: s.cfg.cli.vim_aliases,
             git: s.cfg.cli.git,
@@ -426,15 +403,13 @@ pub fn leader_in(src: &str) -> Option<char> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// The terminal step's changes, run off the UI thread after setup.
+/// The terminal step's changes, run off the UI thread after setup. Nothing goes on `$PATH`:
+/// the aliases, `$EDITOR` and git name the binary by its full path.
 struct Integration {
-    name: String,
-    link: bool,
-    /// `$EDITOR` and git name the command, not the binary's full path.
-    by_name: bool,
-    add_path: bool,
+    /// This binary as a shell word (`Setup::program`).
+    program: String,
     env: bool,
-    /// `vi` and `vim` aliases in the shell's startup file.
+    /// `nvim`, `vim` and `vi` aliases in the shell's startup file.
     vim: bool,
     git: bool,
     default_app: bool,
@@ -446,18 +421,7 @@ impl Integration {
     fn run(self) {
         let Ok(exe) = std::env::current_exe() else { return };
         let home = dirs::home_dir().unwrap_or_default();
-        let expand = |p: &str| PathBuf::from(p.replacen('~', &home.to_string_lossy(), 1));
-        let bin = home.join(".local/bin");
-        let cmd_ref = if self.by_name { self.name.clone() } else { exe.display().to_string() };
-        let dest = bin.join(&self.name);
-        // Never remove the binary itself: the link would then point at itself.
-        if self.link && dest.canonicalize().ok() != exe.canonicalize().ok() {
-            let _ = std::fs::create_dir_all(&bin);
-            let _ = std::fs::remove_file(&dest);
-            #[cfg(unix)]
-            let _ = std::os::unix::fs::symlink(&exe, &dest);
-        }
-        let rc = expand(&self.rc);
+        let rc = PathBuf::from(self.rc.replacen('~', &home.to_string_lossy(), 1));
         let append = |line: String| {
             let have = std::fs::read_to_string(&rc).unwrap_or_default();
             if !have.contains(&line) {
@@ -467,17 +431,15 @@ impl Integration {
                 }
             }
         };
-        if self.add_path {
-            append(format!("export PATH=\"{}:$PATH\"", bin.display()));
-        }
         if self.vim {
-            append(vim_aliases(&cmd_ref));
+            append(vim_aliases(&self.program));
         }
         if self.env {
-            append(format!("export EDITOR=\"{cmd_ref} --wait\" VISUAL=\"{cmd_ref} --wait\""));
+            append(editor_env(&self.program));
         }
         if self.git {
-            let _ = std::process::Command::new("git").args(["config", "--global", "core.editor", &format!("{cmd_ref} --wait")]).status();
+            let editor = format!("{} --wait", self.program);
+            let _ = std::process::Command::new("git").args(["config", "--global", "core.editor", &editor]).status();
         }
         if self.default_app {
             // A launcher may not have ~/.local/bin on its PATH, so the entry names the binary in full.
@@ -508,11 +470,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_terminal_step_aliases_vi_and_vim_to_the_command() {
+    fn the_terminal_step_aliases_nvim_vim_and_vi_to_the_full_path() {
         let mut s = Setup::new(None);
         s.step = 4;
-        s.bin_on_path = true;
-        let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with("echo 'alias vi=\"nsvim\" vim=\"nsvim\"' >> "));
+        s.exe = Some(PathBuf::from("/home/dev/.local/share/nsvim/nsvim"));
+        let line = "alias nvim=\"/home/dev/.local/share/nsvim/nsvim\" vim=\"/home/dev/.local/share/nsvim/nsvim\" vi=\"/home/dev/.local/share/nsvim/nsvim\"";
+        let alias = |s: &Setup| s.commands().iter().any(|c| c.starts_with(&format!("echo '{line}' >> ")));
         assert!(s.cfg.cli.vim_aliases && alias(&s), "on by default: {:?}", s.commands());
         assert_eq!(s.choices().first(), Some(&Choice::Toggle("vim")), "the aliases come first");
         s.flip("vim");
@@ -540,27 +503,65 @@ mod tests {
     fn the_terminal_step_shows_what_it_runs() {
         let mut s = Setup::new(None);
         s.mac = false;
-        s.bin_on_path = false;
+        s.exe = Some(PathBuf::from("/opt/nsvim/nsvim"));
         s.cfg.cli.default_app = true;
         let cmds = s.commands().join("\n");
-        assert!(cmds.contains("mkdir -p ~/.local/bin && ln -sf"), "{cmds}");
-        assert!(cmds.contains("export PATH=\"$HOME/.local/bin:$PATH\""), "a folder off $PATH is added: {cmds}");
+        assert!(cmds.contains("export EDITOR=\"/opt/nsvim/nsvim --wait\" VISUAL=\"/opt/nsvim/nsvim --wait\""), "{cmds}");
+        assert!(cmds.contains("git config --global core.editor \"/opt/nsvim/nsvim --wait\""), "{cmds}");
         assert!(cmds.contains("xdg-mime default nsvim.desktop text/plain text/x-rust"), "{cmds}");
-        s.bin_on_path = true;
-        assert!(!s.commands().join("\n").contains("export PATH"), "{cmds}");
+        // Setup puts nothing on $PATH and adds no command of its own.
+        assert!(!cmds.contains("ln -s") && !cmds.contains("export PATH") && !cmds.contains("alias nsvim"), "{cmds}");
+        s.step = 4;
+        assert!(!s.choices().contains(&Choice::Toggle("path")) && !s.choices().contains(&Choice::Shadow));
         s.mac = true;
         assert!(!s.commands().join("\n").contains("xdg-mime"), "macOS has no default-app step");
-        s.step = 4;
         assert!(!s.choices().contains(&Choice::Toggle("default")), "and no default-app choice");
+    }
 
-        // `cargo install` puts the binary in ~/.cargo/bin. The command `nsvim` links to it.
-        s.exe = dirs::home_dir().map(|h| h.join(".cargo/bin/nsvim"));
-        let cmds = s.commands().join("\n");
-        assert!(cmds.contains("ln -sf ") && cmds.contains(" ~/.local/bin/nsvim\n"), "{cmds}");
-        assert!(cmds.contains("export EDITOR=\"nsvim --wait\""), "{cmds}");
-        // A binary that is the command already needs no link.
-        s.exe = dirs::home_dir().map(|h| h.join(".local/bin/nsvim"));
-        assert!(!s.commands().join("\n").contains("ln -sf"));
+    #[test]
+    fn a_path_with_spaces_or_quotes_stays_one_shell_word() {
+        let mut s = Setup::new(None);
+        s.exe = Some(PathBuf::from("/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim"));
+        assert_eq!(s.program(), "'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'");
+        assert_eq!(
+            vim_aliases(&s.program()),
+            "alias nvim=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\" vim=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\" vi=\"'/Users/dev/My Apps/nsvim.app/Contents/MacOS/nsvim'\""
+        );
+        s.exe = Some(PathBuf::from("/opt/it's $HOME/nsvim"));
+        assert_eq!(s.program(), "'/opt/it'\\''s $HOME/nsvim'");
+        assert_eq!(editor_env("'/a $b'"), "export EDITOR=\"'/a \\$b' --wait\" VISUAL=\"'/a \\$b' --wait\"");
+    }
+
+    /// The lines setup writes do what they say in a real shell: each alias runs the binary with
+    /// the arguments, and `\nvim` skips the alias.
+    #[cfg(unix)]
+    #[test]
+    fn the_alias_line_runs_the_binary_in_a_shell() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = dir.path().join("my apps");
+        std::fs::create_dir_all(&bin).unwrap();
+        let exe = bin.join("nsvim");
+        std::fs::write(&exe, "#!/bin/sh\necho \"nsvim $*\"\n").unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let real = dir.path().join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        std::fs::write(real.join("nvim"), "#!/bin/sh\necho neovim\n").unwrap();
+        std::fs::set_permissions(real.join("nvim"), std::fs::Permissions::from_mode(0o755)).unwrap();
+        let program = shell_word(&exe.display().to_string());
+        let script = format!(
+            "{}\n{}\nnvim src/main.rs:42\nvim .\nvi -V\n\\nvim\neval \"set -- $EDITOR\"\necho \"$#\"\n",
+            vim_aliases(&program),
+            editor_env(&program)
+        );
+        // bash expands aliases only when asked to outside an interactive shell.
+        let out = std::process::Command::new("bash")
+            .args(["-c", &format!("shopt -s expand_aliases\n{script}")])
+            .env("PATH", format!("{}:/usr/bin:/bin", real.display()))
+            .output()
+            .unwrap();
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert_eq!(text, "nsvim src/main.rs:42\nnsvim .\nnsvim -V\nneovim\n2\n", "{}", String::from_utf8_lossy(&out.stderr));
     }
 
     #[test]

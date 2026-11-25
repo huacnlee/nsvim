@@ -1,23 +1,33 @@
-//! Command-line arguments: `nsvim [path[:line]] [+line] [--wait] [--new]`, `nsvim ctl` and
-//! `nsvim mcp`. A folder opens as the project. A file opens in the project around it: its git
-//! work tree, else its folder.
+//! Command-line arguments: `nvim [path[:line]] [+line] [--wait] [--new]`, `PROGRAM ctl` and
+//! `PROGRAM mcp`. `nvim` is the shell alias the first-run setup makes, and PROGRAM is the
+//! binary's full path. The program does not read its own name, so any alias or path starts it.
+//! A folder opens as the project. A file opens in the project around it: its git work tree,
+//! else its folder.
 
 use std::path::{Path, PathBuf};
 
 use editor::buffer::Pos;
 
-pub const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
+/// The help text. `usage` puts this binary's full path in place of PROGRAM.
+const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  nsvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
-  nsvim ctl COMMAND [ARGS]    drive the running editor (nsvim ctl --help)
-  nsvim mcp                   serve the running editor to AI agents, over stdio
+  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  PROGRAM ctl COMMAND [ARGS]
+  PROGRAM mcp
+
+The first launch runs a short setup. It can make nvim, vim and vi open nsvim with shell
+aliases. \\nvim still runs Neovim. Scripts and AI agents do not see aliases, so they run the
+program by its full path:
+  PROGRAM
 
 Examples:
-  nsvim .                     open this folder as the project
-  nsvim src/main.rs:42        open a file at line 42, in the project around it
-  nsvim --wait NOTES.md       return when its buffer closes, for $EDITOR and git
-  nsvim --new                 open a new window, also when one runs for the project
+  nvim .                      open this folder as the project
+  nvim src/main.rs:42         open a file at line 42, in the project around it
+  nvim --wait NOTES.md        return when its buffer closes, for $EDITOR and git
+  nvim --new                  open a new window, also when one runs for the project
+  PROGRAM ctl --help          drive the running editor
+  PROGRAM mcp                 serve the running editor to AI agents, over stdio
 
 A path opens in the editor already running for its project, when there is one.
 
@@ -30,20 +40,42 @@ Options:
 Docs: https://github.com/huacnlee/nsvim/blob/main/docs/cli.md
 ";
 
-pub const MCP_USAGE: &str = "nsvim mcp: a Model Context Protocol server, over stdio, for the editor
+const MCP_USAGE: &str = "nsvim mcp: a Model Context Protocol server, over stdio, for the editor
 running in the current folder. An agent starts it. You do not run it by hand.
 
-  claude mcp add nsvim -- nsvim mcp
+  claude mcp add nsvim -- PROGRAM mcp
 
 Tools and setup for Codex and opencode: https://github.com/huacnlee/nsvim/blob/main/docs/agents.md
 ";
 
+/// This binary's full path, with links resolved, as one shell word.
+pub fn program() -> String {
+    let exe = std::env::current_exe().ok().map(|e| e.canonicalize().unwrap_or(e));
+    exe.map(|p| shell_word(&p.display().to_string())).unwrap_or_else(|| "nsvim".into())
+}
+
+/// `word` as one shell word: as it is when it has only safe characters, else in single quotes.
+pub fn shell_word(word: &str) -> String {
+    let safe = |c: char| c.is_ascii_alphanumeric() || "/._-+=:,@%".contains(c);
+    if !word.is_empty() && word.chars().all(safe) { word.to_string() } else { format!("'{}'", word.replace('\'', "'\\''")) }
+}
+
+/// The help text, with `program` (a shell word) as the program.
+pub fn usage(program: &str) -> String {
+    USAGE.replace("PROGRAM", program)
+}
+
+/// The help text of `mcp`, with `program` (a shell word) as the program.
+pub fn mcp_usage(program: &str) -> String {
+    MCP_USAGE.replace("PROGRAM", program)
+}
+
 /// What the command line asks for. `argv` includes the program name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
-    /// `nsvim ctl ARGS`: drive a running editor.
+    /// `PROGRAM ctl ARGS`: drive a running editor.
     Ctl(Vec<String>),
-    /// `nsvim mcp`: serve the running editor to an agent over stdio.
+    /// `PROGRAM mcp`: serve the running editor to an agent over stdio.
     Mcp,
     McpHelp,
     Help,
@@ -151,6 +183,16 @@ fn clean(p: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_help_shows_nvim_and_this_binarys_full_path() {
+        let help = usage("/home/dev/.local/share/nsvim/nsvim");
+        assert!(help.contains("  nvim .  ") && help.contains("  nvim src/main.rs:42  "), "{help}");
+        assert!(help.contains("\\nvim still runs Neovim"), "{help}");
+        assert!(help.contains("  /home/dev/.local/share/nsvim/nsvim ctl --help "), "{help}");
+        assert!(!help.contains("PROGRAM") && !help.contains("nsvim ."), "{help}");
+        assert!(mcp_usage("'/a b/nsvim'").contains("claude mcp add nsvim -- '/a b/nsvim' mcp"));
+    }
 
     #[test]
     fn a_trailing_line_number_splits_off() {

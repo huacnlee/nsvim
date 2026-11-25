@@ -121,10 +121,10 @@ fn setup_asks_each_name_once_and_takes_the_workers_answers() {
     assert!(s.check_name().is_empty(), "each name is asked once");
     let name = s.cfg.cli.name.clone();
     a.setup_answer(Answer::OnPath(vec![(name, Some("/usr/bin/editor".into()))]));
-    a.setup_answer(Answer::Facts { exe: Some(PathBuf::from("/opt/editor")), bin_on_path: false, nvim_leader: Some('\\') });
+    a.setup_answer(Answer::Facts { exe: Some(PathBuf::from("/opt/editor")), nvim_leader: Some('\\') });
     let super::Screen::Setup(s) = &a.screen else { panic!("setup shows") };
     assert_eq!(s.taken().as_deref(), Some("/usr/bin/editor"));
-    assert_eq!((s.exe.clone(), s.bin_on_path, s.nvim_leader), (Some(PathBuf::from("/opt/editor")), false, Some('\\')));
+    assert_eq!((s.exe.clone(), s.nvim_leader), (Some(PathBuf::from("/opt/editor")), Some('\\')));
 }
 
 #[test]

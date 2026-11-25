@@ -73,7 +73,7 @@ try {
     $shortcut.IconLocation = "$InstallDir\nsvim.exe,0"
     $shortcut.Save()
     Write-Host "Installed $InstallDir. Open nsvim from the Start menu."
-    Write-Host "To open nsvim from a terminal, add $InstallDir to PATH."
+    Write-Host "The program is $(Join-Path $InstallDir 'nsvim.exe')."
 } finally {
     Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $staged -Recurse -Force -ErrorAction SilentlyContinue
