@@ -4,12 +4,12 @@
 :root, [data-theme='dark'] {
   color-scheme: dark;
   --bg: #0e1016; --deep: #0a0c11; --surface: #151925; --text: #d6dae4; --secondary: #a3abbd; --muted: #8b93a6;
-  --border: #2e3448; --subtle: #232838; --brand: #6c9eff; --brand-ink: #0a0c11; --selection: #2a3150; --mark-diagonal: #ffffff;
+  --border: #2e3448; --subtle: #232838; --brand: #6c9eff; --brand-ink: #0a0c11; --selection: #2a3150; --mark-insert: #a7d46f; --mark-diagonal: #ffffff;
 }
 [data-theme='light'] {
   color-scheme: light;
   --bg: #fafaf7; --deep: #f1f0ea; --surface: #e6e4dc; --text: #14161c; --secondary: #484d5a; --muted: #5a5f6b;
-  --border: #bdbbb2; --subtle: #dddbd3; --brand: #2f5fd0; --brand-ink: #fafaf7; --selection: #d3dcf3; --mark-diagonal: #d3cfc3;
+  --border: #bdbbb2; --subtle: #dddbd3; --brand: #2f5fd0; --brand-ink: #fafaf7; --selection: #d3dcf3; --mark-insert: #39761d; --mark-diagonal: #d3cfc3;
 }
 
 * { box-sizing: border-box; }
@@ -60,9 +60,8 @@ h1 span { display: inline-block; white-space: nowrap; }
 .note { font-size: 13px; color: var(--muted); line-height: 1.8; margin: 24px 0 0; }
 
 /* The mark keeps the app's dark surface in both color schemes. */
-.mark { margin: 0; min-width: 0; background: #0e1016; padding: 18px 20px 20px; border: 1px solid var(--subtle); }
-.mark-art { aspect-ratio: 16 / 10; display: grid; place-items: center; }
-.mark-art svg { height: 68%; overflow: visible; }
+.shot { margin: 0; min-width: 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--subtle); }
 
 .quick-install { padding: 0 0 44px; }
 .install-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -142,7 +141,7 @@ footer .text-link { font-size: inherit; }
   .nav-row { gap: 12px; min-height: 64px; }
   .brand { gap: 8px; font-size: 14px; }
   .hero { grid-template-columns: 1fr; padding: 28px 0 22px; }
-  .hero .mark { display: none; }
+  .hero .shot { display: none; }
   .demo-heading { display: block; }
   .demo-heading p { margin-top: 6px; }
   .demo-screen, .demo-frame { aspect-ratio: 4 / 5; }

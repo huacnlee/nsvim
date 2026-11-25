@@ -3,7 +3,7 @@
 // the state they show. The screens are here and under `src/`.
 
 import { mount, signal, View } from "nsh";
-import { currentWindow } from "nsh/desktop";
+import { currentWindow, isAvailable as hasWindows } from "nsh/desktop";
 import { Shell, TextArea, Workspace, type ScreenState } from "nsvim-native";
 import { Tree } from "./src/tree";
 import { BufferLine } from "./src/buffer-line";
@@ -39,8 +39,9 @@ function App() {
   const screen = signal<ScreenState>({ setup: false, settings: false, tree: false });
   Shell.onChange((s) => screen.set(s));
   // The window stays open on a close press (Workspace sets closeOnPress false): the app
-  // decides whether it quits.
-  currentWindow().on("closePress", () => Shell.closeRequested());
+  // decides whether it quits. The web and the terminal have no window, and currentWindow()
+  // throws there.
+  if (hasWindows) currentWindow().on("closePress", () => Shell.closeRequested());
   return (
     <Workspace>
       <If when={screen().setup} else={<Editor screen={screen} />}>

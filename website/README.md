@@ -15,7 +15,7 @@ The default base is `/nsvim`. Set `BASE_PATH` and `SITE_URL` together for anothe
 
 `.github/workflows/website.yml` builds and tests pull requests, then deploys `main` using GitHub Pages. Repository Settings → Pages → Source must be **GitHub Actions**.
 
-`public/favicon.svg` is a copy of `assets/editor.svg`: a black N on a light tile, its diagonal white. The header and the hero of the home page draw the same N with the bars in the brand color.
+`public/favicon.svg` is a copy of `assets/editor.svg`: an N on a black tile: a blue left stem, a green right stem and a white diagonal. The header draws the same N in the colours of the page theme. The hero shows `public/screenshot.png`, a link to `assets/screenshot.png`.
 
 ## The editor slot
 

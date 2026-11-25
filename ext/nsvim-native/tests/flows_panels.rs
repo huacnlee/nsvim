@@ -86,6 +86,28 @@ fn settings_shows_its_sections_and_rows() {
 }
 
 #[test]
+fn ctrl_w_moves_the_keyboard_between_the_tree_and_the_text() {
+    let (_dir, mut f) = tree_project();
+    let before = f.text();
+    f.press("ctrl+w");
+    f.keys("h");
+    assert!(f.read(|a| a.tree.show && a.tree.focus), "Ctrl-w h gives the tree the keyboard");
+    f.press("ctrl+w");
+    f.keys("h");
+    assert!(f.read(|a| a.tree.focus), "Ctrl-w h in the tree keeps it there");
+    f.press("ctrl+w");
+    f.keys("l");
+    assert!(f.read(|a| a.tree.show && !a.tree.focus), "Ctrl-w l gives the text the keyboard");
+    f.press("ctrl+w");
+    f.press("ctrl+w");
+    assert!(f.read(|a| a.tree.focus), "Ctrl-w Ctrl-w goes to the tree");
+    f.press("ctrl+w");
+    f.press("ctrl+w");
+    assert!(f.read(|a| !a.tree.focus), "and back to the text");
+    assert_eq!(f.text(), before, "no key edits the file");
+}
+
+#[test]
 fn space_e_focuses_the_tree_and_space_e_again_hides_it() {
     let (_dir, mut f) = tree_project();
     f.keys(" e");

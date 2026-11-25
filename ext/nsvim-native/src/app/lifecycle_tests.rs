@@ -92,6 +92,9 @@ fn the_window_follows_the_config() {
     assert_eq!(a.close_on_press, Some(false), "the app decides about unsaved edits");
     let min = a.min_size.flatten().expect("a least size");
     assert_eq!((min.width.0, min.height.0), crate::MIN_SIZE);
+    let bar = a.title_bar.expect("a title bar");
+    assert_eq!(bar.style, nsh_core::desktop::TitleBarStyle::Hidden, "the app draws the title bar");
+    assert_eq!(bar.height, Some(nsh_core::geometry::Points(crate::TITLE_BAR)));
     cfg.window.opacity = 90;
     assert_eq!(crate::window_attributes(&cfg).transparent, Some(true));
     assert_eq!(crate::opacity(&cfg), 0.9);

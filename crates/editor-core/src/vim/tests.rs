@@ -536,6 +536,17 @@ fn leader_and_app_keys_return_actions() {
 }
 
 #[test]
+fn ctrl_w_moves_to_the_tree_and_l_stays_in_the_text() {
+    let mut e = ed("x");
+    for keys in ["<c-w>h", "<c-w>w", "<c-w>p", "<c-w><c-w>", "<c-w><c-h>"] {
+        assert_eq!(feed(&mut e, keys), vec![Action::FocusTree], "{keys}");
+    }
+    assert_eq!(feed(&mut e, "<c-w>l"), vec![], "the text is the right window");
+    assert_eq!(text(&e), "x");
+    assert_eq!(cur(&e), (0, 0));
+}
+
+#[test]
 fn showcmd_lists_pending_keys() {
     let mut e = ed("x");
     feed(&mut e, "\"a2d");

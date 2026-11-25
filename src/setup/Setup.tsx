@@ -6,6 +6,7 @@ import { signal, Text, token, View, Scroll } from "nsh";
 import { Button } from "nsh/base";
 import { Icon, type SetupState, SetupFlow } from "nsvim-native";
 import { act } from "../controls";
+import { DRAG } from "../title-bar";
 import { ShellStep, ReadyStep } from "./finish";
 import { KeysStep, LookStep, MouseStep } from "./steps";
 
@@ -16,8 +17,10 @@ export function Setup() {
   const vim = () => state()?.vim ?? true;
   return (
     <View class="flex-1 bg-background" testID="setup">
+      {/* The window's title bar: empty, so the window controls have room and it drags. */}
+      <View class="h-9 shrink-0" desktop={DRAG} testID="setup-title-bar" />
       <Scroll class="flex-1">
-        <View class="w-full items-center pt-10 pb-6 px-8">
+        <View class="w-full items-center pt-1 pb-6 px-8">
           <View class="w-full max-w-225 gap-6.5">
             <If when={state()}>
               {(st) => (
@@ -78,17 +81,22 @@ function Body(props: { st: () => SetupState }) {
   );
 }
 
-/** The app's icon: four lines in the mode colours, on a 128 unit grid. */
+/** The app's icon (assets/editor.svg), on a 128 unit grid. */
 export function AppIcon(props: { size: number }) {
   const k = props.size / 128;
-  // assets/editor.svg on a 128 grid: an N whose bars take the theme's primary colour, with a
-  // light stroke between them, under the bars. The stroke is a round bar turned 45 degrees about
-  // the middle of the tile.
-  const bar = (x: number, fill: string) => (
-    <View class={`absolute ${fill}`} style={{ left: x * k, top: 24 * k, width: 24 * k, height: 80 * k, borderRadius: 8 * k }} />
+  // An N of round strokes: the left stem in primary, the right stem in the insert colour, and a
+  // light diagonal over both. A ring in the tile colour cuts the diagonal free of the stems.
+  const capsule = (cx: number, cy: number, w: number, h: number, fill: Record<string, boolean>, rotate?: string) => (
+    <View
+      class="absolute"
+      classList={fill}
+      style={{ left: (cx - w / 2) * k, top: (cy - h / 2) * k, width: w * k, height: h * k, borderRadius: (Math.min(w, h) / 2) * k, rotate }}
+    />
   );
-  const stroke = 56 * Math.SQRT2 + 16;
-  // The stroke stands out from every tile: the border colour on a light tile, as on the website,
+  // The diagonal runs from (39, 34) to (89, 94).
+  const length = Math.hypot(50, 60);
+  const angle = `${(Math.atan2(60, 50) * 180) / Math.PI}deg`;
+  // The diagonal stands out from every tile: the border colour on a light tile, as on the website,
   // and the text colour on a dark one.
   const dark = () => luminance(token("muted")) < 0.5;
   return (
@@ -99,13 +107,10 @@ export function AppIcon(props: { size: number }) {
       role="image"
       accessibilityLabel="nsvim"
     >
-      <View
-        class="absolute"
-        classList={{ "bg-border": !dark(), "bg-foreground": dark() }}
-        style={{ left: (64 - stroke / 2) * k, top: 56 * k, width: stroke * k, height: 16 * k, borderRadius: 8 * k, rotate: "45deg" }}
-      />
-      {bar(24, "bg-primary")}
-      {bar(80, "bg-primary")}
+      {capsule(39, 64, 16, 76, { "bg-primary": true })}
+      {capsule(89, 64, 16, 76, { "bg-mode-insert": true })}
+      {capsule(64, 64, length + 28, 28, { "bg-muted": true }, angle)}
+      {capsule(64, 64, length + 16, 16, { "bg-border": !dark(), "bg-foreground": dark() }, angle)}
     </View>
   );
 }

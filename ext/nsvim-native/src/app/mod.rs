@@ -80,6 +80,8 @@ pub struct Tree {
     pub open: HashSet<String>,
     /// The tree has the keyboard (`SPC e` twice, or a click on it).
     pub focus: bool,
+    /// `Ctrl-w` came, and the next key says which window gets the keyboard.
+    pub window_key: bool,
     /// The row the keyboard is on, by path.
     pub sel: Option<String>,
     /// The first row on screen, and the part of a row the wheel has turned but not scrolled.
@@ -236,6 +238,7 @@ impl App {
                 show: true,
                 open: HashSet::new(),
                 focus: false,
+                window_key: false,
                 sel: None,
                 top: 0,
                 wheel_rest: 0.0,

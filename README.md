@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/editor.svg" width="96" alt="nsvim icon: a black N on a light tile, its diagonal white">
+<img src="assets/editor.svg" width="96" alt="nsvim icon: an N on a black tile: a blue left stem, a green right stem and a white diagonal">
 
 # nsvim
 
@@ -10,6 +10,8 @@
 [AI agents](docs/agents.md) · [How it works](docs/architecture.md)
 
 </div>
+
+![nsvim with the file tree open and a Rust file in Normal mode](assets/screenshot.png)
 
 ## The name
 
