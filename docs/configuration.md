@@ -1,6 +1,7 @@
 # Configuration
 
-editor reads `~/.config/editor/config.toml` at startup. The first launch writes it, at the
+nsvim reads `~/.config/nsvim/config.toml` at startup. On the first start, nsvim copies an older
+`~/.config/editor` folder there once. The first launch writes it, at the
 end of setup. Settings (`:Settings`) edits it as a tab: changes apply at once, and `:w` writes
 the file. A missing key takes its default, so a file can hold only what you change.
 

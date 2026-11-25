@@ -24,7 +24,7 @@ pub struct Config {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ThemeCfg {
-    /// `light`, `dark`, `system` or `omarchy`.
+    /// `light`, `dark` or `system`. An old `omarchy` acts as `system`.
     pub mode: String,
     /// The theme `dark` (and `system` on a dark OS) uses.
     pub dark: String,

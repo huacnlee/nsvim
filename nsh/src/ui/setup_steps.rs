@@ -560,6 +560,6 @@ fn step_ready(k: Keys, m: &Model) -> View {
     }
     view()
         .gap(px(22.0))
-        .child(heading("Ready", "Saved to ~/.config/editor/config.toml when you open nsvim."))
+        .child(heading("Ready", "Saved to ~/.config/nsvim/config.toml when you open nsvim."))
         .child(view().flex_row().gap(px(16.0)).flex_wrap().items_start().child(summary).child(tips_box))
 }

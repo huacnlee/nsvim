@@ -488,7 +488,7 @@ shows in Settings. To keep it in `config.toml`, open Settings and run `:w`.
 | Option | Short | Values |
 | --- | --- | --- |
 | `keymap` | | `neovim`, `classic` |
-| `theme` | | `light`, `dark`, `system`, `omarchy`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
+| `theme` | | `light`, `dark`, `system`, or a theme id from `docs/configuration.md`, such as `gruvbox` |
 | `number` | `nu` | `:set nu` shows absolute numbers, `:set nonu` hides them. `:set nu=hybrid`, `relative`, `absolute` or `off` sets the style |
 | `numbers` | | `hybrid`, `relative`, `absolute`, `off` |
 | `relativenumber` | `rnu` | `:set rnu` shows hybrid numbers, `:set nornu` shows absolute numbers |
