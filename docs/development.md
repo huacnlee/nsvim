@@ -112,7 +112,7 @@ The tag must be the version in `nsh.json` and `ext/nsvim-native/Cargo.toml`, wit
 
 `.github/workflows/release.yml` builds `nsvim` for Linux, macOS and Windows. Each job compiles
 App.tsx with `nsh build --release`. `scripts/package-release.py` packs the program with its
-interface (`nsh/bundle.nshc`) into the archive that `install.sh` and `install.ps1` read. The
+interface (`nsh/bundle.nshc`) into the archive that `scripts/install.sh` and `scripts/install.ps1` read. The
 publish job joins the checksums into one `SHA256SUMS` and attaches everything to a GitHub release.
 [docs/install.md](install.md) lists the archives.
 
@@ -123,4 +123,4 @@ request. It also tests the installers against local release fixtures:
 TMPDIR=~/.cache/nsvim-test-tmp scripts/test-install.sh
 ```
 
-`scripts/test-install.ps1` does the same for `install.ps1` on Windows.
+`scripts/test-install.ps1` does the same for `scripts/install.ps1` on Windows.

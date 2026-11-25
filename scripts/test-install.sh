@@ -7,7 +7,7 @@
 set -eu
 
 here="$(cd "$(dirname "$0")" && pwd)"
-script="$here/../install.sh"
+script="$here/install.sh"
 shell="${1:-sh}"
 root="$(mktemp -d "${TMPDIR:-/tmp}/nsvim-install-test.XXXXXXXX")"
 trap 'rm -rf "$root"' 0
