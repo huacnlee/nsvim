@@ -23,6 +23,7 @@ use crate::app::keys::{LEADER, LEADER_AGENT, LEADER_GIT, LEADER_LSP};
 use crate::app::menu::ITEMS;
 use crate::app::{App, Overlay};
 use crate::store::Session;
+use crate::ui::icons::{Lucide, icon, src};
 use crate::ui::style::color;
 
 /// Which overlay shows.
@@ -131,7 +132,7 @@ fn leader(s: Session, keys: ElementRef) -> impl IntoElement {
                             s.update(|a, tx| a.key(KeyInput::ch(k), tx));
                         })
                         .child(text(k.to_string()).text_size(px(size)).font_weight(FontWeight::BOLD).text_color(move || color("primary")))
-                        .child(text("→").text_size(px(size)).text_color(move || color("text-faint")))
+                        .child(icon(src(Lucide::ArrowRight)).size(px(size)).text_color(move || color("text-faint")))
                         .child(text(label).text_size(px(size)).text_color(move || color(if group { "mode-visual" } else { "foreground" }))),
                 );
             }

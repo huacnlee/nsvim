@@ -9,6 +9,7 @@ use crate::app::{App, Screen};
 use crate::config::Config;
 use crate::store::Session;
 use crate::theme::{self, Palette};
+use crate::ui::icons::{self, Lucide, src};
 use crate::ui::settings_controls::act;
 use crate::ui::setup_steps;
 use crate::ui::style::color;
@@ -152,7 +153,10 @@ fn status(s: Session, keys: ElementRef, m: &Model) -> AnyElement {
         } else {
             "muted-foreground"
         };
-        let mut label = text(format!("{}{t}", if i > 0 { "› " } else { "" })).text_xs().px(px(6.0)).text_color(move || color(token));
+        if i > 0 {
+            line = line.child(icons::icon(src(Lucide::ChevronRight)).size(px(12.0)).ml(px(6.0)).text_color(move || color(token)));
+        }
+        let mut label = text(t.to_string()).text_xs().px(px(6.0)).text_color(move || color(token));
         if n == m.step {
             label = label.font_weight(FontWeight::BOLD);
         }
@@ -160,7 +164,8 @@ fn status(s: Session, keys: ElementRef, m: &Model) -> AnyElement {
     }
     line = line.child(view().flex_1());
     let btn = |label: &'static str, go: bool, by: isize| {
-        button()
+        let fg = move || color(if go { "primary-foreground" } else { "muted-foreground" });
+        let mut b = button()
             .accessibility_label(label)
             .on_press(act(s, keys, move |a, tx| if by == 99 { a.finish_setup(tx) } else { a.setup_go(by) }))
             .self_stretch()
@@ -170,7 +175,13 @@ fn status(s: Session, keys: ElementRef, m: &Model) -> AnyElement {
             .bg(move || color(if go { "primary" } else { "muted" }))
             .hover(|st| st.opacity(0.85))
             .active(|st| st.opacity(0.7))
-            .child(text(label).text_xs().text_color(move || color(if go { "primary-foreground" } else { "muted-foreground" })))
+            .gap(px(6.0))
+            .child(text(label).text_xs().text_color(fg));
+        // A button that goes forward shows an arrow after its name.
+        if go {
+            b = b.child(icons::icon(src(Lucide::ArrowRight)).size(px(14.0)).text_color(fg));
+        }
+        b
     };
     let last = STEPS.len();
     if m.step < last {
@@ -180,9 +191,9 @@ fn status(s: Session, keys: ElementRef, m: &Model) -> AnyElement {
         line = line.child(btn("back", false, -1));
     }
     if m.step < last {
-        line = line.child(btn("next →", true, 1));
+        line = line.child(btn("next", true, 1));
     } else {
-        line = line.child(btn("open nsvim →", true, 99));
+        line = line.child(btn("open nsvim", true, 99));
     }
     line.into_element()
 }

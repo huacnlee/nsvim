@@ -12,6 +12,7 @@ use crate::app::setup::{Choice, FONTS, LOOKS, SIZES};
 use crate::color::Color;
 use crate::store::Session;
 use crate::theme::Palette;
+use crate::ui::icons::{Lucide, icon, src};
 use crate::ui::settings_controls::{act, choice, kbd, pill, titled, toggle};
 use crate::ui::setup_view::Model;
 use crate::ui::style::{color, swatch};
@@ -49,7 +50,7 @@ fn heading(t: &str, sub: &str) -> impl IntoElement {
         .child(text(sub.to_string()).text_sm().text_color(move || color("muted-foreground")))
 }
 
-/// A card that picks one option: a tag over its border, a title, a `( )` or `(•)` mark, a
+/// A card that picks one option: a tag over its border, a title, a radio mark, a
 /// description and a body.
 #[allow(clippy::too_many_arguments)]
 fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus: bool, body: impl IntoElement) -> ButtonElement {
@@ -92,7 +93,7 @@ fn card(k: Keys, c: Choice, tag: &str, title: &str, desc: &str, on: bool, focus:
                 .flex_row()
                 .items_center()
                 .child(text(title.to_string()).text_base().font_weight(FontWeight::BOLD).flex_1().text_color(move || color("foreground")))
-                .child(text(if on { "(•)" } else { "( )" }).text_sm().text_color(move || color(mark))),
+                .child(icon(src(if on { Lucide::CircleDot } else { Lucide::Circle })).text_color(move || color(mark))),
         )
         // The description takes the free height, so the bodies of the cards in a row line up.
         .child(text(desc.to_string()).text_xs().flex_1().text_color(move || color("muted-foreground")))

@@ -264,6 +264,8 @@ fn a_proposal_shows_as_a_diff_until_y_accepts_it() -> Result<(), String> {
     assert!(app.shows("+1") && app.shows("-1"));
     assert!(app.shows("old line") && app.shows("new line"));
     assert!(app.shows("-") && app.shows("+"), "signs mark the lines");
+    app.wait_for("text:1 proposal")?;
+    assert!(app.screen().matches("id:proposals-icon")?, "an icon goes before the count");
     typ(&mut app, &["y"]);
     app.wait_for_gone("id:review", Duration::from_secs(5))?;
     app.wait_for("text:new line")?;

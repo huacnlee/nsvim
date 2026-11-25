@@ -6,9 +6,10 @@ use nsh_core::prelude::*;
 
 use crate::app::App;
 use crate::app::fx::{Mods, WheelEvent as AppWheel};
-use crate::app::tree::ROW_H;
+use crate::app::tree::{DIR_MARK, ROW_H};
 use crate::store::Session;
 use crate::ui::chrome::{UiFont, clear, ui_font, ui_text};
+use crate::ui::icons::{Lucide, icon, src, src_with_stroke_width};
 use crate::ui::style::color;
 
 /// Lines one notch of a mouse wheel scrolls.
@@ -30,7 +31,8 @@ pub struct RowInfo {
     pub active: bool,
     /// The keyboard is on this row.
     pub picked: bool,
-    /// The git letter: `M`, `U`, `A`, `D`, or `•` on a folder with changes inside.
+    /// The git letter: `M`, `U`, `A`, `D`, or `DIR_MARK` on a folder with changes inside. The
+    /// view draws `DIR_MARK` as a dot icon.
     pub git: Option<char>,
 }
 
@@ -117,6 +119,9 @@ pub fn tree(s: Session, keys: ElementRef) -> impl IntoElement {
 
 fn row(s: Session, keys: ElementRef, font: Memo<UiFont>, r: ReadSignal<RowInfo>) -> impl IntoElement {
     let info = computed(move || r.get());
+    // `None` for a file, else whether the folder is open.
+    let fold = computed(move || info.with(|r| r.dir.then_some(r.open)));
+    let git = computed(move || info.with(|r| r.git));
     view()
         .flex_row()
         .items_center()
@@ -156,18 +161,14 @@ fn row(s: Session, keys: ElementRef, font: Memo<UiFont>, r: ReadSignal<RowInfo>)
         })
         .child(ui_text(font, 0.0, move || "│ ".repeat(info.with(|r| r.depth))).text_color(move || color("border")))
         .child(
-            ui_text(font, 0.0, move || {
-                info.with(|r| {
-                    if !r.dir {
-                        "  "
-                    } else if r.open {
-                        "▾ "
-                    } else {
-                        "▸ "
-                    }
-                })
-            })
-            .text_color(move || color("muted-foreground")),
+            // A folder shows a chevron, a file the same space empty, so the names line up.
+            view().w(move || px(font.get().size + 5.0)).flex_shrink_0().text_color(move || color("muted-foreground")).child(dynamic(
+                move || match fold.get() {
+                    None => view().into_element(),
+                    Some(true) => icon(src(Lucide::ChevronDown)).size(move || px(font.get().size)).test_id("tree-open").into_element(),
+                    Some(false) => icon(src(Lucide::ChevronRight)).size(move || px(font.get().size)).test_id("tree-closed").into_element(),
+                },
+            )),
         )
         .child(
             ui_text(font, 0.0, move || info.with(|r| r.name.clone()))
@@ -176,14 +177,18 @@ fn row(s: Session, keys: ElementRef, font: Memo<UiFont>, r: ReadSignal<RowInfo>)
                 .text_color(move || color(info.with(RowInfo::name_token))),
         )
         .child(view().flex_1())
-        .child(when(
-            move || info.with(|r| r.git.is_some()),
-            move || {
-                ui_text(font, 0.0, move || info.with(|r| r.git.map(String::from).unwrap_or_default()))
-                    .pl(px(8.0))
-                    .text_color(move || color(info.with(RowInfo::git_token)))
-            },
-        ))
+        .child(dynamic(move || match git.get() {
+            None => view().into_element(),
+            // A folder with changes inside shows a solid dot.
+            Some(DIR_MARK) => view()
+                .pl(px(8.0))
+                .text_color(move || color(info.with(RowInfo::git_token)))
+                .child(icon(src_with_stroke_width(Lucide::Dot, 9.0)).size(move || px(font.get().size)).test_id("tree-changes"))
+                .into_element(),
+            Some(c) => {
+                ui_text(font, 0.0, c.to_string()).pl(px(8.0)).text_color(move || color(info.with(RowInfo::git_token))).into_element()
+            }
+        }))
 }
 
 /// The tree's right edge: a drag changes the tree's width, and the release keeps it in the
