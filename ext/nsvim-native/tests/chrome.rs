@@ -381,3 +381,23 @@ fn the_command_line_shows_pending_keys_and_a_button_for_the_keys() -> Result<(),
     wait_text(&mut app, "id:pending", "<Space>")?;
     Ok(())
 }
+
+/// The close button is a small square by the mark, not a strip as tall as the tab: a press on
+/// the tab above or below it shows the tab and leaves it open.
+#[test]
+fn the_close_button_takes_only_its_square() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let mut app = start_files(&[&a, &b], None);
+    app.wait_for("text:/beta/")?;
+    let bounds = |app: &Headless, sel: &str| app.screen().layout(sel).unwrap().unwrap().bounds;
+    let (tab, close) = (bounds(&app, "id:tab-0"), bounds(&app, "id:tab-close-0"));
+    assert!(close.size.height.0 < tab.size.height.0 - 8.0, "close {close:?} in tab {tab:?}");
+    assert!(close.size.width.0 <= close.size.height.0 + 0.5, "the close button is square: {close:?}");
+    // Just above the close button, inside the tab.
+    let at = Point::new(Points(close.origin.x.0 - tab.origin.x.0 + close.size.width.0 / 2.0), Points(1.0));
+    app.press_at("id:tab-0", at)?;
+    assert_eq!(app.screen().count("role:tab")?, 2, "a press above the close button does not close the tab");
+    Ok(())
+}

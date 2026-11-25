@@ -272,3 +272,35 @@ fn a_proposal_shows_as_a_diff_until_y_accepts_it() -> Result<(), String> {
     assert!(!app.shows("old line"));
     Ok(())
 }
+
+#[test]
+fn the_block_cursor_draws_its_char_level_with_the_row() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "a.txt", "Wxyz\n");
+    let mut app = start(&file);
+    app.wait_for("text:Wxyz")?;
+    app.wait_for("id:caret >> text:W")?;
+    let mid = |sel: &str| {
+        let b = app.screen().layout(sel).unwrap().unwrap_or_else(|| panic!("{sel} is not on screen")).bounds;
+        b.origin.y.0 + b.size.height.0 / 2.0
+    };
+    let (under, row, caret) = (mid("id:caret >> text:W"), mid("id:row-0 >> text:Wxyz"), mid("id:caret"));
+    assert!((under - caret).abs() < 0.5, "the char sits at {under}, the cell's middle is {caret}");
+    assert!((under - row).abs() < 0.5, "the char sits at {under}, the row's text at {row}");
+    Ok(())
+}
+
+/// The selection follows the pointer while the button is still down, not only after the release.
+#[test]
+fn a_mouse_drag_shows_the_selection_before_the_release() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "a.txt", "first line\nmiddle\nlast line\n");
+    let mut app = start(&file);
+    app.wait_for("text:middle")?;
+    let h = row_h(&app);
+    app.drag_and_hold("id:row-0 >> text:first line", point(0.0, 2.0 * h), DragOptions::default())?;
+    app.wait_for("VISUAL")?;
+    assert!(marked(&app, 1, "middle")?, "the middle line is selected while dragging: {}", texts(&app));
+    app.drop_held()?;
+    Ok(())
+}
