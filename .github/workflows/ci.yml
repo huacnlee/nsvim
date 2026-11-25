@@ -42,7 +42,7 @@ jobs:
       - name: Lint
         run: cargo clippy --all-targets --locked -- -D warnings
 
-  # install.sh and install.ps1 against local release fixtures. The release workflow runs them too.
+  # scripts/install.sh and scripts/install.ps1 against local release fixtures. The release workflow runs them too.
   installer:
     name: installer (${{ matrix.os }})
     strategy:
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Lint
         if: runner.os == 'Linux'
-        run: shellcheck -s sh install.sh scripts/test-install.sh
+        run: shellcheck -s sh scripts/install.sh scripts/test-install.sh
       - name: Test with sh
         if: runner.os != 'Windows'
         run: scripts/test-install.sh
@@ -65,7 +65,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($file in 'install.ps1', 'scripts/test-install.ps1') {
+          foreach ($file in 'scripts/install.ps1', 'scripts/test-install.ps1') {
             $parseErrors = $null
             $tokens = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
