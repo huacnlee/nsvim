@@ -118,6 +118,8 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
         "b" | "buffer" if !args.trim().is_empty() => out.push(Action::Open(buffer_arg(ed, args.trim())?)),
         "ls" | "buffers" | "files" | "b" | "buffer" => out.push(Action::PickBuffer),
         "Settings" | "settings" => out.push(Action::Settings),
+        // Not `update`: in Vim that writes the file when it changed.
+        "Update" => out.push(Action::Update),
         "Keys" | "keys" | "h" | "help" => out.push(Action::KeyList(args.trim().to_string())),
         "Find" | "find" | "Files" => out.push(Action::FindFile),
         "Grep" | "grep" | "rg" => out.push(Action::GrepProject),

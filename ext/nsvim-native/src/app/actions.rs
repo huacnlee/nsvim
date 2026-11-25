@@ -60,6 +60,7 @@ impl App {
                 Action::GotoDefinition => self.goto_definition(),
                 Action::Hover => self.hover_here(),
                 Action::Settings => self.open_settings(),
+                Action::Update => self.run_update(tx),
                 Action::LeaderMenu => self.overlay = Overlay::Leader(None),
                 Action::Copy(text) => tx.copy(text),
                 Action::Paste { before, count } => self.paste(before, count, tx),
@@ -177,7 +178,7 @@ impl App {
         self.apply_doc_opts();
     }
 
-    fn quit_all(&mut self, force: bool, tx: &mut Tx) {
+    pub(crate) fn quit_all(&mut self, force: bool, tx: &mut Tx) {
         if !force {
             let dirty: Vec<String> = self.ed.docs.iter().filter(|d| d.buf.is_dirty()).map(|d| d.buf.name()).collect();
             if let Some(first) = dirty.first() {

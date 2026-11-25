@@ -71,6 +71,7 @@ fn write_quit_and_open_return_actions() {
     assert_eq!(run_ex(&mut e, "w /abs/f.rs"), vec![Action::Save(Some(PathBuf::from("/abs/f.rs")))]);
     assert_eq!(run_ex(&mut e, "bn"), vec![Action::NextBuffer]);
     assert_eq!(run_ex(&mut e, "Settings"), vec![Action::Settings]);
+    assert_eq!(run_ex(&mut e, "Update"), vec![Action::Update]);
 }
 
 #[test]

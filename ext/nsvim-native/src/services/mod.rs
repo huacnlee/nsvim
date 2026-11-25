@@ -11,6 +11,7 @@ pub mod io;
 pub mod ipc;
 pub mod lsp;
 pub mod probe;
+pub mod update;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod watch;
 pub mod web;
@@ -48,6 +49,8 @@ pub enum WriteKind {
 // Events move once each, from a worker to the UI thread; boxing the big ones buys nothing.
 #[allow(clippy::large_enum_variant)]
 pub enum Event {
+    /// What an update check found (`update::check`).
+    Update(update::Checked),
     /// A file opened. `recovered` holds unsaved text a crash left in its swap file.
     /// `background` files open without switching to them (a rename's other files).
     Opened {
@@ -283,6 +286,12 @@ impl Services {
     /// Finds what the setup screen needs about this machine. Sends `Event::Setup`.
     pub fn probe_setup(&self) {
         let _ = self.probe.send(probe::Job::Facts);
+    }
+
+    /// Looks for a newer release on GitHub and sends `Event::Update`. An automatic check
+    /// (`manual` false) runs at most once a day.
+    pub fn check_update(&self, manual: bool) {
+        update::check(self.out.clone(), manual);
     }
 
     /// Reads `file` again each time it changes and sends `Event::Config`.
