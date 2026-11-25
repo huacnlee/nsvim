@@ -86,7 +86,7 @@ pub fn buffer_line(s: Session) -> impl IntoElement {
             move || {
                 let on = move || settings.with(|t| t.is_some_and(|t| t.0));
                 let dirty = move || settings.with(|t| t.is_some_and(|t| t.1));
-                view()
+                accent_line(view(), on)
                     .flex_row()
                     .flex_shrink_0()
                     .self_stretch()
@@ -98,7 +98,6 @@ pub fn buffer_line(s: Session) -> impl IntoElement {
                     .label("settings")
                     .accessibility_state(move || AccessibilityState { selected: on(), ..AccessibilityState::default() })
                     .on_press(move || s.update(|a, _| a.on_settings = true))
-                    .child(accent_bar(on))
                     .child(
                         ui_text(font, 0.0, move || if dirty() { "settings [+]" } else { "settings" })
                             .text_color(move || color(if on() { "foreground" } else { "muted-foreground" })),
@@ -107,9 +106,14 @@ pub fn buffer_line(s: Session) -> impl IntoElement {
         ))
 }
 
-/// The bar at the start of a tab, in the accent colour on the tab that shows.
-fn accent_bar(on: impl Fn() -> bool + Copy + 'static) -> impl IntoElement {
-    view().w(px(3.0)).h(px(16.0)).ml(px(2.0)).mr(px(8.0)).bg(move || if on() { color("primary") } else { clear() })
+/// A tab's frame: a line along the bottom in the accent colour on the tab that shows. A clear
+/// line of the same width at the top keeps the name in the middle.
+fn accent_line(v: View, on: impl Fn() -> bool + Copy + 'static) -> View {
+    v.pl(px(12.0))
+        .border_t(px(2.0))
+        .border_t_color(clear())
+        .border_b(px(2.0))
+        .border_b_color(move || if on() { color("primary") } else { clear() })
 }
 
 /// Tab `i`. It reads its own entry of `tabs`, so a change to one file redraws one tab.
@@ -117,7 +121,7 @@ fn tab(s: Session, font: Memo<UiFont>, tabs: Memo<Vec<TabInfo>>, i: usize) -> im
     let info = computed(move || tabs.with(|t| t.get(i).cloned().unwrap_or(TabInfo { name: String::new(), dirty: false, on: false })));
     let on = move || info.with(|t| t.on);
     let dirty = move || info.with(|t| t.dirty);
-    view()
+    accent_line(view(), on)
         .flex_row()
         .flex_shrink_0()
         .self_stretch()
@@ -134,7 +138,6 @@ fn tab(s: Session, font: Memo<UiFont>, tabs: Memo<Vec<TabInfo>>, i: usize) -> im
                 s.update(|a, _| a.close_tab(i));
             }
         })
-        .child(accent_bar(on))
         .child(
             ui_text(font, 0.0, move || info.with(|t| t.name.clone()))
                 .text_color(move || color(if on() { "foreground" } else { "muted-foreground" })),
