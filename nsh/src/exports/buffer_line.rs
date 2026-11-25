@@ -5,24 +5,17 @@ use nsh_core::prelude::*;
 
 use crate::app::App;
 
-/// One tab of an open file.
+/// One tab.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct TabState {
-    /// The file name.
+    /// The name on the tab: a file name, or `Settings`.
     pub name: String,
-    /// The file has unsaved changes.
+    /// What the tab shows has unsaved changes.
     pub dirty: bool,
     /// The tab shows.
     pub on: bool,
-}
-
-/// The Settings tab, while it is open.
-#[derive(Debug, Clone, PartialEq, JsObject)]
-pub struct SettingsTabState {
-    /// The tab shows.
-    pub on: bool,
-    /// The settings have changes that are not written to config.toml.
-    pub dirty: bool,
+    /// The tab has a close button.
+    pub closable: bool,
 }
 
 /// The project folder over the tree, while the tree shows.
@@ -39,10 +32,8 @@ pub struct ProjectState {
 pub struct BufferLineState {
     /// The project folder, while the tree shows.
     pub project: Option<ProjectState>,
-    /// A tab for each open file, in order.
+    /// The tabs, in order: one for each open file, then Settings while it is open.
     pub tabs: Vec<TabState>,
-    /// The Settings tab, while it is open.
-    pub settings: Option<SettingsTabState>,
     /// The font family of the interface.
     pub font_family: String,
     /// The text size of the interface, in points.
@@ -58,9 +49,14 @@ pub fn state_of(a: &App) -> BufferLineState {
             .docs
             .iter()
             .enumerate()
-            .map(|(i, d)| TabState { name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == a.ed.active && !a.on_settings })
+            .map(|(i, d)| TabState { name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == a.ed.active && !a.on_settings, closable: true })
+            .chain(a.settings.is_some().then(|| TabState {
+                name: "Settings".into(),
+                dirty: a.cfg != a.disk_cfg,
+                on: a.on_settings,
+                closable: false,
+            }))
             .collect(),
-        settings: a.settings.is_some().then(|| SettingsTabState { on: a.on_settings, dirty: a.cfg != a.disk_cfg }),
         font_family: if a.cfg.ui.font == "system" { "system-ui".into() } else { a.font_family.into() },
         font_size: a.cfg.ui.size,
     }
@@ -77,18 +73,26 @@ impl Tabs {
         crate::bridge::subscribe(state_of, listener)
     }
 
-    /// Shows the file of tab `index`.
+    /// Shows tab `index`.
     pub fn show(index: u32) {
-        crate::bridge::update(move |a, _| a.show_tab(index as usize));
+        crate::bridge::update(move |a, _| {
+            let i = index as usize;
+            // The Settings tab comes after the files.
+            if i == a.ed.docs.len() && a.settings.is_some() {
+                a.on_settings = true;
+            } else {
+                a.show_tab(i);
+            }
+        });
     }
 
-    /// Closes tab `index`. A file with unsaved changes stays open and the editor tells why.
+    /// Closes tab `index` when it has a close button. A file with unsaved changes stays open
+    /// and the editor tells why.
     pub fn close(index: u32) {
-        crate::bridge::update(move |a, _| a.close_tab(index as usize));
-    }
-
-    /// Shows the Settings tab.
-    pub fn show_settings() {
-        crate::bridge::update(|a, _| a.on_settings = true);
+        crate::bridge::update(move |a, _| {
+            if (index as usize) < a.ed.docs.len() {
+                a.close_tab(index as usize);
+            }
+        });
     }
 }

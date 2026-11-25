@@ -105,7 +105,7 @@ fn a_click_on_a_tab_gives_the_keys_back_to_the_editor() {
 }
 
 /// The Settings tab: a click shows it, a click on a file goes back, and unsaved settings show
-/// `[+]`.
+/// a dot.
 #[test]
 fn the_settings_tab_takes_clicks_and_shows_unsaved_settings() {
     let dir = common::scratch();
@@ -113,17 +113,22 @@ fn the_settings_tab_takes_clicks_and_shows_unsaved_settings() {
     let mut f = common::flow(&main, None);
     f.wait_open(&main);
     f.update(|a, _| a.open_settings());
-    f.ui.wait_for("role:tab[settings]").unwrap();
+    f.ui.wait_for("role:tab[Settings]").unwrap();
     f.ui.press("role:tab[main.rs]").unwrap();
     f.settle("the file shows", |a| !a.on_settings && a.ed.mode == Mode::Normal);
     assert!(f.ui.screen().selected("role:tab[main.rs]").unwrap());
-    assert!(!f.ui.screen().selected("role:tab[settings]").unwrap());
-    f.ui.press("role:tab[settings]").unwrap();
+    assert!(!f.ui.screen().selected("role:tab[Settings]").unwrap());
+    f.ui.press("role:tab[Settings]").unwrap();
     f.settle("Settings shows", |a| a.on_settings);
-    f.ui.wait_for("text:settings").unwrap();
+    f.ui.wait_for("text:Settings").unwrap();
+    assert!(!f.ui.screen().matches("id:tab-mark-1").unwrap(), "no mark while the settings are saved");
+    assert!(!f.ui.screen().matches("id:tab-close-1").unwrap(), "the Settings tab has no close button");
     f.update(|a, _| a.cfg.ui.size += 1.0);
-    f.ui.wait_for("text:settings [+]").unwrap();
-    assert!(f.ui.screen().selected("role:tab[settings]").unwrap());
+    f.ui.wait_until("the unsaved mark", std::time::Duration::from_secs(5), |s| {
+        s.accessibility(Some("id:tab-mark-1")).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
+    })
+    .unwrap();
+    assert!(f.ui.screen().selected("role:tab[Settings]").unwrap());
 }
 
 /// The wheel over the tree scrolls it a row per 22 points, adds up a trackpad's small steps
