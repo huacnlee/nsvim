@@ -5,7 +5,8 @@
 //! less often. `status_of` and `position_of` make the parts from the app, so tests can check
 //! them without a window.
 
-use editor::editor::{Mode, VisualKind};
+use editor::buffer::LineEnding;
+use editor::editor::Mode;
 use nsh_core::prelude::*;
 
 use crate::app::App;
@@ -30,7 +31,7 @@ pub enum ModeColor {
 /// What the status line shows, except the position.
 #[derive(Debug, Clone, Default, PartialEq, JsObject)]
 pub struct StatusState {
-    /// The text of the mode badge: the vim mode, or `Settings`. None in the classic keymap.
+    /// The text of the mode badge: the vim mode, or `SETTINGS`. None in the classic keymap.
     pub badge: Option<String>,
     /// The colour of the mode badge.
     pub badge_color: ModeColor,
@@ -54,7 +55,7 @@ pub struct StatusState {
     pub outside: u32,
     /// The language of the file. Empty when no file shows.
     pub lang: String,
-    /// The encoding and the line endings, as `utf-8 · LF`.
+    /// The encoding and the line endings, as `UTF-8 · LF`.
     pub encoding: String,
 }
 
@@ -93,30 +94,23 @@ pub fn status_of(app: &App) -> StatusState {
         Mode::Visual(_) => ModeColor::ModeVisual,
         Mode::Command => ModeColor::ModeCommand,
     };
-    // The badge is bold on a strong fill, so its text is in sentence case, not in capitals.
+    // The badge shows the mode as vim writes it: `NORMAL`, `V-LINE`.
     let label = if replacing {
-        "Replace"
+        "REPLACE"
     } else if confirming {
-        "Confirm"
+        "CONFIRM"
     } else {
-        match mode {
-            Mode::Normal => "Normal",
-            Mode::Insert => "Insert",
-            Mode::Visual(VisualKind::Char) => "Visual",
-            Mode::Visual(VisualKind::Line) => "Visual line",
-            Mode::Visual(VisualKind::Block) => "Visual block",
-            Mode::Command => "Command",
-        }
+        mode.label()
     };
     let mut st = StatusState { mode_color, vim, branch: app.git.branch.clone(), ..StatusState::default() };
     if app.on_settings {
-        st.badge = Some("Settings".into());
+        st.badge = Some("SETTINGS".into());
         st.badge_color = ModeColor::ModeCommand;
         let dirty = if app.cfg != app.disk_cfg { " [+]" } else { "" };
         st.file = format!("config.toml{dirty}");
         let t = &app.cfg.theme;
         let resolved = crate::theme::resolve(crate::theme::Source::parse(&t.mode), &t.dark, &t.light, true, app.omarchy.as_ref()).1;
-        st.settings = Some(format!("{} · {}", t.mode, crate::theme::name(&resolved)));
+        st.settings = Some(format!("{} · {}", sentence(&t.mode), crate::theme::name(&resolved)));
         return st;
     }
     if vim {
@@ -131,10 +125,14 @@ pub fn status_of(app: &App) -> StatusState {
     let meta = d.buf.path.as_ref().and_then(|p| app.meta.get(p));
     let name = d.buf.path.as_deref().map(|p| app.rel(p)).unwrap_or_else(|| "[No Name]".into());
     let dirty = if d.buf.is_dirty() { " [+]" } else { "" };
-    let conflict = if meta.is_some_and(|m| m.conflict) { " [changed on disk]" } else { "" };
+    let conflict = if meta.is_some_and(|m| m.conflict) { " [Changed on disk]" } else { "" };
     st.file = format!("{name}{dirty}{conflict}");
-    st.lang = meta.and_then(|m| m.lang).map(crate::highlight::lang_label).unwrap_or("text").to_string();
-    st.encoding = format!("utf-8 · {}", d.buf.line_ending.label());
+    st.lang = language_name(meta.and_then(|m| m.lang).map_or("plain", crate::highlight::lang_label)).to_string();
+    let ending = match d.buf.line_ending {
+        LineEnding::Lf => "LF",
+        LineEnding::CrLf => "CRLF",
+    };
+    st.encoding = format!("UTF-8 · {ending}");
     let diags = meta.map(|m| m.diags.as_slice()).unwrap_or(&[]);
     let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
     st.errors = count(diags.iter().filter(|d| d.severity <= 1).count());
@@ -142,6 +140,59 @@ pub fn status_of(app: &App) -> StatusState {
     st.proposals = count(app.proposals.len());
     st.outside = count(app.outside.len());
     st
+}
+
+/// `text` with its first letter in capitals: `system` is `System`.
+fn sentence(text: &str) -> String {
+    let mut chars = text.chars();
+    chars.next().map(|c| c.to_uppercase().chain(chars).collect()).unwrap_or_default()
+}
+
+/// The name of a language as people write it, for the status line: `rust` is `Rust`.
+pub fn language_name(id: &str) -> &'static str {
+    match id {
+        "rust" => "Rust",
+        "python" => "Python",
+        "javascript" => "JavaScript",
+        "typescript" => "TypeScript",
+        "tsx" => "TSX",
+        "jsx" => "JSX",
+        "go" => "Go",
+        "c" => "C",
+        "cpp" => "C++",
+        "java" => "Java",
+        "ruby" => "Ruby",
+        "bash" => "Bash",
+        "json" => "JSON",
+        "lua" => "Lua",
+        "toml" => "TOML",
+        "yaml" => "YAML",
+        "markdown" => "Markdown",
+        "html" => "HTML",
+        "css" => "CSS",
+        "scss" => "SCSS",
+        "makefile" => "Makefile",
+        "dockerfile" => "Dockerfile",
+        "cmake" => "CMake",
+        "sql" => "SQL",
+        "zig" => "Zig",
+        "swift" => "Swift",
+        "kotlin" => "Kotlin",
+        "php" => "PHP",
+        "csharp" => "C#",
+        "haskell" => "Haskell",
+        "ocaml" => "OCaml",
+        "elixir" => "Elixir",
+        "erlang" => "Erlang",
+        "nix" => "Nix",
+        "vue" => "Vue",
+        "svelte" => "Svelte",
+        "xml" => "XML",
+        "diff" => "Diff",
+        "fish" => "Fish",
+        "zsh" => "Zsh",
+        _ => "Plain text",
+    }
 }
 
 /// Where the cursor is. Both texts are empty on the Settings tab and when no file shows.

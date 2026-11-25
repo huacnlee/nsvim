@@ -62,7 +62,7 @@ function Message(props: { font: () => FontState; command: CommandState }) {
       <View class="flex-1" />
       <If when={props.command.hint === "leader"}>
         <Line font={props.font} size={SIZE} mono class="text-foreground" testID="pending">
-          {"<space>"}
+          {"<Space>"}
         </Line>
       </If>
       <If when={props.command.hint === "pending"}>
@@ -81,7 +81,7 @@ function Message(props: { font: () => FontState; command: CommandState }) {
           }}
         >
           <Line font={props.font} size={12} mono class="text-text-faint">
-            {"<space> for keys"}
+            {"Space for keys"}
           </Line>
         </View>
       </If>

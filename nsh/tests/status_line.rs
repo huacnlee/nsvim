@@ -8,6 +8,7 @@ use std::time::Duration;
 use common::{flow, isolate_home, keymap_config, scratch, start_files, typ, type_text, write};
 use nsh_app_editor::app::DocMeta;
 use nsh_app_editor::app::review::Hunk;
+use nsh_app_editor::exports::language_name;
 use nsh_app_editor::services::lsp::Diag;
 use nsh_testing::Headless;
 
@@ -33,6 +34,8 @@ fn the_status_line_counts_diagnostics_and_outside_changes() -> Result<(), String
     let dir = scratch();
     let a = write(dir.path(), "a.rs", "fn a() {}\n");
     let mut f = flow(&a, None);
+    wait_text(&mut f.ui, "id:language", "Rust")?;
+    wait_text(&mut f.ui, "id:encoding", "UTF-8 · LF")?;
     assert!(!f.ui.screen().matches("id:errors")?, "no errors, no count");
     assert!(!f.ui.screen().matches("id:outside")?);
     let path = a.clone();
@@ -58,7 +61,7 @@ fn the_position_takes_the_colour_of_the_mode() -> Result<(), String> {
     let normal = background(&app, "id:position-fill");
     assert_eq!(normal, background(&app, "id:mode-badge"));
     typ(&mut app, &["i"]);
-    wait_text(&mut app, "id:mode", "Insert")?;
+    wait_text(&mut app, "id:mode", "INSERT")?;
     let insert = background(&app, "id:mode-badge");
     app.wait_until("the position takes the insert colour", WAIT, |s| {
         s.view_style("id:position-fill").unwrap().and_then(|v| v.background_color) == insert
@@ -89,7 +92,9 @@ fn the_write_button_writes_config_and_gives_the_keys_back() -> Result<(), String
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut f = flow(&a, None);
     type_text(&mut f.ui, ":Settings\n");
-    wait_text(&mut f.ui, "id:mode", "Settings")?;
+    wait_text(&mut f.ui, "id:mode", "SETTINGS")?;
+    // The theme mode starts with a capital letter: `System · Tokyo Night`.
+    f.ui.wait_for("id:status-line >> text:/^[A-Z][a-z]+ · /")?;
     f.update(|app, _| app.cfg.ui.size += 1.0);
     wait_text(&mut f.ui, "id:file", "config.toml [+]")?;
     f.ui.press("label:Write config.toml")?;
@@ -108,11 +113,11 @@ fn the_keys_button_gives_the_keys_back() -> Result<(), String> {
     let mut app = start_files(&[&a], None);
     app.wait_for("label:Show the keys")?;
     app.press("label:Show the keys")?;
-    wait_text(&mut app, "id:pending", "<space>")?;
+    wait_text(&mut app, "id:pending", "<Space>")?;
     typ(&mut app, &["escape"]);
     app.wait_for("label:Show the keys")?;
     typ(&mut app, &["i"]);
-    wait_text(&mut app, "id:mode", "Insert")?;
+    wait_text(&mut app, "id:mode", "INSERT")?;
     Ok(())
 }
 
@@ -128,5 +133,18 @@ fn a_search_shows_its_prompt_and_its_text() -> Result<(), String> {
     app.wait_for_gone("id:command-caret", WAIT)?;
     type_text(&mut app, "?ph");
     wait_text(&mut app, "id:command-input", "?ph")?;
+    Ok(())
+}
+
+#[test]
+fn the_status_line_names_languages_and_line_endings_as_people_write_them() -> Result<(), String> {
+    assert_eq!(language_name("cpp"), "C++");
+    assert_eq!(language_name("javascript"), "JavaScript");
+    assert_eq!(language_name("text"), "Plain text");
+    let dir = scratch();
+    let a = write(dir.path(), "a.md", "# title\r\nbody\r\n");
+    let mut app = start_files(&[&a], None);
+    wait_text(&mut app, "id:language", "Markdown")?;
+    wait_text(&mut app, "id:encoding", "UTF-8 · CRLF")?;
     Ok(())
 }

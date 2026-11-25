@@ -113,18 +113,18 @@ fn the_status_line_follows_the_mode() -> Result<(), String> {
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start(&a);
     app.wait_for("text:/alpha/")?;
-    wait_text(&mut app, "id:mode", "Normal")?;
-    assert_eq!(name(app.screen(), "id:language").as_deref(), Some("text"));
+    wait_text(&mut app, "id:mode", "NORMAL")?;
+    assert_eq!(name(app.screen(), "id:language").as_deref(), Some("Plain text"));
     assert_eq!(name(app.screen(), "id:position").as_deref(), Some("1:1"));
     let normal = background(&app, "id:mode-badge");
     typ(&mut app, &["i"]);
-    wait_text(&mut app, "id:mode", "Insert")?;
+    wait_text(&mut app, "id:mode", "INSERT")?;
     wait_text(&mut app, "id:message", "-- INSERT --")?;
     assert_ne!(background(&app, "id:mode-badge"), normal, "insert has its own colour");
     typ(&mut app, &["escape", "l"]);
     wait_text(&mut app, "id:position", "1:2")?;
     typ(&mut app, &["shift+v"]);
-    wait_text(&mut app, "id:mode", "Visual line")?;
+    wait_text(&mut app, "id:mode", "V-LINE")?;
     wait_text(&mut app, "id:message", "-- VISUAL LINE --")?;
     Ok(())
 }
@@ -150,13 +150,13 @@ fn the_command_line_shows_what_is_typed_with_a_caret() -> Result<(), String> {
     type_text(&mut app, ":set");
     wait_text(&mut app, "id:command-input", ":set")?;
     assert!(has(&app, "id:command-caret"));
-    wait_text(&mut app, "id:mode", "Command")?;
+    wait_text(&mut app, "id:mode", "COMMAND")?;
     typ(&mut app, &["left"]);
     wait_text(&mut app, "id:command-input", ":se")?;
     wait_text(&mut app, "id:command-after", "t")?;
     typ(&mut app, &["escape"]);
     app.wait_for_gone("id:command-caret", WAIT)?;
-    wait_text(&mut app, "id:mode", "Normal")?;
+    wait_text(&mut app, "id:mode", "NORMAL")?;
     Ok(())
 }
 
@@ -208,7 +208,7 @@ fn a_click_on_a_file_in_the_tree_opens_it() -> Result<(), String> {
     app.wait_until("the tree marks the new file", WAIT, |s| s.selected("role:treeitem[notes.md]").unwrap_or(false))?;
     // The click gives the keys back to the editor.
     typ(&mut app, &["i"]);
-    wait_text(&mut app, "id:mode", "Insert")?;
+    wait_text(&mut app, "id:mode", "INSERT")?;
     Ok(())
 }
 
@@ -291,11 +291,11 @@ fn the_settings_tab_shows_in_the_buffer_line() -> Result<(), String> {
     app.wait_for("role:tab[settings]")?;
     assert!(app.screen().selected("role:tab[settings]")?);
     assert!(!app.screen().selected("role:tab[a.txt]")?);
-    wait_text(&mut app, "id:mode", "Settings")?;
+    wait_text(&mut app, "id:mode", "SETTINGS")?;
     app.wait_for("text:config.toml")?;
     assert!(has(&app, "label:Write config.toml"));
     app.press("role:tab[a.txt]")?;
-    wait_text(&mut app, "id:mode", "Normal")?;
+    wait_text(&mut app, "id:mode", "NORMAL")?;
     assert!(app.screen().selected("role:tab[a.txt]")?);
     Ok(())
 }
@@ -343,7 +343,7 @@ fn the_status_line_counts_errors_and_warnings_and_shows_the_scroll() {
     assert_eq!((st.errors, st.warnings), (2, 1));
     assert_eq!(st.file, "a.rs");
     assert_eq!(position_of(&app).scroll, "Top");
-    assert_eq!((st.badge.as_deref(), st.badge_color), (Some("Normal"), ModeColor::Primary));
+    assert_eq!((st.badge.as_deref(), st.badge_color), (Some("NORMAL"), ModeColor::Primary));
     app.ed.doc_mut().view.cursor.line = 49;
     assert_eq!(position_of(&app).scroll, "50%");
     app.ed.doc_mut().view.cursor.line = 100;
@@ -372,6 +372,6 @@ fn the_command_line_shows_pending_keys_and_a_button_for_the_keys() -> Result<(),
     typ(&mut app, &["escape"]);
     app.wait_for("label:Show the keys")?;
     app.press("label:Show the keys")?;
-    wait_text(&mut app, "id:pending", "<space>")?;
+    wait_text(&mut app, "id:pending", "<Space>")?;
     Ok(())
 }

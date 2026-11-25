@@ -127,7 +127,7 @@ fn a_mouse_drag_selects_across_lines() -> Result<(), String> {
     app.wait_for("text:middle")?;
     let h = row_h(&app);
     app.drag("id:row-0 >> text:first line", point(0.0, 2.0 * h), DragOptions::default())?;
-    app.wait_for("Visual")?;
+    app.wait_for("VISUAL")?;
     assert!(marked(&app, 1, "middle")?, "the middle line is selected: {}", texts(&app));
     assert!(marked(&app, 0, "line")?, "the end of the first line is selected");
     assert!(!marked(&app, 0, "first")?, "the start of the first line is not");
@@ -142,11 +142,11 @@ fn a_double_click_selects_a_word_and_a_triple_click_the_line() -> Result<(), Str
     app.wait_for("text:hello world")?;
     click(&mut app, "id:row-0 >> text:hello world", 2.0, 4.0)?;
     click(&mut app, "id:row-0 >> text:hello world", 2.0, 4.0)?;
-    app.wait_for("Visual")?;
+    app.wait_for("VISUAL")?;
     assert!(marked(&app, 0, "hello")?);
     assert!(!marked(&app, 0, "world")?);
     click(&mut app, "id:row-0 >> text:hello world", 2.0, 4.0)?;
-    app.wait_for("Visual line")?;
+    app.wait_for("V-LINE")?;
     assert!(marked(&app, 0, "world")?);
     Ok(())
 }

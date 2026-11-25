@@ -79,7 +79,7 @@ fn escape_and_a_press_outside_close_the_finder() -> Result<(), String> {
     app.wait_for_gone("id:picker", WAIT)?;
     // The keys go to the text again.
     typ(&mut app, &["shift+a"]);
-    app.wait_for("Insert")?;
+    app.wait_for("INSERT")?;
     Ok(())
 }
 

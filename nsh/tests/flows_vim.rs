@@ -87,11 +87,11 @@ fn r_overtypes_and_the_status_line_says_replace() {
     let (_dir, mut f) = rust_flow("neovim", SRC);
     f.keys("R");
     assert!(f.read(|a| editor::vim::replacing(&a.ed.vim)));
-    f.ui.wait_for("text:Replace").unwrap();
+    f.ui.wait_for("text:REPLACE").unwrap();
     f.keys("xy\x1b");
     assert!(f.text().starts_with("xy main"), "{}", f.text());
     assert!(!f.read(|a| editor::vim::replacing(&a.ed.vim)));
-    f.ui.wait_for("text:Normal").unwrap();
+    f.ui.wait_for("text:NORMAL").unwrap();
 }
 
 #[test]
