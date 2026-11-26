@@ -10,7 +10,9 @@ const WIDTH = TERM ? 256 : 260;
 /** A row's height, and a separator's: one cell each in a terminal. */
 const ROW = TERM ? 16 : 24;
 const SEPARATOR = TERM ? 16 : 9;
-/** The padding above and below the rows: the border's cell in a terminal. */
+/** The padding above and below the rows: the border's cell in a terminal. The menu also has
+ * padding left and right of its rows (`px-[8px]`, `p-[4px]`), so the selected row's fill does
+ * not touch the border. */
 const PAD = TERM ? 32 : 8;
 
 /** The menu's height: its rows, separators and padding. */
@@ -41,7 +43,7 @@ function Menu(props: { part: () => MenuState }) {
   return (
     <View class="absolute" style={{ left: left(), top: top() }} onPress={() => Shell.focusKeys()}>
       <View
-        class={TERM ? "bg-background border border-border" : "py-[4px] rounded-(--radius) bg-muted border border-border shadow-lg"}
+        class={TERM ? "px-[8px] bg-background border border-border" : "p-[4px] rounded-(--radius) bg-muted border border-border shadow-lg"}
         style={{ width: WIDTH }}
         role="menu"
         testID="context-menu"
@@ -53,7 +55,7 @@ function Menu(props: { part: () => MenuState }) {
               else={<View class={TERM ? "h-[16px] w-full" : "h-px w-full my-[4px] bg-border"} />}
             >
               <View
-                class={TERM ? "flex-row h-[16px] px-[8px] items-center" : "flex-row h-[24px] px-[12px] items-center"}
+                class={TERM ? "flex-row h-[16px] px-[8px] items-center" : "flex-row h-[24px] px-[8px] rounded-(--radius) items-center"}
                 classList={{
                   "bg-surface-raised": part().sel === index(),
                   "hover:bg-surface-raised": part().sel !== index() && item().enabled,

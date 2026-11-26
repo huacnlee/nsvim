@@ -11,6 +11,9 @@ const ROW_H = TERM ? 16 : 22;
 /** The list's padding above and below its rows (`pt-[10px] pb-[6px]`). A terminal has none:
  * the border's cell is the gap. */
 const PAD_Y = TERM ? 0 : 16;
+/** The list's padding left and right of its rows, so a picked row's fill does not touch the
+ * border: one cell in a terminal. */
+const PAD_X = TERM ? "px-[8px]" : "px-[6px]";
 /** Rows one notch of a mouse wheel scrolls. */
 const WHEEL_LINES = 3;
 
@@ -39,7 +42,7 @@ function Line(props: { row: PickRow }) {
 function Row(props: { row: PickRow; picked: boolean }) {
   return (
     <View
-      class={`flex-row ${TERM ? "h-[16px]" : "h-[22px]"} px-[8px] items-center cursor-pointer`}
+      class={`flex-row ${TERM ? "h-[16px]" : "h-[22px] rounded-(--radius)"} px-[8px] items-center cursor-pointer`}
       classList={{ "bg-surface-raised": props.picked, "hover:bg-surface-raised": !props.picked }}
       role="option"
       accessibilityLabel={props.row.label}
@@ -79,7 +82,7 @@ export function PickList(props: { empty: string }) {
   };
   return (
     <View
-      class={`flex-1 min-h-0 overflow-hidden ${TERM ? "" : "pt-[10px] pb-[6px]"}`}
+      class={`flex-1 min-h-0 overflow-hidden ${PAD_X} ${TERM ? "" : "pt-[10px] pb-[6px]"}`}
       onLayout={({ bounds }) => Overlays.setPickFit(fit(bounds.size.height))}
       onWheel={wheel}
     >
