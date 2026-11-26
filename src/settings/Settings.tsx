@@ -84,7 +84,7 @@ function Header(props: { state: () => SettingsState }) {
 function Nav(props: { state: () => SettingsState }) {
   return (
     <View class="w-57.5 shrink-0 bg-muted border-r border-border">
-      <View class="flex-1 pt-1.5" role="tablist">
+      <View class="flex-1 pt-1.5 px-1.5" role="tablist">
         <Each of={props.state().sections}>
           {(name) => {
             const on = () => props.state().section === name();
@@ -95,7 +95,7 @@ function Nav(props: { state: () => SettingsState }) {
                 accessibilityLabel={name()}
                 testID={`section:${name().toLowerCase()}`}
                 onPress={act(() => SettingsPage.showSection(name()))}
-                class="flex-row h-6.5 items-center"
+                class="flex-row h-6.5 items-center rounded-(--radius)"
                 // The active section keeps its look under the pointer: only the others take hover.
                 classList={{ "bg-selection": on(), "bg-muted": !on(), "hover:bg-surface-raised": !on() }}
               >
@@ -123,7 +123,7 @@ function Row(props: { item: () => SettingsItem; index: () => number; state: () =
   const key = props.item().key;
   if (kind === "heading") {
     return (
-      <Text class="text-xs pb-1.5 text-muted-foreground" classList={{ "pt-4.5": props.index() > 0 }}>
+      <Text class="text-xs pb-1.5 px-2 text-muted-foreground" classList={{ "pt-4.5": props.index() > 0 }}>
         {props.item().key}
       </Text>
     );
@@ -140,7 +140,7 @@ function Row(props: { item: () => SettingsItem; index: () => number; state: () =
   if (kind === "check") {
     return (
       <View
-        class="w-full py-1 border-b border-border"
+        class="w-full py-1 px-2 border-b border-border"
         classList={{ "bg-surface-raised": kb(), "bg-background": !kb() }}
         testID={`row:${key}`}
       >
@@ -153,7 +153,7 @@ function Row(props: { item: () => SettingsItem; index: () => number; state: () =
   if (kind === "themes") {
     return (
       <View
-        class="w-full gap-2.5 py-2.5 border-b border-border"
+        class="w-full gap-2.5 py-2.5 px-2 border-b border-border"
         classList={{ "bg-surface-raised": kb(), "bg-background": !kb() }}
         testID={`row:${key}`}
       >
@@ -164,7 +164,7 @@ function Row(props: { item: () => SettingsItem; index: () => number; state: () =
   }
   return (
     <View
-      class="w-full py-1 border-b border-border flex-row min-h-10 gap-6 items-center flex-wrap"
+      class="w-full py-1 px-2 border-b border-border flex-row min-h-10 gap-6 items-center flex-wrap"
       classList={{ "bg-surface-raised": kb(), "bg-background": !kb() }}
       testID={`row:${key}`}
     >
