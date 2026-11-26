@@ -115,7 +115,7 @@ fn a_dirty_file_shows_a_dot_on_its_tab_and_a_plus_in_the_status_line() -> Result
 }
 
 #[test]
-fn the_close_button_closes_a_clean_tab_and_keeps_a_dirty_one() -> Result<(), String> {
+fn the_close_button_closes_a_clean_tab_and_asks_about_a_dirty_one() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let b = write(dir.path(), "b.txt", "beta\n");
@@ -123,12 +123,19 @@ fn the_close_button_closes_a_clean_tab_and_keeps_a_dirty_one() -> Result<(), Str
     app.wait_for("text:/beta/")?;
     typ(&mut app, &["x"]);
     wait_text(&mut app, "id:tab-mark-1", "Unsaved changes")?;
+    app.answer_dialogs_myself();
     app.press("id:tab-close-1")?;
-    app.wait_for("id:error")?;
-    assert!(has(&app, "role:tab[b.txt]"), "a dirty tab stays open");
+    let d = app.pending_dialog().ok_or("a dirty tab asks in a dialog")?;
+    assert_eq!(d.title.as_deref(), Some("Save changes to \"b.txt\"?"));
+    app.answer_dialog(nsh_testing::DialogAnswer::Press("Cancel".into()))?;
+    assert!(has(&app, "role:tab[b.txt]"), "cancel keeps the dirty tab open");
     app.press("id:tab-close-0")?;
     app.wait_for_gone("role:tab[a.txt]", WAIT)?;
     assert_eq!(app.screen().count("role:tab")?, 1);
+    app.press("id:tab-close-0")?;
+    app.answer_dialog(nsh_testing::DialogAnswer::Press("Don't save".into()))?;
+    app.wait_for_gone("role:tab[b.txt]", WAIT)?;
+    assert_eq!(std::fs::read_to_string(&b).unwrap(), "beta\n", "don't save writes nothing");
     Ok(())
 }
 

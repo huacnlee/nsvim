@@ -76,12 +76,12 @@ impl Tabs {
         crate::bridge::update(move |a, tx| a.tab_menu(index as usize, (x as f32, y as f32), tx));
     }
 
-    /// Closes tab `index`. A file with unsaved changes stays open
-    /// and the editor tells why.
+    /// Closes tab `index`. For a file with unsaved changes, a dialog asks to save them, drop
+    /// them or keep the tab.
     pub fn close(index: u32) {
-        crate::bridge::update(move |a, _| {
+        crate::bridge::update(move |a, tx| {
             if (index as usize) < a.ed.docs.len() {
-                a.close_tab(index as usize);
+                a.close_tab(index as usize, tx);
             }
         });
     }

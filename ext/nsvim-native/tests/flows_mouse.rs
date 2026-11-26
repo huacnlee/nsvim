@@ -72,11 +72,11 @@ fn a_middle_click_closes_a_clean_tab() {
     f.settle("the tab closes", |a| a.ed.docs.len() == 1);
 }
 
-/// The files are plain text: a Rust file starts rust-analyzer, and its own message ("started",
-/// or "exited before it started" where it is not installed) comes on its own time and can
-/// replace the error that the test waits for.
+/// The files are plain text: a Rust file starts rust-analyzer, whose messages ("started", or
+/// "exited before it started" where it is not installed) arrive on their own time and only add
+/// noise to this test.
 #[test]
-fn a_middle_click_keeps_a_dirty_tab_open() {
+fn a_middle_click_on_a_dirty_tab_asks_and_cancel_keeps_it() {
     let dir = common::scratch();
     let two = common::write(dir.path(), "two.txt", "two\n");
     let main = common::write(dir.path(), "main.txt", SRC);
@@ -91,7 +91,11 @@ fn a_middle_click_keeps_a_dirty_tab_open() {
     })
     .unwrap();
     f.middle_click(&format!("id:tab-{active}"), point(20.0, 10.0));
-    f.settle("the editor tells why", |a| a.ed.msg.as_ref().is_some_and(|m| m.error && m.text.starts_with("E37")));
+    // The test's dialog handler presses Cancel.
+    f.ui.wait_until("the unsaved changes dialog", std::time::Duration::from_secs(5), |s| {
+        s.dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Save changes to")))
+    })
+    .unwrap();
     assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");
 }
 

@@ -49,6 +49,9 @@ impl Shell {
     /// The user asked to close the window. The app decides: it quits, or warns about unsaved
     /// edits first.
     pub fn close_requested() {
-        crate::bridge::send(|s| s.close_requested());
+        crate::bridge::send(|s| {
+            s.close_requested();
+            super::refocus_keys();
+        });
     }
 }

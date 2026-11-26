@@ -79,6 +79,35 @@ impl PopupMenu {
     }
 }
 
+/// What a button of a [`Confirm`] dialog means: the platform places and draws it by its role.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    Default,
+    Cancel,
+    Destructive,
+}
+
+/// A native alert with a title, a description and buttons. Its answer is the id of the
+/// button chosen, or None when it closed without one.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Confirm {
+    pub title: String,
+    pub description: String,
+    /// The buttons in order: id, label, role.
+    pub buttons: Vec<(String, String, Role)>,
+}
+
+impl Confirm {
+    pub fn new(title: impl Into<String>, description: impl Into<String>) -> Confirm {
+        Confirm { title: title.into(), description: description.into(), buttons: Vec::new() }
+    }
+
+    pub fn button(mut self, id: &str, label: &str, role: Role) -> Confirm {
+        self.buttons.push((id.to_string(), label.to_string(), role));
+        self
+    }
+}
+
 /// A thing the app asks the window to do.
 pub enum Effect {
     Quit,
@@ -99,6 +128,13 @@ pub enum Effect {
     /// Show the system's folder dialog, starting in this folder. The callback gets the folder
     /// picked, None when cancelled, or why the dialog could not show.
     ChooseFolder(std::path::PathBuf, Then<Result<Option<std::path::PathBuf>, String>>),
+    /// Show a native alert. The callback gets the id of the button chosen, None when it
+    /// closed without one, or why it could not show.
+    Confirm(Confirm, Then<Result<Option<String>, String>>),
+    /// Show a native alert with a text field that starts with this text. The callback gets
+    /// the text when the user pressed the default button, None when cancelled, or why it
+    /// could not show.
+    Prompt(Confirm, String, Then<Result<Option<String>, String>>),
 }
 
 /// The effects of one update, and the state of the input event that caused it.
@@ -161,6 +197,21 @@ impl Tx {
         then: impl FnOnce(&mut App, Result<Option<std::path::PathBuf>, String>, &mut Tx) + 'static,
     ) {
         self.effects.push(Effect::ChooseFolder(start, Box::new(then)));
+    }
+
+    pub fn confirm(&mut self, dialog: Confirm, then: impl FnOnce(&mut App, Result<Option<String>, String>, &mut Tx) + 'static) {
+        self.effects.push(Effect::Confirm(dialog, Box::new(then)));
+    }
+
+    /// Asks for a line of text in a native dialog. `dialog` holds the buttons: the answer is the
+    /// text when a `Role::Default` button closed it, else None.
+    pub fn prompt(
+        &mut self,
+        dialog: Confirm,
+        text: impl Into<String>,
+        then: impl FnOnce(&mut App, Result<Option<String>, String>, &mut Tx) + 'static,
+    ) {
+        self.effects.push(Effect::Prompt(dialog, text.into(), Box::new(then)));
     }
 
     pub fn wake_after(&mut self, delay: Duration) {

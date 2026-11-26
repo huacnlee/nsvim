@@ -209,10 +209,11 @@ impl App {
         }
     }
 
-    /// Opens the command line with `:Rename <word under the cursor>`, ready to edit.
-    pub fn start_rename(&mut self) {
+    /// The word under the cursor, when it can be a symbol's name, after leaving Insert and
+    /// Visual mode. None with no file open.
+    fn rename_word(&mut self) -> Option<String> {
         if !self.ed.has_doc() {
-            return;
+            return None;
         }
         let cur = self.ed.cursor();
         let (a, b) = editor::vim::word_range_at(self.ed.buf(), cur);
@@ -221,7 +222,30 @@ impl App {
         if self.ed.keymap == Keymap::Vim && matches!(self.ed.mode, Mode::Insert | Mode::Visual(_)) {
             editor::vim::handle_key(&mut self.ed, KeyInput::plain(KeyCode::Esc));
         }
+        Some(word)
+    }
+
+    /// Opens the command line with `:Rename <word under the cursor>`, ready to edit. The keys
+    /// (F2) rename this way.
+    pub fn start_rename(&mut self) {
+        let Some(word) = self.rename_word() else { return };
         editor::vim::open_cmdline(&mut self.ed, ':', &format!("Rename {word}"));
+    }
+
+    /// Asks for the new name in a dialog. A menu, the palette and the right-click menu rename
+    /// this way, so the mouse never lands on the command line. Where no dialog can show (a
+    /// terminal), the command line asks.
+    pub fn ask_rename(&mut self, tx: &mut Tx) {
+        let Some(word) = self.rename_word() else { return };
+        let title = if word.is_empty() { "Rename symbol".to_string() } else { format!("Rename \"{word}\"") };
+        let dialog = super::fx::Confirm::new(title, "The language server renames it everywhere it is used.")
+            .button("rename", "Rename", super::fx::Role::Default)
+            .button("cancel", "Cancel", super::fx::Role::Cancel);
+        tx.prompt(dialog, word.clone(), move |a, typed, _| match typed {
+            Ok(Some(name)) if name.trim() != word => a.rename(name),
+            Ok(_) => {}
+            Err(_) => editor::vim::open_cmdline(&mut a.ed, ':', &format!("Rename {word}")),
+        });
     }
 
     /// Asks for the code actions at the cursor or over the selection.
