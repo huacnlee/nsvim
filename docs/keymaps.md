@@ -835,6 +835,7 @@ Turn the mouse on or off in setup, in Settings or with `:set mouse`. When it is 
 - A right-click opens the context menu, when `mouse.right_click` is on.
 - A click on a tab goes to it. A click on its `×`, or a middle-click on the tab, closes it.
   A tab with unsaved changes stays open.
+- Drag a tab along the line to move it. A line shows where it lands.
 - A click on a row of the file tree opens the file or folder. The wheel over the tree scrolls
   it, and the keyboard row stays where it was. Drag the tree's edge to resize it.
 - A click on a row of a picker or the leader menu runs it.
