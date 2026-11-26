@@ -102,7 +102,7 @@ export function ReadyStep(props: Step) {
       ? [
           ["Find a file", [l, "f"]],
           ["Every key, in a popup", [l]],
-          ["Command palette", [l, ":"]],
+          ["Command palette", [l, "p"]],
           ["Settings", [":Settings"]],
         ]
       : [
