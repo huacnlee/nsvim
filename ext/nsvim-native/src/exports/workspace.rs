@@ -91,16 +91,22 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     let root_bg = move || {
         if alpha.get() < 1.0 { ui::style::swatch(crate::color::Color::TRANSPARENT) } else { ui::style::color("background") }
     };
+    // While the hidden input has the keyboard, the root captures nothing: an ancestor's capture
+    // would take the characters before the input method sees them.
+    let sink_focused = signal(false);
     view()
         .flex_1()
         .bg(root_bg)
         .text_color(move || ui::style::color("foreground"))
         .element_ref(&keys)
         .focusable(true)
-        .capture_keys(KeyCapture::All)
+        .capture_keys(move || if sink_focused.get() { KeyCapture::None } else { KeyCapture::All })
         .on_focus(move || s.update(|a, _| a.key_focus = true))
         .on_blur(move || s.update(|a, _| a.key_focus = false))
         .on_key_down(move |e: &KeyEvent| {
+            if sink_focused.get_untracked() {
+                return;
+            }
             if let Some(captured) = keys::mac_quit_key(e, os()) {
                 if captured {
                     s.close_requested();
@@ -112,6 +118,100 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
             }
         })
         .child(props.children)
+        .child(text_sink(s, keys, sink_focused))
+}
+
+/// The hidden input that takes the keyboard where text is typed (Insert mode, the classic
+/// keymap), so the platform's input method can compose there ([`crate::ime`]). Keys that do not
+/// type text are captured and go to the editor as before; nothing is captured while an input
+/// method composes, whose keys (Backspace, Enter, the arrows) are its own. Not in a terminal.
+fn text_sink(s: Session, keys: ElementRef, focused: Signal<bool>) -> AnyElement {
+    use editor::editor::{KeyCode, KeyInput, Keymap, Mode};
+    use std::{cell::RefCell, rc::Rc};
+
+    let sink = element_ref();
+    if crate::terminal() {
+        return view().into_element();
+    }
+    let typing = s.view(|a| a.ed.keymap != Keymap::Vim || a.ed.mode == Mode::Insert);
+    let editor = s.view(|a| a.key_focus);
+    let composing = signal(false);
+    let text = Rc::new(RefCell::new(crate::ime::SinkText::default()));
+    // Keys that do not type text go to the editor through the keymap while the input has the
+    // keyboard: a focused input owns its raw keys. Not while an input method composes.
+    let bound = Rc::new(crate::ime::editor_keys(apple_keys()));
+    effect(move || {
+        if !focused.get() || composing.get() {
+            return;
+        }
+        let os = os();
+        for (text, k) in bound.iter() {
+            let reserved = nsh_core::keymap::Keystroke::parse_with(text, apple_keys()).map_or(true, |p| p.reserved(os).is_some());
+            if reserved {
+                continue;
+            }
+            let k = *k;
+            on_key_with(
+                text,
+                KeyOptions { when: nsh_core::keymap::When::Always, repeat: true, for_focus: true, ..Default::default() },
+                move |_| s.key(k),
+            );
+        }
+    });
+    // The keyboard follows the mode: to the input while text is typed, back to the editor after.
+    {
+        effect(move || {
+            let (typing, editor) = (typing.get(), editor.get());
+            if typing && editor && !focused.get() {
+                sink.focus();
+            } else if !typing && focused.get() {
+                keys.focus();
+            }
+        });
+    }
+    let typed = move |t: String| {
+        for c in t.chars() {
+            let code = match c {
+                '\n' | '\r' => KeyCode::Enter,
+                '\t' => KeyCode::Tab,
+                c => KeyCode::Char(c),
+            };
+            s.key(KeyInput { code, ctrl: false, alt: false, shift: false, cmd: false });
+        }
+    };
+    let (change, compose) = (text.clone(), text);
+    nsh_core::element::input()
+        .element_ref(&sink)
+        .test_id("text-input")
+        .absolute()
+        .left(px(0.0))
+        .bottom(px(0.0))
+        .w(px(1.0))
+        .h(px(1.0))
+        .pointer_events(PointerEvents::None)
+        .p_0()
+        .border(px(0.0))
+        .bg(AdaptiveColor::TRANSPARENT)
+        .text_color(AdaptiveColor::TRANSPARENT)
+        // Not 0, which takes the input out of accessibility and focus.
+        .opacity(0.02)
+        .caret(false)
+        .auto_correct(false)
+        .value(String::new())
+        .on_change(move |t: &str| typed(change.borrow_mut().changed(t)))
+        .on_composition_change(move |c: &nsh_core::element::Composition| {
+            composing.set(c.composing);
+            typed(compose.borrow_mut().composed(c.composing));
+        })
+        .on_focus(move || {
+            focused.set(true);
+            s.update(|a, _| a.key_focus = true);
+        })
+        .on_blur(move || {
+            focused.set(false);
+            s.update(|a, _| a.key_focus = false);
+        })
+        .into_element()
 }
 
 /// The app state for a launch that a test set, or else for the command line (or, in a

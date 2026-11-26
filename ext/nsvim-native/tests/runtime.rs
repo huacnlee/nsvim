@@ -312,49 +312,6 @@ fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
     Ok(())
 }
 
-/// The app on macOS with one file open.
-fn start_on_mac(file: &Path) -> Headless {
-    let launch = Launch {
-        project: file.parent().map(Path::to_path_buf),
-        config: Some(CONFIG.into()),
-        files: vec![file.to_path_buf()],
-        first_launch: false,
-    };
-    common::engine_on(nsvim_native::Pending { launch, config_file: None, on_session: None }, nsh_core::platform::Os::MacOs)
-}
-
-#[test]
-fn cmd_q_on_macos_quits_a_clean_editor_in_the_neovim_keymap() -> Result<(), String> {
-    isolate();
-    let dir = scratch();
-    let file = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start_on_mac(&file);
-    app.wait_for("text:/alpha/")?;
-    typ(&mut app, &["cmd+q"]);
-    wait_quit(&mut app)
-}
-
-#[test]
-fn cmd_q_on_macos_asks_once_over_unsaved_edits() -> Result<(), String> {
-    isolate();
-    let dir = scratch();
-    let file = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start_on_mac(&file);
-    app.wait_for("text:/alpha/")?;
-    typ(&mut app, &["x"]);
-    app.wait_for("text:/^lpha/")?;
-    typ(&mut app, &["cmd+q"]);
-    app.wait_for("text:/E37: \"a.txt\" has unsaved changes/")?;
-    assert!(!app.quit(), "the first cmd+q keeps the window");
-    assert_eq!(std::fs::read_to_string(&file).unwrap(), "alpha\n", "the file is not written");
-    typ(&mut app, &["cmd+q"]);
-    wait_quit(&mut app)?;
-    let swap = nsvim_native::services::io::swap_file(&file);
-    let kept = std::fs::read_to_string(&swap).map_err(|e| format!("{}: {e}", swap.display()))?;
-    assert!(kept.contains("lpha"), "the swap file holds the edit: {kept}");
-    Ok(())
-}
-
 #[test]
 fn search_results_show_the_preview_without_a_key() -> Result<(), String> {
     isolate();

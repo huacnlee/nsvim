@@ -12,6 +12,7 @@ pub mod exports;
 pub mod fuzzy;
 pub mod geometry;
 pub mod highlight;
+pub mod ime;
 pub mod ipc;
 pub mod keys;
 pub mod migrate;
