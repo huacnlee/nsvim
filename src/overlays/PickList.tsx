@@ -50,6 +50,11 @@ function Row(props: { row: PickRow; picked: boolean }) {
         <Icon name="chevronRight" size={SIZE} class="text-primary" style={{ opacity: props.picked ? 1 : 0 }} />
       </View>
       <Line row={props.row} />
+      <If when={props.row.keys}>
+        <Text class="shrink-0 pl-[12px] text-muted-foreground" style={{ fontSize: SIZE }}>
+          {props.row.keys}
+        </Text>
+      </If>
     </View>
   );
 }

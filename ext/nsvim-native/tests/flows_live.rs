@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use common::{Flow, SRC, flow, flow_files, keymap_config, rust_flow, scratch, write};
 use editor::buffer::Pos;
-use editor::editor::Keymap;
+use editor::editor::{Keymap, Mode, VisualKind};
 use nsvim_native::app::{App, Overlay, PickKind};
 
 fn picking(a: &App, kind: PickKind) -> bool {
@@ -93,6 +93,9 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" ?");
     f.settle("SPC ? shows every key", |a| picking(a, PickKind::Keys));
     f.keys("\x1b");
+    f.keys(" p");
+    f.settle("SPC p opens the command palette", |a| picking(a, PickKind::Commands));
+    f.keys("\x1b");
 
     // +git: the two changed blocks, in order and around.
     f.settle("git signs", |a| a.meta.get(&a.ed.buf().path.clone().unwrap()).is_some_and(|m| !m.signs.is_empty()));
@@ -172,9 +175,9 @@ fn every_leader_menu_key_does_what_it_says() {
     f.settle("SPC a p shows the proposal", |a| active_ends_with(a, "main.c") && a.proposal_here().is_some());
     f.keys("n");
 
-    // SPC p lists the projects to open.
-    f.keys(" p");
-    f.settle("SPC p opens the project list", |a| picking(a, PickKind::Projects));
+    // SPC o lists the projects to open.
+    f.keys(" o");
+    f.settle("SPC o opens the project list", |a| picking(a, PickKind::Projects));
     f.keys("\x1b");
 
     // SPC q closes the buffer.
@@ -182,15 +185,13 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" q");
     f.settle("SPC q closes the buffer", |a| a.ed.docs.len() == 1);
 
-    // A key added to the menu must be added here too.
-    let tested = ["f", "p", "b", "/", "e", ",", "?", "d", "gn", "gp", "gs", "ld", "lr", "lh", "ln", "la", "w", "al", "ac", "ap", "an", "q"];
-    use nsvim_native::app::keys::{LEADER, LEADER_AGENT, LEADER_GIT, LEADER_LSP};
-    let shown = LEADER.iter().filter(|(_, _, group)| !group).map(|(c, _, _)| c.to_string());
-    let groups = [('g', LEADER_GIT), ('l', LEADER_LSP), ('a', LEADER_AGENT)];
-    let shown = shown.chain(groups.iter().flat_map(|(g, keys)| keys.iter().map(move |(c, _, _)| format!("{g}{c}"))));
-    for key in shown {
-        assert!(tested.contains(&key.as_str()), "SPC {key} shows in the menu but this test does not press it");
-    }
+    // Every other key of the menu runs a palette command, which `every_palette_command_does_what_it_says`
+    // runs, and `palette_tests` checks that each key finds its command.
+}
+
+/// The whole text of the active buffer.
+fn text(a: &App) -> String {
+    a.ed.buf().slice(0, a.ed.buf().len_chars())
 }
 
 /// Runs palette command `id`, waits until `done` holds and presses Esc.
@@ -246,6 +247,52 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "outside", "outside says when there is nothing", |a| said(a, "no changes from outside"));
     run_check(&mut f, t, "clear-outside", "clear-outside confirms", |a| said(a, "cleared"));
     run_check(&mut f, t, "proposal", "proposal says when there is none", |a| said(a, "no proposals"));
+    run_check(&mut f, t, "clear-note", "clear-note clears the note", |a| a.note.is_none());
+    run_check(&mut f, t, "buffers", "buffers lists the buffers", |a| picking(a, PickKind::Buffers));
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "diagnostics", "diagnostics says when there are none", |a| said(a, "no diagnostics"));
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "git-next", "git-next says when there is no change", |a| said(a, "no changes against HEAD"));
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "git-prev", "git-prev says when there is no change", |a| said(a, "no changes against HEAD"));
+    run_check(&mut f, t, "git-status", "git-status focuses the tree", |a| a.tree.show && a.tree.focus);
+    // Hover needs a language server: `every_leader_menu_key_does_what_it_says` checks it with clangd.
+    t.push("hover");
+    // The Edit and Go menus, which Linux and Windows do not show.
+    let before = f.read(text);
+    f.keys("x");
+    let undone = before.clone();
+    run_check(&mut f, t, "undo", "undo takes the edit back", move |a| text(a) == undone);
+    run_check(&mut f, t, "redo", "redo makes the edit again", move |a| text(a) != before);
+    run_check(&mut f, t, "all", "select all selects every line", |a| a.ed.mode == Mode::Visual(VisualKind::Line));
+    f.keys("V");
+    run_check(&mut f, t, "copy", "copy yanks the selected line", |a| {
+        a.ed.mode == Mode::Normal && a.ed.regs.get(None).is_some_and(|r| r.linewise && !r.text.is_empty())
+    });
+    let full = f.read(text);
+    f.keys("V");
+    let cut = full.clone();
+    run_check(&mut f, t, "cut", "cut deletes the selected line", move |a| text(a).len() < cut.len());
+    // Paste reads the clipboard in a task that only key events drive, so this one goes the way
+    // a person goes: `Ctrl ⇧ P` in the Neovim keymap, the name, Enter.
+    f.press("ctrl+shift+p");
+    f.settle("Ctrl Shift P opens the palette in the Neovim keymap", |a| picking(a, PickKind::Commands));
+    f.keys("paste");
+    f.settle("the query picks Paste", |a| {
+        matches!(&a.overlay, Overlay::Pick(p) if p.matches.get(p.sel).is_some_and(|m| nsvim_native::app::palette::COMMANDS[m.index].id == "paste"))
+    });
+    f.press("enter");
+    f.settle("paste puts it back", move |a| text(a).len() >= full.len());
+    t.push("paste");
+    for id in ["definition", "references", "actions"] {
+        f.update(|a, _| a.ed.msg = None);
+        run_check(&mut f, t, id, id, |a| said(a, "no language server"));
+    }
+    run_check(&mut f, t, "rename", "rename opens :Rename", |a| a.ed.cmd.as_ref().is_some_and(|c| c.text.starts_with("Rename ")));
+    // A test cannot pick a folder in the system's dialog. `palette_tests` checks that it asks.
+    t.push("folder");
+    f.update(|a, t| a.run_command("save", t));
+    f.settle("the edits are saved", |a| !a.ed.buf().is_dirty());
     f.keys("x");
     run_check(&mut f, t, "quit", "quit refuses to drop unsaved edits", |a| {
         a.ed.msg.as_ref().is_some_and(|m| m.error && m.text.contains("E37"))
@@ -262,8 +309,8 @@ fn every_palette_command_does_what_it_says() {
     f.settle(":set theme=nope is an error", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
 
     // An entry added to the palette must be added here too.
-    for (label, id) in nsvim_native::app::picker::COMMANDS {
-        assert!(tested.contains(id), "\"{label}\" ({id}) shows in the palette but this test does not run it");
+    for c in nsvim_native::app::palette::COMMANDS {
+        assert!(tested.contains(&c.id), "\"{}\" ({}) shows in the palette but this test does not run it", c.label, c.id);
     }
 }
 

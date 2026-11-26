@@ -292,6 +292,7 @@ fn ex_commands_that_ask_the_app() {
         ("Ex", Action::ToggleTree),
         ("Tree", Action::ToggleTree),
         ("ca", Action::CodeActions),
+        ("Commands", Action::Palette),
         ("e", Action::Reload),
         ("close", Action::Quit { force: false }),
         ("qa!", Action::QuitAll { force: true }),

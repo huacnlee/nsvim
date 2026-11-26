@@ -1,4 +1,4 @@
-//! Opening another project: `Open project` (`SPC p`, Ctrl/⌘ O, `:Projects`, the palette)
+//! Opening another project: `Open project` (`SPC o`, Ctrl/⌘ O, `:Projects`, the palette)
 //! lists the recent projects and a folder dialog. The pick opens in a window of its own, as
 //! `nvim <folder>` does, so an editor already running for that project takes it. A window
 //! with no file open gives its place to the new one.
@@ -79,11 +79,11 @@ mod flow_tests {
     }
 
     #[test]
-    fn the_leader_p_lists_the_folder_dialog_first() {
+    fn the_leader_o_lists_the_folder_dialog_first() {
         let mut a = app(PathBuf::from("/project"));
         let mut tx = Tx::new();
         a.key(KeyInput::ch(' '), &mut tx);
-        a.key(KeyInput::ch('p'), &mut tx);
+        a.key(KeyInput::ch('o'), &mut tx);
         let Overlay::Pick(p) = &a.overlay else { panic!("no picker") };
         assert_eq!(p.kind, PickKind::Projects);
         assert_eq!(p.items[0], "Open folder…");

@@ -42,8 +42,9 @@ pub fn rows(vim: bool) -> Vec<KeyRow> {
             continue;
         }
         let head = header.as_ref().and_then(|h| h.first()).cloned().unwrap_or_default();
-        // Only the classic keymap opens the command palette, so its commands are not keys in Neovim.
-        let palette = vim && section == "Command palette";
+        // The palette's commands are names, not keys. The classic list keeps them, as before.
+        // The keys that open the palette show in both lists.
+        let palette = vim && section == "Command palette" && head == "Command";
         if cells.iter().all(|c| !c.is_empty() && c.chars().all(|ch| ch == '-' || ch == ':')) || top == other || top == "Mouse" || palette {
             continue;
         }

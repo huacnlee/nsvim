@@ -175,7 +175,7 @@ pub enum Action {
     Update,
     /// Open the leader (Space) key menu.
     LeaderMenu,
-    /// Open the command palette (classic keymap).
+    /// Open the command palette.
     Palette,
     /// Open the list of every key, with this text in its search line (`F1`, `SPC ?`, `:Keys`).
     KeyList(String),

@@ -157,7 +157,7 @@ fn the_leader_menu_shows_the_group_it_is_in() {
     a.overlay = Overlay::Leader(Some('l'));
     let p = leader(&a);
     assert_eq!(p.title, "SPC l");
-    assert!(p.items.iter().any(|i| i.label == "References…"));
+    assert!(p.items.iter().any(|i| i.key == "r" && i.label == "Find references…"));
 }
 
 #[test]

@@ -127,10 +127,10 @@ command before it runs, and it runs only the ones you leave on.
 | --- | --- | --- |
 | Save | `:w` | `Ctrl S` |
 | Go to file | `SPC f` | `Ctrl P` |
-| Open a project | `SPC p` | `Ctrl O` |
+| Open a project | `SPC o` | `Ctrl O` |
 | Find in project | `SPC /` | `Ctrl ⇧ F` |
 | Command line | `:` | |
-| Command palette | | `Ctrl ⇧ P` |
+| Command palette | `SPC p`, `Ctrl ⇧ P` | `Ctrl ⇧ P` |
 | Every key, with search | `SPC ?`, `F1` | `F1` |
 | Leader keys, in a popup | `SPC` | |
 | Go to definition | `gd` | `F12` |

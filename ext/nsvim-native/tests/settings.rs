@@ -474,6 +474,9 @@ fn the_palette_has_no_omarchy_theme_entry() -> Result<(), String> {
     let mut app = common::start_files(&[&file], Some("[ipc]\nenabled = false\n[keys]\nmap = \"classic\"\n"));
     app.wait_for("text:/hello/")?;
     typ(&mut app, &["ctrl+shift+p"]);
+    app.wait_for("text:Commands")?;
+    // The palette lists more than fits, so filter to the themes.
+    type_text(&mut app, "theme");
     app.wait_for("Theme: follow the OS")?;
     assert!(!app.shows("Theme: follow Omarchy"), "{}", texts(&app));
     Ok(())

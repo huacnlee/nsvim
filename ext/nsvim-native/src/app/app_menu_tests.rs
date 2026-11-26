@@ -18,17 +18,19 @@ fn ids(entries: &[Entry], out: &mut Vec<String>) {
     }
 }
 
+/// Linux and Windows hide the menu bar, so the palette must run every item of the menu.
 #[test]
-fn every_command_item_names_a_palette_command() {
+fn every_menu_item_is_a_palette_command() {
     let app = app();
-    let mut all = Vec::new();
-    ids(&app.app_menu(&[], false), &mut all);
-    for id in all {
-        if let Some(cmd) = id.strip_prefix("cmd:") {
-            assert!(cmd == "palette" || crate::app::picker::COMMANDS.iter().any(|(_, c)| *c == cmd), "{id}");
-        }
-        if let Some(e) = id.strip_prefix("edit:") {
-            assert!(crate::app::menu::ITEMS.iter().any(|i| i.0 == e), "{id}");
+    for mac in [false, true] {
+        let mut all = Vec::new();
+        ids(&app.app_menu(&[PathBuf::from("/work/a")], mac), &mut all);
+        for id in all {
+            if id == "cmd:palette" || id == "none" || id.starts_with("recent:") {
+                continue;
+            }
+            let cmd = id.strip_prefix("cmd:").or_else(|| id.strip_prefix("edit:")).unwrap_or(&id);
+            assert!(crate::app::palette::COMMANDS.iter().any(|c| c.id == cmd), "{id} is in the menu but not in the palette");
         }
     }
 }

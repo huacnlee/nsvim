@@ -338,6 +338,7 @@ fn empty_state(s: Session) -> impl IntoElement {
                 ("open a project", format!("{l} p")),
                 ("search the project", format!("{l} /")),
                 ("every key", l.to_string()),
+                ("commands", format!("{l} p")),
                 ("settings", ":Settings".into()),
             ]
         } else {
