@@ -490,10 +490,9 @@ fn a_dragged_tab_moves_to_where_it_drops() -> Result<(), String> {
     app.drag("id:tab-2", Point::new(Points(-by as f32), Points(0.0)), DragOptions::default())?;
     app.wait_until("a.txt at the start", WAIT, |s| name(s, "id:tab-0").as_deref() == Some("a.txt"))?;
     assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
-    // A short drag keeps the order.
+    // A short drag keeps the order. It ends on the tab, so it shows the tab, as a click does.
     app.drag("id:tab-0", Point::new(Points(10.0), Points(0.0)), DragOptions::default())?;
-    std::thread::sleep(Duration::from_millis(200));
+    app.wait_until("a.txt shows", WAIT, |s| s.selected("role:tab[a.txt]").unwrap_or(false))?;
     assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
-    assert!(app.screen().selected("role:tab[c.txt]")?);
     Ok(())
 }
