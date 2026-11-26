@@ -323,6 +323,86 @@ fn save_in_the_close_dialog_writes_the_file_then_quits() -> Result<(), String> {
     wait_quit(&mut app)
 }
 
+/// The editor with a new buffer (`:enew`) that holds `hello`, which answers its dialogs
+/// only when the test says, and whose save dialog picks `pick`.
+fn untitled(dir: &Path, pick: Option<PathBuf>) -> Headless {
+    let file = write(dir, "a.txt", "alpha\n");
+    let mut app = start(&file);
+    app.wait_for("text:/alpha/").unwrap();
+    ex(&mut app, "enew");
+    app.wait_for("text:/No Name/").unwrap();
+    typ(&mut app, &["i"]);
+    common::type_text(&mut app, "hello");
+    typ(&mut app, &["escape"]);
+    app.wait_for("text:/hello/").unwrap();
+    app.answer_dialogs_myself();
+    app.on_pick_save_path(pick).unwrap();
+    app
+}
+
+/// The save dialogs the app asked for.
+fn save_dialogs(app: &Headless) -> Vec<nsh_core::file_dialog::SaveDialog> {
+    app.screen()
+        .file_requests()
+        .iter()
+        .filter_map(|r| match r {
+            nsh_core::file_dialog::FileRequest::SaveDialog(d) => Some(d.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn save_in_the_close_dialog_asks_where_to_save_a_new_file_then_quits() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let new = dir.path().join("new.txt");
+    let mut app = untitled(dir.path(), Some(new.clone()));
+    app.press_window_close("main")?;
+    let d = app.pending_dialog().ok_or("the close button shows a dialog")?;
+    assert_eq!(d.title.as_deref(), Some("Save changes to \"[No Name]\"?"));
+    press(&mut app, "Save")?;
+    let f = new.clone();
+    app.wait_until("the new file written", Duration::from_secs(5), move |_| {
+        std::fs::read_to_string(&f).is_ok_and(|t| t.trim_end() == "hello")
+    })?;
+    let dialogs = save_dialogs(&app);
+    assert_eq!(dialogs.len(), 1, "one save dialog");
+    assert_eq!(
+        dialogs[0].directory.as_deref().map(|p| p.canonicalize().unwrap()),
+        Some(dir.path().canonicalize().unwrap()),
+        "it starts in the project"
+    );
+    wait_quit(&mut app)
+}
+
+#[test]
+fn a_cancel_in_the_save_dialog_keeps_the_window_and_the_edits() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let mut app = untitled(dir.path(), None);
+    app.press_window_close("main")?;
+    press(&mut app, "Save")?;
+    app.wait_until("the save dialog", Duration::from_secs(5), |s| !s.file_requests().is_empty())?;
+    app.wait(Duration::from_millis(300))?;
+    assert!(!app.quit(), "cancel keeps the window");
+    let texts = app.screen().texts().join("\n");
+    assert!(texts.contains("hello"), "the edits stay: {texts}");
+    assert!(!texts.contains("E141") && !texts.contains("E32"), "{texts}");
+    Ok(())
+}
+
+#[test]
+fn colon_w_on_a_new_file_says_e32_and_shows_no_dialog() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let mut app = untitled(dir.path(), Some(dir.path().join("never.txt")));
+    ex(&mut app, "w");
+    app.wait_for("text:/E32/")?;
+    assert!(save_dialogs(&app).is_empty(), ":w shows no dialog");
+    Ok(())
+}
+
 #[test]
 fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
     isolate();

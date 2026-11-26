@@ -411,6 +411,7 @@ A command takes a range when the table shows one. The next section explains rang
 | `:qa!` | Quit and drop every change |
 | `:wqa`, `:wqall`, `:xa`, `:xall` | Write every modified buffer, then quit when the writes are done |
 | `:e path`, `:edit path` | Open a file. A relative path starts at the project root. `~/` is your home folder |
+| `:enew`, `:ene` | Open a new empty buffer with no name. `:w path` names and writes it; `:w` alone says E32. Save in the menu or the palette asks where to save it |
 | `:e` | Read the buffer again from disk. With unsaved changes, it stops with `E37` |
 | `:e!` | Read the buffer again from disk and drop its changes |
 | `:bn`, `:bnext` | Next tab |
@@ -547,7 +548,8 @@ classic keymap.
 
 | Keys | Does |
 | --- | --- |
-| `Ctrl S` | Save |
+| `Ctrl S` | Save. A new file with no name asks where to save it |
+| `Ctrl N` | New file, with no name yet |
 | `Ctrl P` | Go to file |
 | `Ctrl O` | Open a project |
 | `Ctrl ⇧ P` | Command palette |

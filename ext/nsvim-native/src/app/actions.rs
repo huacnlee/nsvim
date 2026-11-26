@@ -22,7 +22,11 @@ impl App {
             actions.iter().any(|a| matches!(a, Action::SaveAll)) && actions.iter().any(|a| matches!(a, Action::QuitAll { force: false }));
         for a in actions {
             match a {
+                // The classic keymap is for users who do not know Vim: a file with no name asks
+                // where to go, as the menu does, not E32.
+                Action::Save(None) if self.ed.keymap == Keymap::Classic && !close_after_save => self.save_or_ask(tx),
                 Action::Save(path) => self.save_active(path, if close_after_save { AfterSave::Close } else { AfterSave::Nothing }),
+                Action::NewBuffer => self.new_buffer(),
                 Action::Quit { .. } if close_after_save => {}
                 Action::SaveAll if quit_after_all => self.save_all_and_quit(tx),
                 Action::QuitAll { force: false } if quit_after_all => {}
@@ -93,9 +97,7 @@ impl App {
             return;
         }
         if let Some(p) = path {
-            let p = if p.is_absolute() { p } else { self.ed.root.join(p) };
-            self.ed.doc_mut().buf.path = Some(p.clone());
-            self.meta.entry(p.clone()).or_default().lang = Some(crate::highlight::lang_for(Some(&p)));
+            self.set_doc_path(self.ed.active, p);
         }
         self.save_doc(self.ed.active, then);
     }

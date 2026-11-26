@@ -347,6 +347,8 @@ fn cmdline_moves_deletes_and_recalls() {
 fn file_commands_return_actions() {
     let mut e = ed("x\n");
     assert_eq!(run_ex(&mut e, "NewFile src/a.rs"), vec![Action::NewFile("src/a.rs".into())]);
+    assert_eq!(run_ex(&mut e, "enew"), vec![Action::NewBuffer]);
+    assert_eq!(run_ex(&mut e, "ene"), vec![Action::NewBuffer]);
     assert_eq!(run_ex(&mut e, "Mkdir  docs/notes "), vec![Action::NewFolder("docs/notes".into())]);
     assert_eq!(run_ex(&mut e, "Move src/b.rs"), vec![Action::MovePath("src/b.rs".into())]);
     assert_eq!(run_ex(&mut e, "Delete"), vec![Action::DeletePath { force: false }]);

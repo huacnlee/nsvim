@@ -1,7 +1,8 @@
 //! The dialog that asks what to do with unsaved changes before files close: save them, drop
 //! them, or keep the files open. The window's close button, Quit, the tab's close button, the
 //! tab menu, the app menu and the classic keymap use it, so a mouse user needs no Vim command.
-//! The Vim commands (`:q`, `:qa`, `:bd`) keep Vim's E37 message and `!`.
+//! The Vim commands (`:q`, `:qa`, `:bd`) keep Vim's E37 message and `!`. Save asks where to
+//! write a buffer that has no file yet (`save_as`).
 
 use std::path::PathBuf;
 
@@ -25,8 +26,8 @@ pub const CANCEL: &str = "cancel";
 /// A buffer to find again when the answer comes: by its file, or for a buffer with no file, by
 /// its place and name. Tabs can close or move while the dialog shows.
 #[derive(Clone, Debug)]
-struct DocRef {
-    path: Option<PathBuf>,
+pub(super) struct DocRef {
+    pub(super) path: Option<PathBuf>,
     index: usize,
     name: String,
 }
@@ -63,12 +64,12 @@ impl App {
         }
     }
 
-    fn doc_ref(&self, i: usize) -> DocRef {
+    pub(super) fn doc_ref(&self, i: usize) -> DocRef {
         let b = &self.ed.docs[i].buf;
         DocRef { path: b.path.clone(), index: i, name: b.name() }
     }
 
-    fn find_doc(&self, r: &DocRef) -> Option<usize> {
+    pub(super) fn find_doc(&self, r: &DocRef) -> Option<usize> {
         match &r.path {
             Some(p) => self.doc_index(p),
             None => self.ed.docs.get(r.index).filter(|d| d.buf.path.is_none() && d.buf.name() == r.name).map(|_| r.index),
@@ -83,20 +84,25 @@ impl App {
             return;
         }
         let names: Vec<String> = refs.iter().map(|r| r.name.clone()).collect();
-        tx.confirm(dialog(&names), move |a, answer, _| {
+        tx.confirm(dialog(&names), move |a, answer, tx| {
             let choice = a.choice(answer);
             if choice == Choice::Cancel {
                 return;
             }
-            let mut found: Vec<usize> = refs.iter().filter_map(|r| a.find_doc(r)).collect();
-            found.sort_unstable();
             if choice == Choice::Save {
-                // Each buffer closes when its write lands. A failed write keeps it open.
-                for &j in &found {
-                    a.save_doc(j, AfterSave::CloseTab);
-                }
+                // A buffer with no file asks where to go first. Each buffer closes when its
+                // write lands. A failed write keeps it open.
+                a.name_untitled(refs, tx, |a, refs, _| {
+                    let mut found: Vec<usize> = refs.iter().filter_map(|r| a.find_doc(r)).collect();
+                    found.sort_unstable();
+                    for &j in &found {
+                        a.save_doc(j, AfterSave::CloseTab);
+                    }
+                });
                 return;
             }
+            let mut found: Vec<usize> = refs.iter().filter_map(|r| a.find_doc(r)).collect();
+            found.sort_unstable();
             for &j in found.iter().rev() {
                 a.drop_doc(j);
             }
@@ -115,7 +121,12 @@ impl App {
         tx.confirm(dialog(&self.dirty_names()), |a, answer, tx| {
             a.asking_quit = false;
             match a.choice(answer) {
-                Choice::Save => a.save_all_and_quit(tx),
+                // A buffer with no file asks where to go first, then every write lands and
+                // the app quits.
+                Choice::Save => {
+                    let dirty: Vec<DocRef> = (0..a.ed.docs.len()).filter(|&i| a.ed.docs[i].buf.is_dirty()).map(|i| a.doc_ref(i)).collect();
+                    a.name_untitled(dirty, tx, |a, _, tx| a.save_all_and_quit(tx));
+                }
                 Choice::Discard => a.quit_all(true, tx),
                 Choice::Cancel => {}
             }

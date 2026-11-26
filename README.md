@@ -126,6 +126,7 @@ command before it runs, and it runs only the ones you leave on.
 | Action | Neovim | Classic |
 | --- | --- | --- |
 | Save | `:w` | `Ctrl S` |
+| New file | `:enew`, `SPC n` | `Ctrl N` |
 | Go to file | `SPC f` | `Ctrl P` |
 | Open a project | `SPC o` | `Ctrl O` |
 | Find in project | `SPC /` | `Ctrl ⇧ F` |

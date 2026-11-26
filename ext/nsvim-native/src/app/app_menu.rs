@@ -53,6 +53,8 @@ impl App {
             open_recent.push(item("none", "No recent projects"));
         }
         let mut file = vec![
+            item("cmd:new", "New File"),
+            Entry::Separator,
             item("cmd:project", "Open Project…"),
             item("folder", "Open Folder…"),
             Entry::Menu("Open Recent".into(), open_recent),
