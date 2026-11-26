@@ -224,6 +224,46 @@ impl Session {
                 spawn(async move {
                     let picked = answer.await.map(|p| p.and_then(|v| v.into_iter().next()));
                     me.update(|a, tx| then(a, picked, tx));
+                    crate::exports::refocus_keys();
+                });
+            }
+            Effect::Confirm(dialog, then) => {
+                use crate::app::fx::Role;
+                let mut alert = nsh_base::alert_dialog().title(dialog.title).description(dialog.description);
+                for (id, label, role) in dialog.buttons {
+                    alert = match role {
+                        Role::Default => alert.action(id, label),
+                        Role::Cancel => alert.cancel(id, label),
+                        Role::Destructive => alert.destructive(id, label),
+                    };
+                }
+                let answer = alert.show();
+                spawn(async move {
+                    let chosen = answer.await.map(|r| r.action.map(|a| a.to_string()));
+                    me.update(|a, tx| then(a, chosen, tx));
+                    crate::exports::refocus_keys();
+                });
+            }
+            Effect::Prompt(dialog, text, then) => {
+                use crate::app::fx::Role;
+                let accept: Vec<String> = dialog.buttons.iter().filter(|b| b.2 == Role::Default).map(|b| b.0.clone()).collect();
+                let field = nsh_base::AlertDialogInput::new().default_value(text).select_text_on_focus(true).required(true);
+                let mut alert = nsh_base::alert_dialog().title(dialog.title).description(dialog.description).input(field);
+                for (id, label, role) in dialog.buttons {
+                    alert = match role {
+                        Role::Default => alert.action(id, label),
+                        Role::Cancel => alert.cancel(id, label),
+                        Role::Destructive => alert.destructive(id, label),
+                    };
+                }
+                let answer = alert.show();
+                spawn(async move {
+                    let typed = answer.await.map(|r| {
+                        let ok = r.action.is_some_and(|a| accept.iter().any(|id| id.as_str() == &*a));
+                        if ok { r.value.map(|v| v.to_string()) } else { None }
+                    });
+                    me.update(|a, tx| then(a, typed, tx));
+                    crate::exports::refocus_keys();
                 });
             }
             Effect::ChooseSavePath(start, then) => {

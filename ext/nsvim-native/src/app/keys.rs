@@ -183,6 +183,11 @@ impl App {
             }
         }
         if let Some(cmd) = super::palette::leader_command(group, c) {
+            // `SPC l n` is typed: it renames on the command line, as F2 does. The palette and
+            // the menus ask in a dialog.
+            if cmd.id == "rename" {
+                return self.start_rename();
+            }
             self.run_command(cmd.id, tx);
         }
     }
