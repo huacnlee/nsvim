@@ -171,6 +171,8 @@ pub enum Action {
     PrevBuffer,
     Diagnostics,
     Settings,
+    /// Show first-launch setup again, to change its picks (`:Setup`).
+    Setup,
     /// Check for a new release and install it (`:Update`).
     Update,
     /// Open the leader (Space) key menu.

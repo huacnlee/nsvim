@@ -93,7 +93,7 @@ impl App {
             item("edit:actions", "Code Actions…"),
         ];
         let help = vec![item("cmd:keys", "Keyboard Shortcuts…")];
-        let mut app = vec![item("cmd:settings", "Settings…"), Entry::Separator];
+        let mut app = vec![item("cmd:settings", "Settings…"), item("cmd:setup", "Run Setup Again…"), Entry::Separator];
         if mac {
             app.extend([Entry::Hide("Hide nsvim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
         }

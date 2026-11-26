@@ -1,5 +1,6 @@
 //! First launch: pick keys, mouse, look and terminal integration, then open the editor.
-//! The choices land in config.toml. Terminal integration runs only what the user leaves on,
+//! `:Setup` (and `Run setup again…` in the palette and the app menu) shows it again later, from
+//! the current config, to change the picks. The choices land in config.toml. Terminal integration runs only what the user leaves on,
 //! and shows each command before it runs.
 
 use std::path::PathBuf;
@@ -42,6 +43,9 @@ pub struct Setup {
     /// The leader key `~/.config/nvim` sets, as the probe worker found it.
     pub nvim_leader: Option<char>,
     pub omarchy_name: Option<String>,
+    /// Setup runs again over the editor (`:Setup`): the config it started from. Cancel puts
+    /// it back. `None` on first launch, when there is no editor to go back to.
+    pub prior: Option<Box<Config>>,
 }
 
 /// One choice on a step, for keys and the view.
@@ -78,7 +82,13 @@ impl Setup {
             exe: None,
             nvim_leader: None,
             omarchy_name: omarchy.map(|o| o.name.clone()),
+            prior: None,
         }
+    }
+
+    /// Setup again, from `cfg`: each step shows the current picks.
+    pub fn again(cfg: &Config, omarchy: Option<&Omarchy>) -> Setup {
+        Setup { cfg: cfg.clone(), prior: Some(Box::new(cfg.clone())), ..Setup::new(omarchy) }
     }
 
     pub fn vim(&self) -> bool {
@@ -269,9 +279,35 @@ impl App {
                     self.setup_choose(c, tx);
                 }
             }
+            // On the first step of setup run again, Esc leaves it as it was.
+            KeyCode::Esc if s.step == 1 && s.prior.is_some() => self.cancel_setup(),
             KeyCode::Esc => self.setup_go(-1),
             _ => {}
         }
+    }
+
+    /// Shows setup again over the editor, from the current config (`:Setup`).
+    pub fn open_setup(&mut self) {
+        if matches!(self.screen, Screen::Setup(_)) {
+            return;
+        }
+        self.close_settings();
+        self.overlay = super::Overlay::None;
+        self.ed.mode = self.ed.rest_mode();
+        self.screen = Screen::Setup(Box::new(Setup::again(&self.cfg, self.omarchy.as_ref())));
+        if let Some(svc) = &self.svc {
+            svc.probe_setup();
+        }
+    }
+
+    /// Leaves setup run again with nothing changed: the look it showed goes back too.
+    pub fn cancel_setup(&mut self) {
+        let Screen::Setup(s) = &self.screen else { return };
+        let Some(prior) = s.prior.clone() else { return };
+        self.screen = Screen::Editor;
+        self.cfg = *prior;
+        self.config_changed();
+        self.ed.message("setup closed, nothing changed");
     }
 
     /// Moves `by` steps; past the last step, the editor opens.
@@ -353,6 +389,7 @@ impl App {
         };
         let mac = s.mac;
         let nvim = s.nvim_leader;
+        let again = s.prior.is_some();
         self.cfg = s.cfg;
         let mut note = String::new();
         if self.cfg.keys.map == "neovim" && self.cfg.keys.import_nvim {
@@ -371,10 +408,14 @@ impl App {
         if !cmds.is_empty() {
             std::thread::spawn(move || integrate.run());
         }
+        if again {
+            self.ed.message(format!("{note}setup saved to config.toml"));
+            return;
+        }
         let m = if mac { "⌘" } else { "Ctrl" };
         let tip = if self.is_vim() {
             let l = if self.ed.vim.leader == ' ' { "SPC" } else { "\\" };
-            format!("{l} for keys, {l} f to find a file, :Settings for settings")
+            format!("{l} for keys, {l} f to find a file, :Settings for settings, :Setup to run this again")
         } else {
             format!("{m} P finds a file, {m} ⇧ P runs a command, {m} , opens settings")
         };
@@ -569,6 +610,35 @@ mod tests {
         let Screen::Setup(s) = &mut a.screen else { panic!("setup shows") };
         s.step = 5;
         assert_eq!(s.choices().iter().filter(|c| matches!(c, Choice::Change(_))).count(), 4, "no terminal row");
+    }
+
+    /// `:Setup` starts from the config in use, and Cancel puts back the look it previewed.
+    #[test]
+    fn setup_again_starts_from_the_config_and_cancel_keeps_it() {
+        let mut cfg = Config::default();
+        cfg.keys.map = "classic".into();
+        cfg.theme.mode = "light".into();
+        let mut a = App::new(cfg, PathBuf::from("/p"), false, None);
+        let mut tx = Tx::new();
+        a.run_command("setup", &mut tx);
+        let Screen::Setup(s) = &a.screen else { panic!("setup shows") };
+        assert!(!s.vim() && s.cfg.theme.mode == "light" && s.prior.is_some(), "the current picks");
+        a.setup_choose(Choice::Look(2), &mut tx);
+        assert_eq!(a.cfg.theme.mode, "dark", "the window previews the pick");
+        a.setup_key(KeyInput::plain(KeyCode::Esc), &mut tx);
+        assert!(matches!(a.screen, Screen::Editor), "Esc on the first step leaves");
+        assert_eq!(a.cfg.theme.mode, "light", "and puts the look back");
+        assert_eq!(a.cfg.keys.map, "classic");
+    }
+
+    /// First launch has no editor to go back to: Esc and cancel stay in setup.
+    #[test]
+    fn first_launch_setup_cannot_be_cancelled() {
+        let mut a = App::new(Config::default(), PathBuf::from("/p"), true, None);
+        let mut tx = Tx::new();
+        a.setup_key(KeyInput::plain(KeyCode::Esc), &mut tx);
+        a.cancel_setup();
+        assert!(matches!(a.screen, Screen::Setup(_)));
     }
 
     #[test]

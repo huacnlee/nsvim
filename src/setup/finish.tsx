@@ -104,16 +104,21 @@ export function ReadyStep(props: Step) {
           ["Every key, in a popup", [l]],
           ["Command palette", [l, "p"]],
           ["Settings", [":Settings"]],
+          ["Run setup again", [":Setup"]],
         ]
       : [
           ["Find a file", [md(), "P"]],
           ["Command palette", [md(), "⇧", "P"]],
           ["Settings", [md(), ","]],
+          ["Run setup again, from the palette", [md(), "⇧", "P"]],
         ];
   };
   return (
     <View class="gap-5.5" testID="setup-step-5">
-      <Heading title="Ready" sub="Saved to ~/.config/nsvim/config.toml when you open nsvim." />
+      <Heading
+        title="Ready"
+        sub={`Saved to ~/.config/nsvim/config.toml when you ${st().again ? "save" : "open nsvim"}.`}
+      />
       <Text class="text-sm text-foreground" testID="setup-start">
         {start()}
       </Text>
