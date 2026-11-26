@@ -35,8 +35,11 @@ fn untitled() -> App {
     a
 }
 
+/// The save dialog's callback.
+type Picked = super::fx::Then<Result<Option<PathBuf>, String>>;
+
 /// Takes the save dialog out of `tx`: the folder it starts in and its callback.
-fn save_dialog(tx: &mut Tx) -> Option<(PathBuf, super::fx::Then<Result<Option<PathBuf>, String>>)> {
+fn save_dialog(tx: &mut Tx) -> Option<(PathBuf, Picked)> {
     let i = tx.effects.iter().position(|e| matches!(e, Effect::ChooseSavePath(..)))?;
     let Effect::ChooseSavePath(start, then) = tx.effects.remove(i) else { unreachable!() };
     Some((start, then))
