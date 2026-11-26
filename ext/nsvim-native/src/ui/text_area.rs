@@ -168,7 +168,7 @@ fn line(g: Grid, font: &CodeFont, gutter: usize, row: Row) -> AnyElement {
     let number_token = if current { "foreground" } else { "text-faint" };
     let mut code = code_text(font, "");
     for seg in segs {
-        code = code.child(span(font, seg));
+        code = code.child(span(g, font, seg));
     }
     let mut number_text = code_text(font, number).text_color(move || color(number_token));
     if current {
@@ -225,9 +225,19 @@ fn line(g: Grid, font: &CodeFont, gutter: usize, row: Row) -> AnyElement {
     view().flex_row().h(px(g.cell_h)).items_center().bg(fill).child(gut).child(code_box).into_element()
 }
 
-fn span(font: &CodeFont, seg: Seg) -> Text {
+fn span(g: Grid, font: &CodeFont, seg: Seg) -> Text {
     let token = if seg.ws { "border" } else { code_token(seg.kind) };
+    // A wide char takes two cells of the grid that the caret, the mouse and the selection use.
+    // The font that draws it (often a fallback) has its own advance: space it out to two cells.
+    let spacing = seg.wide.then(|| {
+        let n = seg.text.chars().count().max(1) as f32;
+        let drawn = measure_text(&format!("{}px {}", font.size, font.family), &seg.text).0;
+        (2.0 * g.cell_w * n - drawn) / n
+    });
     let mut t = code_text(font, seg.text).text_color(move || color(token));
+    if let Some(s) = spacing {
+        t = t.letter_spacing(px(s));
+    }
     if seg.kind == Some(Kind::Comment) {
         t = t.italic();
     }
