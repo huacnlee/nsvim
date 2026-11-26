@@ -827,8 +827,15 @@ A window has an application menu: the menu bar on macOS. On Windows and Linux ns
 own title bar, which hides the window's menu bar. The terminal editor has none: use the
 command palette there.
 
-- **nsvim**: Settings…, Quit.
+On macOS, Close Window hides nsvim as `⌘ H` does, and does not quit it: your files, tabs
+and undo stay as they were. Click the Dock icon or pick nsvim with `⌘ Tab` to show the
+window again. Its shortcut is `⌘ W` with the Neovim keymap. With the classic keymap `⌘ W`
+closes the tab, so Close Window is `⇧ ⌘ W`, as in VS Code. While Settings shows, `⌘ W`
+closes Settings. To quit, use `⌘ Q`, `:qa` or the close button.
+
+- **nsvim**: Settings…, Quit. On macOS also Hide nsvim (`⌘ H`), Hide Others and Show All.
 - **File**: Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
+  On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….
 - **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….

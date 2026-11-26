@@ -17,6 +17,13 @@ pub enum Entry {
     Item(String, String),
     /// The platform's Quit item, which asks first as the close button does.
     Quit,
+    /// macOS's Hide: the app's windows hide, and the Dock icon or `⌘ Tab` shows them again.
+    /// The label and the shortcut, as `nsh/keymap` writes it (`None`: the platform's `⌘ H`).
+    Hide(String, Option<String>),
+    /// macOS's Hide Others.
+    HideOthers,
+    /// macOS's Show All.
+    ShowAll,
     Separator,
 }
 
@@ -30,13 +37,22 @@ fn recent_id(root: &std::path::Path) -> String {
 }
 
 impl App {
-    /// The menus, with `recent` as the projects of File › Open Recent.
-    pub fn app_menu(&self, recent: &[PathBuf]) -> Vec<Entry> {
+    /// The shortcut of macOS's Close Window: `⌘ W` as in every Mac app, unless something in the
+    /// window takes it (the classic keymap closes the tab with it, Settings closes itself).
+    /// Then `⇧ ⌘ W`, as in VS Code.
+    pub fn close_window_key(&self) -> &'static str {
+        if self.ed.keymap == editor::editor::Keymap::Vim && !self.on_settings { "mod+w" } else { "mod+shift+w" }
+    }
+
+    /// The menus, with `recent` as the projects of File › Open Recent. `mac` adds the Mac's
+    /// window items: Hide, Hide Others, Show All, and Close Window, which hides the app and
+    /// does not quit it.
+    pub fn app_menu(&self, recent: &[PathBuf], mac: bool) -> Vec<Entry> {
         let mut open_recent: Vec<Entry> = recent.iter().map(|r| Entry::Item(recent_id(r), super::project::shown(r))).collect();
         if open_recent.is_empty() {
             open_recent.push(item("none", "No recent projects"));
         }
-        let file = vec![
+        let mut file = vec![
             item("cmd:project", "Open Project…"),
             item("folder", "Open Folder…"),
             Entry::Menu("Open Recent".into(), open_recent),
@@ -48,6 +64,9 @@ impl App {
             Entry::Separator,
             item("cmd:close", "Close Tab"),
         ];
+        if mac {
+            file.push(Entry::Hide("Close Window".into(), Some(self.close_window_key().into())));
+        }
         let edit = vec![
             item("undo", "Undo"),
             item("redo", "Redo"),
@@ -74,9 +93,14 @@ impl App {
             item("edit:actions", "Code Actions…"),
         ];
         let help = vec![item("cmd:keys", "Keyboard Shortcuts…")];
+        let mut app = vec![item("cmd:settings", "Settings…"), Entry::Separator];
+        if mac {
+            app.extend([Entry::Hide("Hide nsvim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
+        }
+        app.push(Entry::Quit);
         vec![
             // The app menu on macOS; elsewhere a menu named after the app.
-            Entry::Menu("nsvim".into(), vec![item("cmd:settings", "Settings…"), Entry::Separator, Entry::Quit]),
+            Entry::Menu("nsvim".into(), app),
             Entry::Menu("File".into(), file),
             Entry::Menu("Edit".into(), edit),
             Entry::Menu("View".into(), view),
