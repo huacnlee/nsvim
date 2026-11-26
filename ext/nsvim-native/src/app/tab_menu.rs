@@ -131,7 +131,10 @@ impl App {
                 let rel = path.strip_prefix(&self.ed.root).unwrap_or(&path).to_string_lossy().replace('\\', "/");
                 self.copy_tab_path(rel, tx);
             }
-            "reveal" => self.reveal_in_tree(&path),
+            "reveal" => {
+                self.tree.show = true;
+                self.reveal_in_tree(&path);
+            }
             _ => {}
         }
     }
