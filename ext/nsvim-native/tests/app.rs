@@ -46,3 +46,23 @@ fn visual_mode_shows_in_the_status_line() -> Result<(), String> {
     app.wait_for("NORMAL")?;
     Ok(())
 }
+
+#[test]
+fn an_input_method_types_chinese_in_insert_mode() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "notes.txt", "one\n");
+    let mut app = start(&file);
+    app.wait_for("text:/one/")?;
+    typ(&mut app, &["shift+a"]);
+    app.wait_for("INSERT")?;
+    // Pinyin composes in the hidden input; only the commit reaches the buffer.
+    app.compose("id:text-input", "ni")?;
+    app.compose("id:text-input", "你好")?;
+    // Nothing is typed while it composes.
+    assert!(!app.shows("one你好") && !app.shows("oneni"), "{:?}", app.screen().texts());
+    app.type_text("id:text-input", "你好")?;
+    app.wait_for("text:/one你好/")?;
+    typ(&mut app, &["escape"]);
+    app.wait_for("NORMAL")?;
+    Ok(())
+}

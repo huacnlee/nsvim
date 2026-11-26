@@ -13,6 +13,52 @@
 
 ![NsVim with the file tree open and a Rust file in Normal mode](assets/screenshot.png)
 
+## Install
+
+NsVim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
+or later, and Windows x86_64.
+
+**macOS / Linux**
+
+```sh
+curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh
+```
+
+**Windows PowerShell**
+
+```powershell
+irm https://huacnlee.github.io/nsvim/install.ps1 | iex
+```
+
+**From source**
+
+The program reads its interface from `nsh/bundle.nshc` next to it, so `cargo install` alone does
+not make a program that runs. Build with Rust and the [NSH CLI](https://nsh.dev/docs/installation)
+0.7. On Linux, the build also needs the GTK 4 development packages.
+
+```sh
+git clone https://github.com/huacnlee/nsvim && cd nsvim
+cargo build --release --locked
+nsh build --release -o target/release/nsh   # on macOS: -o target/Resources/nsh
+target/release/nsvim .                      # the first launch sets up nvim
+```
+
+[docs/install.md](docs/install.md) tells how to pick a version or a folder, upgrade and uninstall.
+
+## Quick start
+
+```sh
+nvim .                  # this folder as the project
+nvim src/main.rs:42     # a file, at line 42
+```
+
+The installer puts the command `nsvim` on `PATH`. Open NsVim the first time from the app launcher, or
+with `nsvim .` in a terminal. The first launch runs a five-step setup: keys, mouse, look,
+terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open NsVim
+(on by default). `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor to
+NsVim's full path. On Linux, it can make NsVim the default app for text files. It shows every
+command before it runs, and it runs only the ones you leave on.
+
 ## The name
 
 NsVim has two meanings:
@@ -74,52 +120,6 @@ NsVim is for opening code, reading it, finding your way around it and making qui
     <td>The light theme. The System look follows your OS.</td>
   </tr>
 </table>
-
-## Install
-
-NsVim runs on macOS 14 or later (Apple silicon and Intel), Linux x86_64 and ARM64 with GTK 4.14
-or later, and Windows x86_64.
-
-**macOS / Linux**
-
-```sh
-curl -fsSL https://huacnlee.github.io/nsvim/install.sh | sh
-```
-
-**Windows PowerShell**
-
-```powershell
-irm https://huacnlee.github.io/nsvim/install.ps1 | iex
-```
-
-**From source**
-
-The program reads its interface from `nsh/bundle.nshc` next to it, so `cargo install` alone does
-not make a program that runs. Build with Rust and the [NSH CLI](https://nsh.dev/docs/installation)
-0.7. On Linux, the build also needs the GTK 4 development packages.
-
-```sh
-git clone https://github.com/huacnlee/nsvim && cd nsvim
-cargo build --release --locked
-nsh build --release -o target/release/nsh   # on macOS: -o target/Resources/nsh
-target/release/nsvim .                      # the first launch sets up nvim
-```
-
-[docs/install.md](docs/install.md) tells how to pick a version or a folder, upgrade and uninstall.
-
-## Quick start
-
-```sh
-nvim .                  # this folder as the project
-nvim src/main.rs:42     # a file, at line 42
-```
-
-The installer puts the command `nsvim` on `PATH`. Open NsVim the first time from the app launcher, or
-with `nsvim .` in a terminal. The first launch runs a five-step setup: keys, mouse, look,
-terminal and ready. The terminal step adds shell aliases, so `nvim`, `vim` and `vi` open NsVim
-(on by default). `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor to
-NsVim's full path. On Linux, it can make NsVim the default app for text files. It shows every
-command before it runs, and it runs only the ones you leave on.
 
 ## Keys
 
