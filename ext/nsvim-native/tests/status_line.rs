@@ -78,7 +78,7 @@ fn the_position_is_quiet_text_like_the_other_parts() -> Result<(), String> {
     wait_padded(&mut app, "id:position", "1:1")?;
     assert!(!app.screen().matches("id:position-fill")?, "no fill behind the position");
     let text = |app: &Headless, sel: &str| app.screen().span_style(&format!("id:status-line >> text:{sel}")).unwrap();
-    let lang_name = name(&app.screen(), "id:language").unwrap().trim().to_string();
+    let lang_name = name(app.screen(), "id:language").unwrap().trim().to_string();
     let (pos, lang) = (text(&app, "/1:1/"), text(&app, &lang_name));
     assert_eq!(pos.color, lang.color, "the position takes the colour of the language");
     assert_eq!(pos.font_weight, lang.font_weight, "and its weight");
