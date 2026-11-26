@@ -875,7 +875,8 @@ need `mouse.right_click`.
 | `Copy path`, `Copy relative path` | Copy the file's path, or its path in the project |
 | `Reveal in file tree` | Show the file in the file tree |
 
-A tab with unsaved changes stays open, and the status line names it. The tab that showed
+A tab with unsaved changes stays open, and the status line names it. `Close clean` leaves
+those tabs alone and says nothing. The tab that showed
 still shows when it stays open. The palette and the `SPC t` keys do the same from the tab
 that shows.
 
