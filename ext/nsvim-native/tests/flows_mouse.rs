@@ -72,11 +72,14 @@ fn a_middle_click_closes_a_clean_tab() {
     f.settle("the tab closes", |a| a.ed.docs.len() == 1);
 }
 
+/// The files are plain text: a Rust file starts rust-analyzer, and its own message ("started",
+/// or "exited before it started" where it is not installed) comes on its own time and can
+/// replace the error that the test waits for.
 #[test]
 fn a_middle_click_keeps_a_dirty_tab_open() {
     let dir = common::scratch();
-    let two = common::write(dir.path(), "two.rs", "two\n");
-    let main = common::write(dir.path(), "main.rs", SRC);
+    let two = common::write(dir.path(), "two.txt", "two\n");
+    let main = common::write(dir.path(), "main.txt", SRC);
     let mut f = common::flow_files(&[&main, &two], None);
     f.settle("both files open", |a| a.ed.docs.len() == 2);
     f.keys("x");
@@ -87,35 +90,8 @@ fn a_middle_click_keeps_a_dirty_tab_open() {
         s.accessibility(Some(&format!("id:tab-mark-{active}"))).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
     })
     .unwrap();
-    let before = f.ui.screen().id(&format!("id:tab-{active}")).unwrap();
-    eprintln!(
-        "DIAG before click: id={before:?} {}",
-        f.read(|a| format!(
-            "docs={:?} active={} msg={:?}",
-            a.ed.docs.iter().map(|d| (d.buf.name(), d.buf.is_dirty())).collect::<Vec<_>>(),
-            a.ed.active,
-            a.ed.msg.as_ref().map(|m| (m.text.clone(), m.error))
-        ))
-    );
     f.middle_click(&format!("id:tab-{active}"), point(20.0, 10.0));
-    let start = std::time::Instant::now();
-    while !f.check(|a| a.ed.msg.as_ref().is_some_and(|m| m.error)) {
-        if start.elapsed() > std::time::Duration::from_secs(5) {
-            let after = f.ui.screen().id(&format!("id:tab-{active}"));
-            let tree = format!("{:?}", f.ui.screen().accessibility(Some(&format!("id:tab-{active}"))));
-            panic!(
-                "DIAG timeout: id after={after:?} state={} tree={tree}",
-                f.read(|a| format!(
-                    "docs={:?} active={} msg={:?} mode={:?}",
-                    a.ed.docs.iter().map(|d| (d.buf.name(), d.buf.is_dirty())).collect::<Vec<_>>(),
-                    a.ed.active,
-                    a.ed.msg.as_ref().map(|m| (m.text.clone(), m.error)),
-                    a.ed.mode
-                ))
-            );
-        }
-        std::thread::sleep(std::time::Duration::from_millis(15));
-    }
+    f.settle("the editor tells why", |a| a.ed.msg.as_ref().is_some_and(|m| m.error && m.text.starts_with("E37")));
     assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");
 }
 
