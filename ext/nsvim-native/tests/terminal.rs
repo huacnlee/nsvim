@@ -120,3 +120,24 @@ fn a_dirty_tab_marks_itself_with_a_char() -> Result<(), String> {
     assert!(app.ui.screen().layout("text:Close")?.is_none());
     Ok(())
 }
+
+#[test]
+fn the_finder_rows_fill_its_list_in_a_terminal() -> Result<(), String> {
+    terminal();
+    let dir = scratch();
+    let f = write(dir.path(), "a.txt", "alpha\n");
+    let mut app = flow(&f, None);
+    // The palette has more commands than the list has rows.
+    keys(&mut app, &text(" :"));
+    app.ui.wait_for("id:picker-list >> role:option")?;
+    let cell = nsvim_native::TERMINAL_CELL_H;
+    let row = app.ui.screen().layout("id:picker-list >> role:option")?.ok_or("no row")?.bounds.size.height.0;
+    assert_eq!(row, cell, "a row is one cell");
+    // Every whole row of the list shows a command: no row of the list stays empty.
+    let full = |s: &nsh_testing::Screen| {
+        let list = s.layout("id:picker-list").ok().flatten().map_or(0.0, |l| l.bounds.size.height.0);
+        list > 0.0 && s.count("id:picker-list >> role:option").ok() == Some((list / cell).floor() as usize)
+    };
+    app.ui.wait_until("the rows fill the list", std::time::Duration::from_secs(5), full)?;
+    Ok(())
+}
