@@ -302,8 +302,10 @@ fn every_palette_command_does_what_it_says() {
     // The next step answers the dialog as the test's handler does: Cancel. The edits and the
     // window stay.
     f.keys("u");
-    let asked = f.ui.screen().dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Save changes to")));
-    assert!(asked, "quit shows the unsaved changes dialog");
+    f.ui.wait_until("the unsaved changes dialog", Duration::from_secs(5), |s| {
+        s.dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Save changes to")))
+    })
+    .unwrap();
     f.settle("cancel keeps the window", |a| !a.asking_quit && a.ed.has_doc());
     run_check(&mut f, t, "close", "close closes the buffer", |a| a.ed.docs.len() == 1);
 
