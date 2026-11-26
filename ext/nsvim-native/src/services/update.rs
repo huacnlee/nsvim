@@ -96,7 +96,10 @@ pub enum Installed {
     Windows { dir: PathBuf },
 }
 
-/// How `exe` was installed, when the install script installed it: `nsvim.app/Contents/MacOS/nsvim`
+/// The macOS app bundle the install script writes. Releases before it named it `nsvim.app`.
+pub const MACOS_APP: &str = "NsVim.app";
+
+/// How `exe` was installed, when the install script installed it: `NsVim.app/Contents/MacOS/nsvim`
 /// on macOS, `<prefix>/share/nsvim/nsvim` on Linux, a folder with `nsvim.exe` and `nsh\` on
 /// Windows. `None` for anything else (a build, a package manager's copy), which must update the
 /// way it was installed.
@@ -109,7 +112,7 @@ pub fn installed(exe: &Path, os: &str) -> Option<Installed> {
             let ok = name == "nsvim"
                 && dir.file_name()? == "MacOS"
                 && dir.parent()?.file_name()? == "Contents"
-                && app.file_name()? == "nsvim.app";
+                && app.file_name()?.to_str()?.eq_ignore_ascii_case(MACOS_APP);
             ok.then_some(Installed::Unix { dir: app.parent()?.to_path_buf() })
         }
         "windows" => (name.eq_ignore_ascii_case("nsvim.exe") && dir.join("nsh").join("bundle.nshc").is_file())
@@ -119,6 +122,15 @@ pub fn installed(exe: &Path, os: &str) -> Option<Installed> {
             let ok = name == "nsvim" && dir.file_name()? == "nsvim" && share.file_name()? == "share";
             ok.then_some(Installed::Unix { dir: share.parent()?.to_path_buf() })
         }
+    }
+}
+
+/// The program to start after the update. On macOS the install script writes `NsVim.app`, which
+/// replaces an older `nsvim.app`, so the program is started from the new bundle.
+pub fn relaunch(at: &Installed, exe: &Path, os: &str) -> PathBuf {
+    match at {
+        Installed::Unix { dir } if os == "macos" => dir.join(MACOS_APP).join("Contents/MacOS/nsvim"),
+        _ => exe.to_path_buf(),
     }
 }
 
@@ -284,6 +296,11 @@ mod tests {
             Some(Installed::Unix { dir: "/Users/a/Applications".into() })
         );
         assert_eq!(
+            installed(Path::new("/Users/a/Applications/NsVim.app/Contents/MacOS/nsvim"), "macos"),
+            Some(Installed::Unix { dir: "/Users/a/Applications".into() })
+        );
+        assert_eq!(installed(Path::new("/Users/a/Applications/Other.app/Contents/MacOS/nsvim"), "macos"), None);
+        assert_eq!(
             installed(Path::new("/home/a/.local/share/nsvim/nsvim"), "linux"),
             Some(Installed::Unix { dir: "/home/a/.local".into() })
         );
@@ -297,6 +314,16 @@ mod tests {
         std::fs::create_dir_all(dir.path().join("nsh")).unwrap();
         std::fs::write(dir.path().join("nsh").join("bundle.nshc"), b"").unwrap();
         assert_eq!(installed(&exe, "windows"), Some(Installed::Windows { dir: dir.path().to_path_buf() }));
+    }
+
+    #[test]
+    fn restarts_from_the_bundle_the_install_script_writes() {
+        let at = Installed::Unix { dir: "/Users/a/Applications".into() };
+        let old = Path::new("/Users/a/Applications/nsvim.app/Contents/MacOS/nsvim");
+        assert_eq!(relaunch(&at, old, "macos"), PathBuf::from("/Users/a/Applications/NsVim.app/Contents/MacOS/nsvim"));
+        let at = Installed::Unix { dir: "/home/a/.local".into() };
+        let exe = Path::new("/home/a/.local/share/nsvim/nsvim");
+        assert_eq!(relaunch(&at, exe, "linux"), exe);
     }
 
     #[test]

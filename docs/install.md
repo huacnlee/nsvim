@@ -1,4 +1,4 @@
-# Install nsvim
+# Install NsVim
 
 Releases are at <https://github.com/huacnlee/nsvim/releases>. The installers download a release
 and verify it with the release's `SHA256SUMS` before they install it. They run as the current
@@ -33,12 +33,12 @@ program by its full path. Terminals, TUIs, scripts and AI agents run `nsvim` lik
 command. If the folder is not on `PATH`, the installer says so. A `nsvim` there that the installer
 did not write stays as it is.
 
-To upgrade, run the installer again. Close nsvim first.
+To upgrade, run the installer again. Close NsVim first.
 
 ### What the installer puts on macOS
 
-- `~/Applications/nsvim.app`: the app. Open it from Finder or Launchpad. The program is
-  `~/Applications/nsvim.app/Contents/MacOS/nsvim`.
+- `~/Applications/NsVim.app`: the app. Open it from Finder or Launchpad. The program is
+  `~/Applications/NsVim.app/Contents/MacOS/nsvim`.
 
 The release app has an ad hoc signature. It does not have a Developer ID signature, and Apple did
 not notarize it. `curl` does not mark the download as quarantined, so macOS opens the app. The
@@ -60,14 +60,14 @@ The program reads its interface from `nsh/bundle.nshc` next to it. Keep the fold
 
 ### The first launch
 
-Open nsvim from the app launcher (Finder on macOS), or from a terminal:
+Open NsVim from the app launcher (Finder on macOS), or from a terminal:
 
 ```sh
 nsvim .
 ```
 
 The first launch runs a short setup. Its terminal step adds shell aliases, so `nvim`, `vim` and
-`vi` open nsvim. `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor. Each
+`vi` open NsVim. `\nvim` still runs Neovim. The step also sets `$EDITOR` and git's editor. Each
 of them names the program by its full path, so an upgrade in the same folder keeps them working.
 Open a new terminal after setup, then:
 
@@ -98,15 +98,15 @@ menu shortcut. It adds the folder to the user `PATH`, so a new terminal runs `ns
 `-NoModifyPath`, or set `NSVIM_NO_MODIFY_PATH=1`, to leave `PATH` alone. The program is
 `nsvim.exe` in that folder.
 
-To upgrade, close nsvim and run the installer again. If the PowerShell policy stops scripts,
+To upgrade, close NsVim and run the installer again. If the PowerShell policy stops scripts,
 download the Windows ZIP from the release page and extract it.
 
 
 ## Updates
 
-nsvim looks for a new release on GitHub once a day. When there is one, it says so on the command
-line. Run `:Update` to install it: nsvim closes, the installer runs into the same folder, and
-nsvim starts again. Save your files first; `:Update` will not close unsaved buffers. With no
+NsVim looks for a new release on GitHub once a day. When there is one, it says so on the command
+line. Run `:Update` to install it: NsVim closes, the installer runs into the same folder, and
+NsVim starts again. Save your files first; `:Update` will not close unsaved buffers. With no
 release found yet, `:Update` checks first.
 
 This works for copies the installers put in place. A build from source or a copy from mise is
@@ -117,7 +117,7 @@ left alone and updates the way it was installed. To turn off the daily check, se
 check = false
 ```
 
-in `config.toml`. Close any other nsvim windows before `:Update` on Windows, which cannot replace
+in `config.toml`. Close any other NsVim windows before `:Update` on Windows, which cannot replace
 a program that is running.
 
 ## mise
@@ -152,7 +152,7 @@ Each release has these archives and one `SHA256SUMS` file:
 | --- | --- |
 | `nsvim-VERSION-x86_64-unknown-linux-gnu.tar.gz` | `nsvim`, `nsh/`, `packaging/nsvim.desktop`, `packaging/nsvim.svg`, `LICENSE`, `README.md` |
 | `nsvim-VERSION-aarch64-unknown-linux-gnu.tar.gz` | the same, for ARM64 |
-| `nsvim-VERSION-aarch64-apple-darwin.tar.gz` | `nsvim.app` (the interface is in `Contents/Resources/nsh/`), `LICENSE`, `README.md` |
+| `nsvim-VERSION-aarch64-apple-darwin.tar.gz` | `NsVim.app` (the interface is in `Contents/Resources/nsh/`), `LICENSE`, `README.md` |
 | `nsvim-VERSION-x86_64-apple-darwin.tar.gz` | the same, for Intel |
 | `nsvim-VERSION-x86_64-pc-windows-msvc.zip` | `nsvim.exe`, `nsh\`, `LICENSE`, `README.md` |
 
@@ -166,14 +166,14 @@ that link with its script.
 
 ## Uninstall
 
-Close nsvim, then remove what the installer added:
+Close NsVim, then remove what the installer added:
 
-- macOS: `~/Applications/nsvim.app`.
+- macOS: `~/Applications/NsVim.app`.
 - Linux: under the prefix, `share/nsvim/`, `share/applications/nsvim.desktop` and
   `share/icons/hicolor/scalable/apps/nsvim.svg`.
-- Windows: the install folder and the nsvim Start menu shortcut.
+- Windows: the install folder and the NsVim Start menu shortcut.
 
 Your settings, session, undo history and recovery files stay. On Linux, they are in
 `~/.config/nsvim` and `~/.local/state/nsvim`. The first-run setup can add lines to your shell startup file
-(after `# Added by nsvim's setup`) and set git's editor. Remove them yourself if you no longer
+(after `# Added by NsVim's setup`) and set git's editor. Remove them yourself if you no longer
 want them.

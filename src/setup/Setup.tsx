@@ -48,7 +48,7 @@ function Header(props: { st: () => SetupState }) {
     <View class="flex-row gap-3.5 items-center">
       <AppIcon size={34} />
       <View class="gap-0.5">
-        <Text class="text-base font-bold text-foreground">nsvim</Text>
+        <Text class="text-base font-bold text-foreground">NsVim</Text>
         <Text class="text-xs text-muted-foreground" testID="setup-step">
           {`Setup ${step()}/${props.st().steps.length} · ${props.st().steps[step() - 1] ?? ""}`}
         </Text>
@@ -106,7 +106,7 @@ export function AppIcon(props: { size: number }) {
       style={{ width: props.size, height: props.size, borderRadius: 28 * k }}
       accessible
       role="image"
-      accessibilityLabel="nsvim"
+      accessibilityLabel="NsVim"
     >
       {capsule(39, 64, 16, 76, { "bg-primary": true })}
       {capsule(89, 64, 16, 76, { "bg-mode-insert": true })}
@@ -178,7 +178,7 @@ function Status(props: { st: () => SetupState }) {
       <If when={step() > 1}>
         <StepButton label="Back" onPress={() => SetupFlow.go(-1)} />
       </If>
-      <If when={step() < last()} else={<StepButton label={props.st().again ? "Save" : "Open nsvim"} go onPress={() => SetupFlow.finish()} />}>
+      <If when={step() < last()} else={<StepButton label={props.st().again ? "Save" : "Open NsVim"} go onPress={() => SetupFlow.finish()} />}>
         <StepButton label="Next" go onPress={() => SetupFlow.go(1)} />
       </If>
     </View>

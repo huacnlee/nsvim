@@ -122,7 +122,7 @@ fn setup_runs_again_from_the_editor_with_the_current_picks() -> Result<(), Strin
     app.press("label:Classic shortcuts")?;
     app.press("label:Skip")?;
     app.wait_for("Ready")?;
-    assert!(!app.screen().matches("label:Open nsvim")?, "the editor is open already");
+    assert!(!app.screen().matches("label:Open NsVim")?, "the editor is open already");
     app.press("label:Save")?;
     app.wait_for("text:/hello/")?;
     assert!(!app.screen().matches("id:setup")?);
@@ -145,7 +145,7 @@ fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     app.press("label:Back")?;
     app.wait_for("Use the mouse?")?;
     typ(&mut app, &["tab", "tab"]);
-    app.wait_for("Use nsvim from the terminal")?;
+    app.wait_for("Use NsVim from the terminal")?;
     assert!(app.shows("Setup 4/5 · Terminal"));
     typ(&mut app, &["shift+tab"]);
     app.wait_for("Pick a look")?;
@@ -154,7 +154,7 @@ fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     app.press("label:Skip")?;
     app.wait_for("Ready")?;
     assert!(app.shows("Setup 5/5 · Ready"));
-    assert!(app.screen().matches("label:Open nsvim")?);
+    assert!(app.screen().matches("label:Open NsVim")?);
     assert!(!app.screen().matches("label:Next")?, "the last step has no next");
     Ok(())
 }
@@ -216,7 +216,7 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     let (mut app, _dir) = first_launch();
     app.wait_for("How do you want to edit?")?;
     typ(&mut app, &["tab", "tab", "tab"]);
-    app.wait_for("Use nsvim from the terminal")?;
+    app.wait_for("Use NsVim from the terminal")?;
     let git = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.starts_with("git config --global core.editor"));
     assert!(git(app.screen()), "git is on by default: {:?}", app.screen().texts());
     let alias = |s: &nsh_testing::Screen| s.texts().iter().any(|t| t.contains("alias nvim=") && t.contains(" vi="));
@@ -226,8 +226,8 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.press("label:Use for git commit messages")?;
     app.wait_until("no git command", Duration::from_secs(2), |s| !git(s))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
-    app.press("label:Open nsvim with nvim, vim and vi")?;
-    app.wait_for("Nothing. nsvim stays inside its window.")?;
+    app.press("label:Open NsVim with nvim, vim and vi")?;
+    app.wait_for("Nothing. NsVim stays inside its window.")?;
     Ok(())
 }
 
@@ -242,7 +242,7 @@ fn finishing_setup_writes_the_config_and_opens_the_editor() -> Result<(), String
     assert!(app.shows("Classic shortcuts (Ctrl)"), "{:?}", app.screen().texts());
     // The last step says how to start nsvim: the aliases are on by default.
     app.wait_for("text:/nvim . opens a folder/")?;
-    app.press("label:Open nsvim")?;
+    app.press("label:Open NsVim")?;
     app.wait_for("id:text-area")?;
     assert!(!app.screen().matches("id:setup")?);
     let cfg =

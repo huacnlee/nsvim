@@ -397,7 +397,7 @@ impl App {
                 Some(' ') => self.cfg.keys.leader = "space".into(),
                 Some('\\') => self.cfg.keys.leader = "backslash".into(),
                 Some(c) => {
-                    note = format!("Neovim's leader is '{c}'. nsvim takes Space or backslash, so it keeps {}. ", self.cfg.keys.leader)
+                    note = format!("Neovim's leader is '{c}'. NsVim takes Space or backslash, so it keeps {}. ", self.cfg.keys.leader)
                 }
                 None => {}
             }
@@ -495,7 +495,7 @@ impl Integration {
             if !have.contains(&line) {
                 use std::io::Write;
                 if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&rc) {
-                    let _ = writeln!(f, "\n# Added by nsvim's setup\n{line}");
+                    let _ = writeln!(f, "\n# Added by NsVim's setup\n{line}");
                 }
             }
         };
@@ -528,7 +528,7 @@ fn desktop_entry(exe: &std::path::Path) -> String {
     let exe = exe.display().to_string().replace('\\', "\\\\").replace('"', "\\\"");
     DESKTOP
         .replace("Exec=editor %F", &format!("Exec=\"{exe}\" %F"))
-        .replace("Name=editor", "Name=nsvim")
+        .replace("Name=editor", "Name=NsVim")
         .replace("Icon=editor", "Icon=nsvim")
         .replace("StartupWMClass=editor", "StartupWMClass=dev.nsvim.app")
 }

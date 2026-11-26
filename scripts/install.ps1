@@ -67,7 +67,7 @@ try {
         if (Test-Path -LiteralPath $previous) { Move-Item -LiteralPath $previous -Destination $InstallDir }
         throw "Could not replace $InstallDir."
     }
-    $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) 'nsvim.lnk'
+    $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) 'NsVim.lnk'
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($startMenu)
     $shortcut.TargetPath = Join-Path $InstallDir 'nsvim.exe'
@@ -76,7 +76,7 @@ try {
     $icon = Join-Path $InstallDir 'nsh\icon.ico'
     $shortcut.IconLocation = if (Test-Path -LiteralPath $icon -PathType Leaf) { "$icon,0" } else { "$InstallDir\nsvim.exe,0" }
     $shortcut.Save()
-    Write-Host "Installed $InstallDir. Open nsvim from the Start menu."
+    Write-Host "Installed $InstallDir. Open NsVim from the Start menu."
     # Put the folder on the user PATH, so terminals, TUIs and AI agents can run nsvim.
     if ($NoModifyPath) {
         Write-Host "The program is $(Join-Path $InstallDir 'nsvim.exe')."

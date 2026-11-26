@@ -1,22 +1,22 @@
 # AI agents and scripts
 
-nsvim has no AI inside it. Instead, a running nsvim is something an agent in your terminal
+NsVim has no AI inside it. Instead, a running NsVim is something an agent in your terminal
 can see and drive: Claude Code, Codex, opencode, or a shell script. The agent can read what you
 are looking at, point you at code, propose changes you review as a diff, and use the editor's
 language server diagnostics.
 
 ## Connect an agent
 
-Every running nsvim serves a socket for its project. Two commands of the nsvim program use it:
+Every running NsVim serves a socket for its project. Two commands of the NsVim program use it:
 
 - `mcp`, a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio. Agents
-  that speak MCP get nsvim as tools.
+  that speak MCP get NsVim as tools.
 - `ctl`, a command-line client for any agent or script.
 
 Agents and scripts do not see the shell aliases that setup makes (`nvim`, `vim`, `vi`). They
 run the program by its full path. `nvim --help` prints it. The examples use the Linux path of
 the installer, `~/.local/share/nsvim/nsvim`. On macOS, it is
-`~/Applications/nsvim.app/Contents/MacOS/nsvim`. Do not give an agent `nvim`: outside your
+`~/Applications/NsVim.app/Contents/MacOS/nsvim`. Do not give an agent `nvim`: outside your
 interactive shell, `nvim` is Neovim.
 
 ### Claude Code
@@ -50,7 +50,7 @@ Tell it about `ctl` in its instructions file (`AGENTS.md`, `CLAUDE.md`). Put in 
 of your program:
 
 ```markdown
-The user reads code in nsvim. Run `~/.local/share/nsvim/nsvim ctl` from the project folder.
+The user reads code in NsVim. Run `~/.local/share/nsvim/nsvim ctl` from the project folder.
 Do not run `nvim`: it is Neovim here.
 - `~/.local/share/nsvim/nsvim ctl state` shows the open file, the cursor and the selection.
 - `~/.local/share/nsvim/nsvim ctl read PATH` returns a buffer's text with unsaved edits.
@@ -80,7 +80,7 @@ Do not run `nvim`: it is Neovim here.
 [cli.md](cli.md) has every command, flag and exit status. Lines and columns are 1-based. Paths are
 absolute or relative to the project root. `ctl`
 prints JSON for data and plain text for `read` and `selection`; add `--json` for JSON
-everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no nsvim is running.
+everywhere. It exits 0 when done, 1 when the editor refuses, and 2 when no NsVim is running.
 
 In your own terminal, the alias works, so `nvim ctl` is the same command:
 
@@ -107,7 +107,7 @@ $ sed 's/println!/eprintln!/' src/main.rs | nvim ctl propose src/main.rs --label
 
 ## `$EDITOR`, git and second launches
 
-`nvim PATH` opens the file in the nsvim already running for that project, brings it forward
+`nvim PATH` opens the file in the NsVim already running for that project, brings it forward
 and exits. `nvim --wait PATH` waits until you close that buffer, so it works as `$EDITOR` for
 git commit messages and for agents that open a prompt in your editor. `--new` always opens a new
 window.

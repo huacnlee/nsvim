@@ -48,9 +48,9 @@ impl Migration {
             }
         }
         if !failed.is_empty() {
-            return Some(format!("nsvim could not copy its old folders: {}", failed.join(", ")));
+            return Some(format!("NsVim could not copy its old folders: {}", failed.join(", ")));
         }
-        (!done.is_empty()).then(|| format!("nsvim copied {}. The old folders stay", done.join(" and ")))
+        (!done.is_empty()).then(|| format!("NsVim copied {}. The old folders stay", done.join(" and ")))
     }
 }
 

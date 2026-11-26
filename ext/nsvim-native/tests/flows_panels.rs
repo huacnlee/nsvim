@@ -321,8 +321,8 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
         first_launch: true,
     });
     f.update(|a, _| a.setup_go(3));
-    f.ui.wait_for("text:Use nsvim from the terminal").unwrap();
-    f.ui.wait_for("label:Open nsvim with nvim, vim and vi").unwrap();
+    f.ui.wait_for("text:Use NsVim from the terminal").unwrap();
+    f.ui.wait_for("label:Open NsVim with nvim, vim and vi").unwrap();
     // The step builds again when the probe answers. Press after it.
     f.settle("the probe answers", |a| match &a.screen {
         Screen::Setup(s) => s.exe.is_some(),
@@ -339,7 +339,7 @@ fn the_terminal_step_offers_nvim_vim_and_vi_aliases() {
     // Under load, a press can reach the row while the step builds again. Press again only
     // while the switch is still on, so a second press never turns it back on.
     for _ in 0..3 {
-        f.ui.press("label:Open nsvim with nvim, vim and vi").unwrap();
+        f.ui.press("label:Open NsVim with nvim, vim and vi").unwrap();
         let t = std::time::Instant::now();
         while on(&f) && t.elapsed() < std::time::Duration::from_secs(1) {
             std::thread::sleep(std::time::Duration::from_millis(20));

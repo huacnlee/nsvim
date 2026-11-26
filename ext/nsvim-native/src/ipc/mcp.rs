@@ -103,7 +103,7 @@ fn call_tool(params: &Value, cwd: &std::path::Path) -> Value {
     let Some(cmd) = command_for(name) else { return text(format!("unknown tool {name}"), true) };
     let socket: Option<PathBuf> = super::find(cwd);
     let Some(socket) = socket else {
-        return text(format!("No nsvim is running for {}. Ask the user to start one with `nvim .` in the project.", cwd.display()), true);
+        return text(format!("No NsVim is running for {}. Ask the user to start one with `nvim .` in the project.", cwd.display()), true);
     };
     let args = params.get("arguments").cloned().unwrap_or(json!({}));
     match super::call(&socket, cmd, args, Some(Duration::from_secs(30))) {
