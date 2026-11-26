@@ -1,11 +1,12 @@
 // The file tree: the project's folders and files, folders first. A press opens a folder or
-// closes it, or opens a file. The wheel scrolls it. A drag on its right edge changes its width.
+// closes it, or opens a file. A right-click opens the row's menu. The wheel scrolls it. A drag
+// on its right edge changes its width.
 //
 // Rust owns the tree (`FileTree` in `ext/nsvim-native/src/exports/tree.rs`). Rust keeps the scroll position
 // and gives only the rows on screen, so a tree of 200,000 files costs the same as a small one.
 // The tree's keys go through `App::key`. After a press, the keys go back to the editor.
 
-import { signal, Text, View, type Signal } from "nsh";
+import { signal, Text, View, type ContextMenuEvent, type Signal } from "nsh";
 import { FileTree, Icon, Shell, type TreeFrame, type TreeItem } from "nsvim-native";
 
 /** The frame before Rust gives the first one. */
@@ -91,6 +92,10 @@ function Row(props: { item: () => TreeItem; frame: Signal<TreeFrame> }) {
       accessibilityState={{ selected: r().picked || r().active, expanded: r().dir ? r().open : undefined }}
       onPress={() => {
         FileTree.press(r().path, r().dir);
+        Shell.focusKeys();
+      }}
+      onContextMenu={(e: ContextMenuEvent) => {
+        FileTree.openMenu(r().path, e.pagePosition.x, e.pagePosition.y);
         Shell.focusKeys();
       }}
     >

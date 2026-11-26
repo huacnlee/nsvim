@@ -125,6 +125,12 @@ impl FileTree {
         });
     }
 
+    /// Opens the menu of the row at `path` at `x`, `y` in the window: a new file or folder,
+    /// rename, delete, or copy its path. The row gets the keyboard.
+    pub fn open_menu(path: String, x: f64, y: f64) {
+        crate::bridge::update(move |a, tx| a.tree_menu(path, (x as f32, y as f32), tx));
+    }
+
     /// Scrolls the tree by `dy`: positive scrolls down. `lines` tells that `dy` is in wheel
     /// notches, else it is in points.
     pub fn wheel(dy: f32, lines: bool) {

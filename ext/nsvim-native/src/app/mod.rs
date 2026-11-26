@@ -33,6 +33,7 @@ pub mod tab_menu;
 #[cfg(test)]
 mod tab_menu_tests;
 pub mod tree;
+pub mod tree_menu;
 pub mod unsaved;
 pub mod update;
 #[cfg(test)]
