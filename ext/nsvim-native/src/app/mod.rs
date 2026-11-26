@@ -16,6 +16,9 @@ mod lifecycle_tests;
 pub mod lsp;
 pub mod menu;
 pub mod mouse;
+pub mod palette;
+#[cfg(test)]
+mod palette_tests;
 pub mod picker;
 pub mod project;
 pub mod review;

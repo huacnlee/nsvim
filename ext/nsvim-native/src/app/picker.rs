@@ -5,8 +5,9 @@ use std::path::PathBuf;
 
 use super::fx::Tx;
 use editor::buffer::Pos;
-use editor::editor::{Action, KeyCode, KeyInput};
+use editor::editor::{KeyCode, KeyInput};
 
+use super::palette::COMMANDS;
 use super::{App, Overlay};
 use crate::fuzzy::{self, Match};
 
@@ -72,31 +73,6 @@ pub struct Picker {
     /// The part of a row the wheel has turned but not scrolled.
     pub wheel_rest: f32,
 }
-
-/// The command palette: a label and what it does.
-pub const COMMANDS: &[(&str, &str)] = &[
-    ("Find file…", "find"),
-    ("Find in project…", "grep"),
-    ("Open project…", "project"),
-    ("Save", "save"),
-    ("Save all", "save-all"),
-    ("Toggle file tree", "tree"),
-    ("Open settings…", "settings"),
-    ("Close tab", "close"),
-    ("Next tab", "next"),
-    ("Previous tab", "prev"),
-    ("Keymap: Neovim", "keymap=neovim"),
-    ("Keymap: classic", "keymap=classic"),
-    ("Theme: dark", "theme=dark"),
-    ("Theme: light", "theme=light"),
-    ("Theme: follow the OS", "theme=system"),
-    ("Toggle soft wrap", "wrap"),
-    ("Show every key…", "keys"),
-    ("Agent: list outside changes…", "outside"),
-    ("Agent: clear change marks", "clear-outside"),
-    ("Agent: show the next proposal", "proposal"),
-    ("Quit", "quit"),
-];
 
 impl Picker {
     pub fn new(kind: PickKind) -> Picker {
@@ -215,7 +191,7 @@ impl App {
                 }
                 p.sel = self.ed.active;
             }
-            PickKind::Commands => p.items = COMMANDS.iter().map(|(l, _)| (*l).to_string()).collect(),
+            PickKind::Commands => p.items = COMMANDS.iter().map(|c| c.label.to_string()).collect(),
             PickKind::Grep => {
                 self.grep.hits.clear();
                 self.grep.error = None;
@@ -374,7 +350,7 @@ impl App {
             return;
         }
         if kind == PickKind::Commands {
-            let id = p.matches.get(p.sel).map(|m| COMMANDS[m.index].1);
+            let id = p.matches.get(p.sel).map(|m| COMMANDS[m.index].id);
             self.overlay = Overlay::None;
             if let Some(id) = id {
                 self.run_command(id, tx);
@@ -404,45 +380,5 @@ impl App {
         if let Some((path, at)) = picked {
             self.open_path(path, at);
         }
-    }
-
-    /// Runs a palette command by id.
-    pub fn run_command(&mut self, id: &str, tx: &mut Tx) {
-        let action = match id {
-            "find" => Action::FindFile,
-            "grep" => Action::GrepProject,
-            "project" => Action::OpenProject,
-            "save" => Action::Save(None),
-            "save-all" => Action::SaveAll,
-            "tree" => Action::ToggleTree,
-            "settings" => Action::Settings,
-            "close" => Action::CloseBuffer,
-            "next" => Action::NextBuffer,
-            "prev" => Action::PrevBuffer,
-            "wrap" => Action::SetOption("wrap".into(), (!self.cfg.editor.wrap).to_string()),
-            "keys" => Action::KeyList(String::new()),
-            "outside" => {
-                self.show_outside();
-                return;
-            }
-            "clear-outside" => {
-                self.clear_outside(None);
-                self.ed.message("change marks cleared");
-                return;
-            }
-            "proposal" => {
-                match self.proposals.first().map(|p| p.path.clone()) {
-                    Some(p) => self.open_path(p, None),
-                    None => self.ed.message("no proposals"),
-                }
-                return;
-            }
-            "quit" => Action::QuitAll { force: false },
-            other => match other.split_once('=') {
-                Some((k, v)) => Action::SetOption(k.into(), v.into()),
-                None => return,
-            },
-        };
-        self.run_actions(vec![action], tx);
     }
 }

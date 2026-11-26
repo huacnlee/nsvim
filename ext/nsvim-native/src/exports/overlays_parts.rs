@@ -117,6 +117,9 @@ pub struct PickRow {
     pub name: Vec<NameRun>,
     /// Text after the name, drawn dim: a hit's line, a key's section.
     pub extra: String,
+    /// The keys of a palette command in the active keymap, drawn at the right end. Empty
+    /// for other rows.
+    pub keys: String,
 }
 
 /// The rows of the open picker that show.
@@ -289,7 +292,8 @@ fn row(a: &App, pk: &Picker, i: usize) -> PickRow {
     };
     let label = format!("{dir}{name}");
     let name = hit_runs(&name, &hits).into_iter().map(|(text, hit)| NameRun { text, hit }).collect();
-    PickRow { index: i as u32, label, dir, name, extra }
+    let keys = if pk.kind == PickKind::Commands { a.command_keys(pk.matches[i].index) } else { String::new() };
+    PickRow { index: i as u32, label, dir, name, extra, keys }
 }
 
 /// `name` in runs of chars, each with whether its chars are matched ones.

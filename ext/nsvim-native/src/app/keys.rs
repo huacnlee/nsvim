@@ -18,6 +18,7 @@ pub const LEADER: &[(char, &str, bool)] = &[
     ('d', "Diagnostics…", false),
     (',', "Settings…", false),
     ('?', "Every key…", false),
+    (':', "Commands…", false),
     ('g', "+Git", true),
     ('l', "+LSP", true),
     ('a', "+Agent", true),
@@ -81,6 +82,16 @@ impl App {
             self.overlay = Overlay::None;
             if !open {
                 self.open_key_list(String::new());
+            }
+            return;
+        }
+        // `Ctrl ⇧ P` (`⇧ ⌘ P` on macOS) opens the command palette in every keymap, as in Zed.
+        // Again closes it. The palette holds the menu, which Linux and Windows do not show.
+        if k.cmd && k.shift && matches!(k.code, KeyCode::Char('p' | 'P')) {
+            let open = matches!(&self.overlay, Overlay::Pick(p) if p.kind == super::picker::PickKind::Commands);
+            self.overlay = Overlay::None;
+            if !open {
+                self.open_picker(super::picker::PickKind::Commands);
             }
             return;
         }
@@ -196,6 +207,7 @@ impl App {
             }
             (None, '/') => vec![Action::GrepProject],
             (None, '?') => vec![Action::KeyList(String::new())],
+            (None, ':') => vec![Action::Palette],
             (None, 'b') => vec![Action::PickBuffer],
             (None, 'w') => vec![Action::Save(None)],
             (None, 'q') => vec![Action::CloseBuffer],

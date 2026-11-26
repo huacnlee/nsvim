@@ -1,7 +1,7 @@
 //! The application menu: the menu bar on macOS, and on Windows and Linux the menus of the
-//! window (which nsvim's own title bar hides, so there they are the same commands as the
-//! palette). The terminal editor has none. Each item names a command by id, so the menu is
-//! data that tests can walk, and `app_menu_pick` carries an id out.
+//! window, which nsvim's own title bar hides. The terminal editor has none. So the command
+//! palette holds every item. Each item names a palette command by id, so the menu is data that
+//! tests can walk, and `app_menu_pick` carries an id out.
 
 use std::path::PathBuf;
 
@@ -109,48 +109,17 @@ impl App {
         ]
     }
 
-    /// Carries out the menu item `id`.
+    /// Carries out the menu item `id`. Every item but Open Recent is a palette command.
     pub fn app_menu_pick(&mut self, id: &str, tx: &mut Tx) {
         // A menu is chosen over whatever shows: close a picker or the in-app menu first.
-        if !matches!(self.overlay, super::Overlay::None) {
-            self.overlay = super::Overlay::None;
-        }
-        if let Some(cmd) = id.strip_prefix("cmd:") {
-            if cmd == "palette" {
-                return self.open_picker(super::picker::PickKind::Commands);
-            }
-            return self.run_command(cmd, tx);
-        }
-        if let Some(edit) = id.strip_prefix("edit:") {
-            if !self.ed.has_doc() || self.on_settings {
-                return;
-            }
-            return self.menu_pick(edit, tx);
+        self.overlay = super::Overlay::None;
+        if id == "cmd:palette" {
+            return self.open_picker(super::picker::PickKind::Commands);
         }
         if let Some(root) = id.strip_prefix("recent:") {
             return self.open_project(PathBuf::from(root), tx);
         }
-        match id {
-            "folder" => self.choose_folder(tx),
-            "undo" | "redo" => {
-                if !self.ed.has_doc() || self.on_settings {
-                    return;
-                }
-                let buf = &mut self.ed.doc_mut().buf;
-                let at = if id == "undo" { buf.undo() } else { buf.redo() };
-                match at {
-                    Some(at) => {
-                        if self.ed.keymap == editor::editor::Keymap::Vim {
-                            self.ed.mode = editor::editor::Mode::Normal;
-                        }
-                        self.ed.doc_mut().view.anchor = None;
-                        self.ed.set_cursor(at);
-                        self.edited();
-                    }
-                    None => self.ed.message(if id == "undo" { "Already at oldest change" } else { "Already at newest change" }),
-                }
-            }
-            _ => {}
-        }
+        let cmd = id.strip_prefix("cmd:").or_else(|| id.strip_prefix("edit:")).unwrap_or(id);
+        self.run_command(cmd, tx);
     }
 }

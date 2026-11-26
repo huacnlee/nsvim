@@ -129,6 +129,7 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
         // Not `update`: in Vim that writes the file when it changed.
         "Update" => out.push(Action::Update),
         "Keys" | "keys" | "h" | "help" => out.push(Action::KeyList(args.trim().to_string())),
+        "Commands" => out.push(Action::Palette),
         "Find" | "find" | "Files" => out.push(Action::FindFile),
         "Projects" | "Project" | "Open" | "cd" | "chdir" => match args.trim() {
             "" if name == "cd" || name == "chdir" => return Err("E471: Argument required".into()),
