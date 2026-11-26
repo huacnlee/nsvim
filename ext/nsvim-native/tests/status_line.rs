@@ -77,13 +77,14 @@ fn the_position_is_quiet_text_like_the_other_parts() -> Result<(), String> {
     let mut app = start_files(&[&a], None);
     wait_padded(&mut app, "id:position", "1:1")?;
     assert!(!app.screen().matches("id:position-fill")?, "no fill behind the position");
-    let text = |app: &Headless, sel: &str| app.screen().span_style(sel).unwrap();
-    let (pos, lang) = (text(&app, "id:position"), text(&app, "id:language"));
+    let text = |app: &Headless, sel: &str| app.screen().span_style(&format!("id:status-line >> text:{sel}")).unwrap();
+    let lang_name = name(&app.screen(), "id:language").unwrap().trim().to_string();
+    let (pos, lang) = (text(&app, "/1:1/"), text(&app, &lang_name));
     assert_eq!(pos.color, lang.color, "the position takes the colour of the language");
     assert_eq!(pos.font_weight, lang.font_weight, "and its weight");
     typ(&mut app, &["i"]);
     wait_text(&mut app, "id:mode", "INSERT")?;
-    assert_eq!(text(&app, "id:position").color, lang.color, "the mode does not colour the position");
+    assert_eq!(text(&app, "/1:1/").color, lang.color, "the mode does not colour the position");
     Ok(())
 }
 
@@ -93,12 +94,12 @@ fn the_position_keeps_its_width_when_the_column_gets_a_digit() -> Result<(), Str
     let a = write(dir.path(), "a.txt", "short\na line with more than ten characters\n");
     let mut app = start_files(&[&a], None);
     wait_padded(&mut app, "id:position", "1:1")?;
-    type_text(&mut app, "$");
+    typ(&mut app, &["shift+4"]);
     wait_padded(&mut app, "id:position", "1:5")?;
     let narrow = (width(&app, "id:position"), width(&app, "id:language"));
     type_text(&mut app, "j");
     wait_padded(&mut app, "id:position", "2:5")?;
-    type_text(&mut app, "$");
+    typ(&mut app, &["shift+4"]);
     wait_padded(&mut app, "id:position", "2:38")?;
     let wide = (width(&app, "id:position"), width(&app, "id:language"));
     assert!((narrow.0 - wide.0).abs() < 0.5, "the position keeps its width: {narrow:?} then {wide:?}");
