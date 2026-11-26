@@ -87,8 +87,35 @@ fn a_middle_click_keeps_a_dirty_tab_open() {
         s.accessibility(Some(&format!("id:tab-mark-{active}"))).ok().flatten().is_some_and(|n| n.name == "Unsaved changes")
     })
     .unwrap();
+    let before = f.ui.screen().id(&format!("id:tab-{active}")).unwrap();
+    eprintln!(
+        "DIAG before click: id={before:?} {}",
+        f.read(|a| format!(
+            "docs={:?} active={} msg={:?}",
+            a.ed.docs.iter().map(|d| (d.buf.name(), d.buf.is_dirty())).collect::<Vec<_>>(),
+            a.ed.active,
+            a.ed.msg.as_ref().map(|m| (m.text.clone(), m.error))
+        ))
+    );
     f.middle_click(&format!("id:tab-{active}"), point(20.0, 10.0));
-    f.settle("the editor tells why", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
+    let start = std::time::Instant::now();
+    while !f.check(|a| a.ed.msg.as_ref().is_some_and(|m| m.error)) {
+        if start.elapsed() > std::time::Duration::from_secs(5) {
+            let after = f.ui.screen().id(&format!("id:tab-{active}"));
+            let tree = format!("{:?}", f.ui.screen().accessibility(Some(&format!("id:tab-{active}"))));
+            panic!(
+                "DIAG timeout: id after={after:?} state={} tree={tree}",
+                f.read(|a| format!(
+                    "docs={:?} active={} msg={:?} mode={:?}",
+                    a.ed.docs.iter().map(|d| (d.buf.name(), d.buf.is_dirty())).collect::<Vec<_>>(),
+                    a.ed.active,
+                    a.ed.msg.as_ref().map(|m| (m.text.clone(), m.error)),
+                    a.ed.mode
+                ))
+            );
+        }
+        std::thread::sleep(std::time::Duration::from_millis(15));
+    }
     assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");
 }
 

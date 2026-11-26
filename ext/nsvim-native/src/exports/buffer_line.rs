@@ -79,7 +79,13 @@ impl Tabs {
     /// Closes tab `index`. A file with unsaved changes stays open
     /// and the editor tells why.
     pub fn close(index: u32) {
+        eprintln!("DIAG Tabs.close({index}) called");
         crate::bridge::update(move |a, _| {
+            eprintln!(
+                "DIAG Tabs.close({index}) runs: docs={} dirty={:?}",
+                a.ed.docs.len(),
+                a.ed.docs.get(index as usize).map(|d| d.buf.is_dirty())
+            );
             if (index as usize) < a.ed.docs.len() {
                 a.close_tab(index as usize);
             }

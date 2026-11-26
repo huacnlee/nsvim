@@ -17,6 +17,18 @@ jobs:
           toolchain: "1.99.1"
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Repeat flows_mouse (diagnostic)
+        run: |
+          cargo test --locked -p nsvim-native --test flows_mouse --no-run
+          fails=0
+          for i in $(seq 25); do
+            if ! cargo test --locked -p nsvim-native --test flows_mouse -- --nocapture > out.txt 2>&1; then
+              fails=$((fails+1)); echo "=== run $i FAILED"; grep -n "DIAG\|panicked\|FAILED" out.txt | cut -c1-6000
+            else
+              echo "=== run $i ok"; grep -n "DIAG" out.txt | head -5
+            fi
+          done
+          echo "FAILS=$fails"
       - name: Format
         run: cargo fmt --all --check
       - name: Lint
