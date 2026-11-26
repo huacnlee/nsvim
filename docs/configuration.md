@@ -2,7 +2,7 @@
 
 nsvim reads `~/.config/nsvim/config.toml` at startup. On the first start, nsvim copies an older
 `~/.config/editor` folder there once. The first launch writes it, at the
-end of setup. `:Setup` runs setup again, from this file. Settings (`:Settings`) edits it over the whole window. A change applies at once and
+end of setup. `:Setup` opens App Setup, from this file. Settings (`:Settings`) edits it over the whole window. A change applies at once and
 goes to the file at once. A missing key takes its default, so a file can hold only what you change.
 
 ## Every option

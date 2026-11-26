@@ -1,5 +1,5 @@
 //! First launch: pick keys, mouse, look and terminal integration, then open the editor.
-//! `:Setup` (and `Run setup again…` in the palette and the app menu) shows it again later, from
+//! `:Setup` (and `App Setup…` in the palette and the app menu) shows it again later, from
 //! the current config, to change the picks. The choices land in config.toml. Terminal integration runs only what the user leaves on,
 //! and shows each command before it runs.
 

@@ -104,13 +104,13 @@ export function ReadyStep(props: Step) {
           ["Every key, in a popup", [l]],
           ["Command palette", [l, "p"]],
           ["Settings", [":Settings"]],
-          ["Run setup again", [":Setup"]],
+          ["App Setup", [":Setup"]],
         ]
       : [
           ["Find a file", [md(), "P"]],
           ["Command palette", [md(), "⇧", "P"]],
           ["Settings", [md(), ","]],
-          ["Run setup again, from the palette", [md(), "⇧", "P"]],
+          ["App Setup, from the palette", [md(), "⇧", "P"]],
         ];
   };
   return (
