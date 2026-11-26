@@ -62,7 +62,12 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     s.attach(win);
     s.start();
     if !crate::terminal() {
-        set_app_menu(s);
+        // The menu follows the keymap and Settings: they decide the shortcut of Close Window.
+        let menu_keys = s.view(|a| a.close_window_key());
+        effect(move || {
+            menu_keys.get();
+            untracked(|| set_app_menu(s));
+        });
     }
 
     // A view takes the focus only once its window shows, which comes after the first layout on
@@ -120,7 +125,8 @@ fn make_app(p: Option<&crate::Pending>) -> app::App {
 }
 
 /// The application menu (`app::app_menu`), each item carried out on the session. The recent
-/// projects are read once, as the window opens.
+/// projects are read as the menu is made: as the window opens, and when the keymap or Settings
+/// change Close Window's shortcut.
 #[cfg(not(target_arch = "wasm32"))]
 fn set_app_menu(s: Session) {
     use nsh_core::desktop::MenuRole;
@@ -135,11 +141,20 @@ fn set_app_menu(s: Session) {
                 Entry::Item(id, label) if id == "none" => MenuItem::new(label).disabled(true),
                 Entry::Item(id, label) => MenuItem::new(label).on_select(move || s.update(|a, tx| a.app_menu_pick(&id, tx))),
                 Entry::Quit => MenuItem::role(MenuRole::Quit),
+                Entry::Hide(label, key) => {
+                    let item = MenuItem::role(MenuRole::Hide).label(label);
+                    match key {
+                        Some(key) => item.shortcut(&key),
+                        None => item,
+                    }
+                }
+                Entry::HideOthers => MenuItem::role(MenuRole::HideOthers),
+                Entry::ShowAll => MenuItem::role(MenuRole::ShowAll),
                 Entry::Separator => MenuItem::separator(),
             })
             .collect()
     }
-    let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root)));
+    let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root), cfg!(target_os = "macos")));
     set_application_menu(build(s, entries));
 }
 
