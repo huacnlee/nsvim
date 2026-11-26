@@ -270,7 +270,17 @@ fn every_palette_command_does_what_it_says() {
     f.keys("V");
     let cut = full.clone();
     run_check(&mut f, t, "cut", "cut deletes the selected line", move |a| text(a).len() < cut.len());
-    run_check(&mut f, t, "paste", "paste puts it back", move |a| text(a).len() >= full.len());
+    // Paste reads the clipboard in a task that only key events drive, so this one goes the way
+    // a person goes: `Ctrl ⇧ P` in the Neovim keymap, the name, Enter.
+    f.press("ctrl+shift+p");
+    f.settle("Ctrl Shift P opens the palette in the Neovim keymap", |a| picking(a, PickKind::Commands));
+    f.keys("paste");
+    f.settle("the query picks Paste", |a| {
+        matches!(&a.overlay, Overlay::Pick(p) if p.matches.get(p.sel).is_some_and(|m| nsvim_native::app::palette::COMMANDS[m.index].id == "paste"))
+    });
+    f.press("enter");
+    f.settle("paste puts it back", move |a| text(a).len() >= full.len());
+    t.push("paste");
     for id in ["definition", "references", "actions"] {
         f.update(|a, _| a.ed.msg = None);
         run_check(&mut f, t, id, id, |a| said(a, "no language server"));
