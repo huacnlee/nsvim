@@ -53,6 +53,9 @@ pub struct Seg {
     pub ws: bool,
     /// Under a diagnostic.
     pub diag: Option<Level>,
+    /// Chars two cells wide (CJK). The view spaces them out to the grid, as a font's own
+    /// advance for them is seldom two cells.
+    pub wide: bool,
 }
 
 /// The mark in a row's gutter.
@@ -469,11 +472,19 @@ pub fn frame_with(ed: &Editor, look: &Look, rows: usize) -> Frame {
                     ch => ch.to_string(),
                 };
                 let k = ink[i];
+                let wide = ch != '\t' && cols[i + 1] - cols[i] == 2;
                 match segs.last_mut() {
-                    Some(s) if s.kind == k.kind && s.selected == k.selected && s.matched == k.matched && s.ws == ws && s.diag == k.diag => {
+                    Some(s)
+                        if s.kind == k.kind
+                            && s.selected == k.selected
+                            && s.matched == k.matched
+                            && s.ws == ws
+                            && s.diag == k.diag
+                            && s.wide == wide =>
+                    {
                         s.text.push_str(&piece)
                     }
-                    _ => segs.push(Seg { text: piece, kind: k.kind, selected: k.selected, matched: k.matched, ws, diag: k.diag }),
+                    _ => segs.push(Seg { text: piece, kind: k.kind, selected: k.selected, matched: k.matched, ws, diag: k.diag, wide }),
                 }
             }
             // A selection past the line end shows one selected space, as Vim does.

@@ -53,6 +53,15 @@ fn tabs_expand_and_the_caret_counts_display_columns() {
     assert_eq!(f.caret.map(|c| (c.row, c.col)), Some((0, 4)));
 }
 
+/// Wide chars get their own pieces, which the view spaces out to two cells each.
+#[test]
+fn wide_chars_get_their_own_pieces() {
+    let f = frame(&editor_with("ab大家，cd\n", "a.txt"), 1);
+    let Row::Line { segs, .. } = &f.rows[0] else { panic!() };
+    let pieces: Vec<(&str, bool)> = segs.iter().map(|s| (s.text.as_str(), s.wide)).collect();
+    assert_eq!(pieces, [("ab", false), ("大家，", true), ("cd", false)]);
+}
+
 #[test]
 fn visual_mode_selects_and_changes_the_mode_pill() {
     let mut ed = editor_with("hello world\n", "a.txt");
