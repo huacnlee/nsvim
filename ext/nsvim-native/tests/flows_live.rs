@@ -312,6 +312,38 @@ fn every_palette_command_does_what_it_says() {
     f.keys(":set theme=nope\n");
     f.settle(":set theme=nope is an error", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
 
+    // The commands that close a group of tabs, from the tab that shows.
+    let names = |a: &App| a.ed.docs.iter().map(|d| d.buf.name()).collect::<Vec<_>>().join(" ");
+    let more: Vec<_> = ["c.txt", "d.txt", "e.txt"].iter().map(|n| write(dir.path(), n, "more\n")).collect();
+    let open = |f: &mut Flow, p: &std::path::PathBuf| {
+        let q = p.clone();
+        f.update(move |a, _| a.open_path(q, None));
+        f.wait_open(p);
+    };
+    f.update(|a, t| a.run_command("save-all", t));
+    f.settle("every file is saved", |a| a.ed.docs.iter().all(|d| !d.buf.is_dirty()));
+    for p in &more {
+        open(&mut f, p);
+    }
+    f.update(|a, _| a.show_tab(a.ed.docs.len() - 2));
+    f.settle("d.txt shows", |a| active_ends_with(a, "d.txt"));
+    run_check(&mut f, t, "close-right", "close-right closes e.txt", move |a| !names(a).contains("e.txt") && names(a).contains("d.txt"));
+    run_check(&mut f, t, "close-left", "close-left keeps only d.txt", move |a| names(a) == "d.txt");
+    open(&mut f, &more[0]);
+    open(&mut f, &more[2]);
+    f.keys("x");
+    run_check(&mut f, t, "close-others", "close-others keeps only e.txt", move |a| names(a) == "e.txt");
+    open(&mut f, &more[0]);
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "close-clean", "close-clean keeps the modified e.txt", move |a| {
+        names(a) == "e.txt" && a.ed.msg.as_ref().is_none_or(|m| !m.error)
+    });
+    open(&mut f, &more[0]);
+    f.update(|a, _| a.show_tab(0));
+    f.keys("u");
+    f.settle("e.txt is clean again", |a| !a.ed.buf().is_dirty());
+    run_check(&mut f, t, "close-all", "close-all closes every tab", |a| a.ed.docs.is_empty());
+
     // An entry added to the palette must be added here too.
     for c in nsvim_native::app::palette::COMMANDS {
         assert!(tested.contains(&c.id), "\"{}\" ({}) shows in the palette but this test does not run it", c.label, c.id);

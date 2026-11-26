@@ -395,10 +395,7 @@ impl App {
             self.ed.error("E37: No write since last change (save first, or :q! to drop it)");
             return;
         }
-        if let (Some(path), Some(svc)) = (self.ed.docs.get(i).and_then(|d| d.buf.path.clone()), &self.svc) {
-            svc.lsp(crate::services::lsp::Job::Close { path });
-        }
-        self.ed.close(i);
+        self.drop_doc(i);
         self.apply_doc_opts();
     }
 

@@ -25,6 +25,9 @@ pub mod review;
 pub mod session;
 pub mod settings;
 pub mod setup;
+pub mod tab_menu;
+#[cfg(test)]
+mod tab_menu_tests;
 pub mod tree;
 pub mod update;
 #[cfg(test)]
