@@ -79,6 +79,23 @@ pub fn recent(current: &Path) -> Vec<PathBuf> {
     recent_in(&read_dir(), current, dirs::home_dir().as_deref())
 }
 
+/// The project of the newest session that still exists: the project to open when the
+/// command line names none.
+pub fn last() -> Option<PathBuf> {
+    last_in(&read_dir())
+}
+
+fn last_in(state: &Path) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(state.join("sessions")).ok()?;
+    let mut found: Vec<(std::time::SystemTime, PathBuf)> =
+        entries.flatten().filter_map(|e| Some((e.metadata().and_then(|m| m.modified()).ok()?, e.path()))).collect();
+    found.sort_by_key(|e| std::cmp::Reverse(e.0));
+    found.into_iter().find_map(|(_, file)| {
+        let s: Session = toml::from_str(&std::fs::read_to_string(file).ok()?).ok()?;
+        s.root.is_dir().then_some(s.root)
+    })
+}
+
 /// How many recent projects `recent` gives at most.
 const RECENT: usize = 30;
 
@@ -150,5 +167,24 @@ mod recent_tests {
         }
         let got = recent_in(state.path(), &a, Some(dir.path()));
         assert_eq!(got, vec![b]);
+    }
+
+    #[test]
+    fn the_last_project_is_the_newest_session_that_still_exists() {
+        let state = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(last_in(state.path()), None, "no session yet");
+        let (old, new, gone) = (dir.path().join("old"), dir.path().join("new"), dir.path().join("gone"));
+        std::fs::create_dir_all(&old).unwrap();
+        std::fs::create_dir_all(&new).unwrap();
+        std::fs::create_dir_all(state.path().join("sessions")).unwrap();
+        let now = std::time::SystemTime::now();
+        for (root, age) in [(&old, 30), (&new, 20), (&gone, 10)] {
+            let path = path_in(state.path(), root);
+            std::fs::write(&path, toml::to_string(&Session { root: root.clone(), ..Default::default() }).unwrap()).unwrap();
+            let f = std::fs::File::options().write(true).open(&path).unwrap();
+            f.set_modified(now - std::time::Duration::from_secs(age)).unwrap();
+        }
+        assert_eq!(last_in(state.path()), Some(new));
     }
 }

@@ -31,7 +31,8 @@ Examples:
   PROGRAM mcp                 serve the running editor to AI agents, over stdio
 
 nsvim opens a window, also from a terminal. --tui edits in the terminal instead. A path
-opens in the window already running for its project, when there is one.
+opens in the window already running for its project, when there is one. With no path, from
+a launcher or in the home folder, nsvim opens the last project, with its files and cursors.
 
 Options:
   --wait          return when the last file's buffer closes
@@ -165,19 +166,28 @@ pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option
 }
 
 /// The folder to open when no path was given. A launcher (Finder, the Start menu, a desktop
-/// entry) starts the app in `/`, a drive root or the app's own folder; open the home folder then.
+/// entry) starts the app in `/`, a drive root or the app's own folder. A start there or in the
+/// home folder names no project, so the project of the last session opens, else the home folder.
 fn launch_dir(cwd: &Path, home: Option<PathBuf>) -> PathBuf {
     let exe_dir = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf));
     let system = std::env::var_os("SystemRoot").map(PathBuf::from);
-    launch_dir_with(cwd, home, &[exe_dir, system].into_iter().flatten().collect::<Vec<_>>())
+    let app_dirs: Vec<PathBuf> = [exe_dir, system].into_iter().flatten().collect();
+    launch_dir_with(cwd, home, &app_dirs, crate::app::session::last)
 }
 
 /// `launch_dir` with the app's and the system's folders given; `cwd` inside one of them, or at a
-/// filesystem root, means a launcher started the app.
-fn launch_dir_with(cwd: &Path, home: Option<PathBuf>, app_dirs: &[PathBuf]) -> PathBuf {
+/// filesystem root, means a launcher started the app. `last` gives the project of the last
+/// session. It reads the disk, so it runs only when `cwd` names no project.
+fn launch_dir_with(cwd: &Path, home: Option<PathBuf>, app_dirs: &[PathBuf], last: impl FnOnce() -> Option<PathBuf>) -> PathBuf {
     let launched = cwd.parent().is_none() || app_dirs.iter().any(|d| cwd.starts_with(d));
+    if !launched && home.as_deref() != Some(cwd) {
+        return cwd.to_path_buf();
+    }
+    if let Some(last) = last() {
+        return last;
+    }
     match home {
-        Some(home) if launched && home.is_dir() => home,
+        Some(home) if home.is_dir() => home,
         _ => cwd.to_path_buf(),
     }
 }
@@ -297,16 +307,32 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let h = Some(home.path().to_path_buf());
         let app = PathBuf::from("/Applications/nsvim.app/Contents/MacOS");
+        let none = || None;
         // Finder and desktop launchers start in `/`, the Start menu in the app's or system folder.
-        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[]), home.path());
-        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app)), home.path());
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], none), home.path());
+        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), none), home.path());
         // A terminal start keeps its folder, even above the app's own folder.
-        assert_eq!(launch_dir_with(Path::new("/work/proj"), h.clone(), &[app]), Path::new("/work/proj"));
+        assert_eq!(launch_dir_with(Path::new("/work/proj"), h.clone(), std::slice::from_ref(&app), none), Path::new("/work/proj"));
         assert_eq!(
-            launch_dir_with(Path::new("/Applications"), h, &[PathBuf::from("/Applications/nsvim.app/Contents/MacOS")]),
+            launch_dir_with(Path::new("/Applications"), h, &[PathBuf::from("/Applications/nsvim.app/Contents/MacOS")], none),
             Path::new("/Applications")
         );
-        assert_eq!(launch_dir_with(Path::new("/"), None, &[]), Path::new("/"));
+        assert_eq!(launch_dir_with(Path::new("/"), None, &[], none), Path::new("/"));
+    }
+
+    #[test]
+    fn a_start_with_no_project_opens_the_last_one() {
+        let home = tempfile::tempdir().unwrap();
+        let h = Some(home.path().to_path_buf());
+        let last = PathBuf::from("/work/last");
+        let app = PathBuf::from("/Applications/nsvim.app/Contents/MacOS");
+        // A launcher start, and a terminal start in the home folder, name no project.
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], || Some(last.clone())), last);
+        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), || Some(last.clone())), last);
+        assert_eq!(launch_dir_with(home.path(), h.clone(), &[], || Some(last.clone())), last);
+        // A terminal start in a folder opens that folder, and does not read the last session.
+        let read = |_: &str| -> Option<PathBuf> { panic!("reads the last session") };
+        assert_eq!(launch_dir_with(Path::new("/work/proj"), h, &[], || read("")), Path::new("/work/proj"));
     }
 
     #[test]
