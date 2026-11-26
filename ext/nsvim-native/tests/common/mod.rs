@@ -56,6 +56,11 @@ fn bundle() -> nsh_engine::Bundle {
 /// The app (`App.tsx`) on a Linux desktop, opening `pending`. The editor is a desktop app, and
 /// Headless shows a window only on a desktop OS.
 pub fn engine(pending: nsvim_native::Pending) -> Headless {
+    engine_on(pending, Os::Linux)
+}
+
+/// The app (`App.tsx`) on the desktop `os`, opening `pending`.
+pub fn engine_on(pending: nsvim_native::Pending, os: Os) -> Headless {
     isolate_home();
     let app = bundle();
     // One engine starts at a time, so that each takes its own launch.
@@ -63,7 +68,7 @@ pub fn engine(pending: nsvim_native::Pending) -> Headless {
     let _one = STARTING.lock().unwrap_or_else(|e| e.into_inner());
     nsvim_native::launch_next(pending);
     let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ui_sets: ui_sets(), ..EngineConfig::new(app) };
-    config.environment.os = Os::Linux;
+    config.environment.os = os;
     // The terminal editor (`nsvim` in a terminal): a terminal of 110 x 24 cells of 8 x 16 points.
     if nsvim_native::terminal() {
         config.environment.idiom = nsh_core::platform::Idiom::Terminal;

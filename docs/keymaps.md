@@ -905,7 +905,9 @@ On macOS, Close Window hides nsvim as `⌘ H` does, and does not quit it: your f
 and undo stay as they were. Click the Dock icon or pick nsvim with `⌘ Tab` to show the
 window again. Its shortcut is `⌘ W` with the Neovim keymap. With the classic keymap `⌘ W`
 closes the tab, so Close Window is `⇧ ⌘ W`, as in VS Code. While Settings shows, `⌘ W`
-closes Settings. To quit, use `⌘ Q`, `:qa` or the close button.
+closes Settings. To quit, use `⌘ Q`, `:qa` or the close button. `⌘ Q` works in every keymap
+and on every screen. Over unsaved edits it asks first, as the close button does: press it
+again to quit and keep the edits for recovery.
 
 - **nsvim**: Settings…, Quit. On macOS also Hide nsvim (`⌘ H`), Hide Others and Show All.
 - **File**: Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.

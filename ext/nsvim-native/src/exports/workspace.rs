@@ -101,6 +101,12 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
         .on_focus(move || s.update(|a, _| a.key_focus = true))
         .on_blur(move || s.update(|a, _| a.key_focus = false))
         .on_key_down(move |e: &KeyEvent| {
+            if let Some(captured) = keys::mac_quit_key(e, os()) {
+                if captured {
+                    s.close_requested();
+                }
+                return;
+            }
             if let Some(k) = keys::convert(e, apple_keys()) {
                 s.key(k);
             }
