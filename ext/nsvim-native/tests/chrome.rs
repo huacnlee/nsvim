@@ -475,7 +475,7 @@ fn a_dragged_tab_moves_to_where_it_drops() -> Result<(), String> {
     let c = write(dir.path(), "c.txt", "gamma\n");
     let mut app = start_files(&[&a, &b, &c], None);
     app.wait_for("text:/gamma/")?;
-    let names = |app: &Headless| (0..3).map(|i| name(&app.screen(), &format!("id:tab-{i}")).unwrap_or_default()).collect::<Vec<_>>();
+    let names = |app: &Headless| (0..3).map(|i| name(app.screen(), &format!("id:tab-{i}")).unwrap_or_default()).collect::<Vec<_>>();
     assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
     // Past the middle of the last tab: a.txt goes to the end.
     let by = width(&app, "id:tab-0") / 2.0 + width(&app, "id:tab-1") + width(&app, "id:tab-2") * 0.75;
