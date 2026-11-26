@@ -1,6 +1,6 @@
 [package]
 name = "nsvim-native"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "nsvim's Rust: the app state, the workers and the views that Rust draws, as an nshm."
 license = "MIT"
