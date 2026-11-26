@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use common::{Flow, SRC, flow, flow_files, keymap_config, rust_flow, scratch, write};
 use editor::buffer::Pos;
 use editor::editor::{Keymap, Mode, VisualKind};
-use nsvim_native::app::{App, Overlay, PickKind};
+use nsvim_native::app::{App, Overlay, PickKind, Screen};
 
 fn picking(a: &App, kind: PickKind) -> bool {
     matches!(&a.overlay, Overlay::Pick(p) if p.kind == kind)
@@ -234,6 +234,10 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "settings", "settings opens settings", |a| a.on_settings);
     // Close Settings, so the keys go to the files again.
     f.update(|a, _| a.close_settings());
+    run_check(&mut f, t, "setup", "setup runs again over the editor", |a| matches!(a.screen, Screen::Setup(_)));
+    // Cancel it, so the keys go to the files again.
+    f.update(|a, _| a.cancel_setup());
+    f.settle("cancel goes back to the editor", |a| matches!(a.screen, Screen::Editor));
     run_check(&mut f, t, "next", "next goes to the next buffer", |a| active_ends_with(a, "a.txt"));
     run_check(&mut f, t, "prev", "prev goes to the previous buffer", |a| active_ends_with(a, "b.txt"));
     run_check(&mut f, t, "keymap=classic", "the classic keymap", |a| a.ed.keymap == Keymap::Classic);
