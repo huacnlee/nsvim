@@ -61,6 +61,9 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     });
     s.attach(win);
     s.start();
+    if !crate::terminal() {
+        set_app_menu(s);
+    }
 
     // A view takes the focus only once its window shows, which comes after the first layout on
     // Linux. Ask until it holds the focus, for at most 5 seconds. On the web the editor is often
@@ -115,3 +118,30 @@ fn make_app(p: Option<&crate::Pending>) -> app::App {
     }
     a
 }
+
+/// The application menu (`app::app_menu`), each item carried out on the session. The recent
+/// projects are read once, as the window opens.
+#[cfg(not(target_arch = "wasm32"))]
+fn set_app_menu(s: Session) {
+    use nsh_core::desktop::MenuRole;
+    use nsh_core::element::desktop::{MenuItem, set_application_menu};
+
+    fn build(s: Session, entries: Vec<app::app_menu::Entry>) -> Vec<MenuItem> {
+        use app::app_menu::Entry;
+        entries
+            .into_iter()
+            .map(|e| match e {
+                Entry::Menu(label, items) => MenuItem::submenu(label, build(s, items)),
+                Entry::Item(id, label) if id == "none" => MenuItem::new(label).disabled(true),
+                Entry::Item(id, label) => MenuItem::new(label).on_select(move || s.update(|a, tx| a.app_menu_pick(&id, tx))),
+                Entry::Quit => MenuItem::role(MenuRole::Quit),
+                Entry::Separator => MenuItem::separator(),
+            })
+            .collect()
+    }
+    let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root)));
+    set_application_menu(build(s, entries));
+}
+
+#[cfg(target_arch = "wasm32")]
+fn set_app_menu(_: Session) {}

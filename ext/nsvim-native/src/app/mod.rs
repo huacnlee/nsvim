@@ -2,6 +2,9 @@
 //! setup, git, the project index). `poll` applies what the background workers send.
 
 pub mod actions;
+pub mod app_menu;
+#[cfg(test)]
+mod app_menu_tests;
 pub mod files;
 pub mod fx;
 pub mod ipc;
