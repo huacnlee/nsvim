@@ -12,14 +12,14 @@ export function ShellStep(props: Step) {
   const st = props.st;
   return (
     <View class="gap-5.5" testID="setup-step-4">
-      <Heading title="Use nsvim from the terminal" sub="Optional. Everything here can be undone by hand later." />
+      <Heading title="Use NsVim from the terminal" sub="Optional. Everything here can be undone by hand later." />
       <View class="flex-row gap-4 flex-wrap items-start">
         <OptionBox title="Integrations" class="flex-1 min-w-90">
           <CheckRow
             st={st}
             choice="toggle:vim"
-            label="Open nsvim with nvim, vim and vi"
-            sub={"Shell aliases to the full path of nsvim. \\nvim still runs Neovim."}
+            label="Open NsVim with nvim, vim and vi"
+            sub={"Shell aliases to the full path of NsVim. \\nvim still runs Neovim."}
           />
           <CheckRow st={st} choice="toggle:env" label="Set as $EDITOR and $VISUAL" sub="For tools that open an editor, like crontab -e" />
           <CheckRow st={st} choice="toggle:git" label="Use for git commit messages" sub="git waits until you close the buffer" />
@@ -27,14 +27,14 @@ export function ShellStep(props: Step) {
             <CheckRow
               st={st}
               choice="toggle:default"
-              label="Make nsvim the default for text files"
+              label="Make NsVim the default for text files"
               sub="A double-click opens code and text files"
             />
           </If>
         </OptionBox>
         <Titled title="What runs" class="flex-1 min-w-90" bodyClass="pt-4 pb-3.5 px-4 gap-1" testID="setup-commands">
           <If when={st().commands.length === 0}>
-            <Text class="text-xs text-muted-foreground">Nothing. nsvim stays inside its window.</Text>
+            <Text class="text-xs text-muted-foreground">Nothing. NsVim stays inside its window.</Text>
           </If>
           <Each of={st().commands} key="index">
             {(line) => {
@@ -94,7 +94,7 @@ export function ReadyStep(props: Step) {
     if (s.devBuild) return `This is a development build. The terminal step is off. Run ${s.program} in a terminal.`;
     if (terminal() && s.on.includes("vim")) return "Then, in a new terminal, nvim . opens a folder. \\nvim still runs Neovim.";
     const launcher = terminal() ? "the app launcher" : "the Start menu";
-    return `Then, open nsvim from ${launcher}, or run ${s.program} in a terminal.`;
+    return `Then, open NsVim from ${launcher}, or run ${s.program} in a terminal.`;
   };
   const tips = (): [string, string[]][] => {
     const l = space() ? "SPC" : "\\";
@@ -117,7 +117,7 @@ export function ReadyStep(props: Step) {
     <View class="gap-5.5" testID="setup-step-5">
       <Heading
         title="Ready"
-        sub={`Saved to ~/.config/nsvim/config.toml when you ${st().again ? "save" : "open nsvim"}.`}
+        sub={`Saved to ~/.config/nsvim/config.toml when you ${st().again ? "save" : "open NsVim"}.`}
       />
       <Text class="text-sm text-foreground" testID="setup-start">
         {start()}

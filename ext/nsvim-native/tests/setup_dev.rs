@@ -35,7 +35,7 @@ fn a_development_build_has_no_terminal_step_and_writes_nothing() -> Result<(), S
     app.press("label:Skip")?;
     app.wait_for("Ready")?;
     app.wait_for("text:/This is a development build. The terminal step is off./")?;
-    app.press("label:Open nsvim")?;
+    app.press("label:Open NsVim")?;
     app.wait_for("id:text-area")?;
     let path = nsvim_native::config::config_path();
     let off = |t: &toml::Table| {

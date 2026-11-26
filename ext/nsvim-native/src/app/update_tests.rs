@@ -22,7 +22,7 @@ fn release() -> Release {
 fn a_found_release_is_announced_and_kept_for_update() {
     let mut a = app();
     a.event(Event::Update(Checked { result: Ok(Some(release())), manual: false }), &mut Tx::new());
-    assert!(message(&a).contains("nsvim 9.0.0 is available"), "{}", message(&a));
+    assert!(message(&a).contains("NsVim 9.0.0 is available"), "{}", message(&a));
     assert!(message(&a).contains(":Update"));
     assert_eq!(a.update, Some(release()));
 }

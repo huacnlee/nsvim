@@ -359,10 +359,10 @@ impl App {
         self.check_waiters();
         self.refresh_proposals();
         let title = match (&self.screen, self.on_settings, self.ed.has_doc()) {
-            (Screen::Setup(_), _, _) => "setup — nsvim".to_string(),
-            (_, true, _) => "Settings — nsvim".into(),
-            (_, _, true) => format!("{}{} — nsvim", self.ed.buf().name(), if self.ed.buf().is_dirty() { " [+]" } else { "" }),
-            _ => "nsvim".into(),
+            (Screen::Setup(_), _, _) => "setup — NsVim".to_string(),
+            (_, true, _) => "Settings — NsVim".into(),
+            (_, _, true) => format!("{}{} — NsVim", self.ed.buf().name(), if self.ed.buf().is_dirty() { " [+]" } else { "" }),
+            _ => "NsVim".into(),
         };
         if title != self.title {
             tx.set_title(title.clone());

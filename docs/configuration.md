@@ -1,6 +1,6 @@
 # Configuration
 
-nsvim reads `~/.config/nsvim/config.toml` at startup. On the first start, nsvim copies an older
+NsVim reads `~/.config/nsvim/config.toml` at startup. On the first start, NsVim copies an older
 `~/.config/editor` folder there once. The first launch writes it, at the
 end of setup. `:Setup` opens App Setup, from this file. Settings (`:Settings`) edits it over the whole window. A change applies at once and
 goes to the file at once. A missing key takes its default, so a file can hold only what you change.
@@ -66,14 +66,14 @@ right_click = false      # right-click opens a context menu
 editor_env = true        # $EDITOR and $VISUAL name the program by its full path
 git = true               # git's editor, by the full path too
 default_app = false      # Linux: the default app for the file types in editor.desktop
-vim_aliases = true       # nvim, vim and vi open nsvim (shell aliases), \nvim runs Neovim
+vim_aliases = true       # nvim, vim and vi open NsVim (shell aliases), \nvim runs Neovim
 ```
 
 ## Themes
 
 | Dark | Light |
 | --- | --- |
-| `dark` (nsvim dark) | `light` (nsvim light) |
+| `dark` (NsVim dark) | `light` (NsVim light) |
 | `catppuccin` (Catppuccin Mocha) | `catppuccin-latte` |
 | `tokyo-night` | `tokyo-night-day` |
 | `gruvbox` | `gruvbox-light` |
@@ -81,16 +81,16 @@ vim_aliases = true       # nvim, vim and vi open nsvim (shell aliases), \nvim ru
 | `rose-pine` | `one-light` |
 | `one-dark` | |
 
-On [Omarchy](https://omarchy.org), `theme.mode = "system"` follows the desktop theme. nsvim
+On [Omarchy](https://omarchy.org), `theme.mode = "system"` follows the desktop theme. NsVim
 reads `colors.toml` from `~/.local/state/omarchy/current/theme` (or
 `~/.config/omarchy/current/theme` on older releases), and falls back to the theme's
 `alacritty.toml`. A theme with a `light.mode` file, or `mode = "light"`, gets the light variant.
-When you switch the desktop theme, nsvim changes with it. An older config with
+When you switch the desktop theme, NsVim changes with it. An older config with
 `theme.mode = "omarchy"` still loads and works as `system`.
 
 ## .editorconfig
 
-nsvim reads every `.editorconfig` from a file's folder up to the first one with `root = true`.
+NsVim reads every `.editorconfig` from a file's folder up to the first one with `root = true`.
 Nearer files win, and they win over config.toml.
 
 | Key | Sets |

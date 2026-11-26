@@ -1,6 +1,6 @@
-# How nsvim works
+# How NsVim works
 
-nsvim is a TSX app with its own Rust, in NSH's recommended layout. The **core**
+NsVim is a TSX app with its own Rust, in NSH's recommended layout. The **core**
 (`crates/editor-core`, library `editor`) is the text and the rules for changing it. It knows
 nothing about windows. The **app** (`ext/nsvim-native`, an nshm crate and the binary `nsvim`)
 owns all app state, routes input to the core, and runs every slow job on a worker thread. The
@@ -188,7 +188,7 @@ bytes. The file worker writes them to a temporary file and renames it over the o
 
 A release is the `nsvim` binary and its interface, `nsh/bundle.nshc`, in a folder next to it.
 `nsh build --release` compiles `App.tsx` and `src/` to that bytecode. On macOS the interface is
-in the app bundle, in `nsvim.app/Contents/Resources/nsh/`. See [install.md](install.md).
+in the app bundle, in `NsVim.app/Contents/Resources/nsh/`. See [install.md](install.md).
 
 In development:
 
@@ -209,4 +209,4 @@ In development:
 | `~/.local/state/nsvim/swap/` | Unsaved text, for crash recovery. |
 | `~/.local/state/nsvim/window.toml` | The window's last size and position. |
 
-nsvim copies the files of an older `editor` folder into these folders once, on the first start.
+NsVim copies the files of an older `editor` folder into these folders once, on the first start.

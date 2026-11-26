@@ -3,7 +3,7 @@ mod note;
 use note::Note;
 
 /// The notes to show when the file has none.
-const WELCOME: &str = "Welcome to nsvim #start";
+const WELCOME: &str = "Welcome to NsVim #start";
 
 fn main() {
     let mut notes = vec![Note::parse(WELCOME)];

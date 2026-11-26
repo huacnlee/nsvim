@@ -95,12 +95,12 @@ impl App {
         let help = vec![item("cmd:keys", "Keyboard Shortcuts…")];
         let mut app = vec![item("cmd:settings", "Settings…"), item("cmd:setup", "App Setup…"), Entry::Separator];
         if mac {
-            app.extend([Entry::Hide("Hide nsvim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
+            app.extend([Entry::Hide("Hide NsVim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
         }
         app.push(Entry::Quit);
         vec![
             // The app menu on macOS; elsewhere a menu named after the app.
-            Entry::Menu("nsvim".into(), app),
+            Entry::Menu("NsVim".into(), app),
             Entry::Menu("File".into(), file),
             Entry::Menu("Edit".into(), edit),
             Entry::Menu("View".into(), view),

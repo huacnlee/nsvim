@@ -1,6 +1,6 @@
 ---
-name: nsvim
-description: The promo site for nsvim, set as the datasheet of a precision part.
+name: NsVim
+description: The promo site for NsVim, set as the datasheet of a precision part.
 colors:
   ink: "#0e1016"
   ink-deep: "#0a0c11"
@@ -139,13 +139,13 @@ components:
     padding: "16px 18px"
 ---
 
-# Design System: nsvim
+# Design System: NsVim
 
 ## Overview
 
 **Creative North Star: "The Datasheet"**
 
-The site sells nsvim the way a maker sells a precision part. Each page is a datasheet. It shows real screen plates, measured characteristics in tables, a functional block diagram and ordering information. The world uses the app's own dark palette and the app's own panel form. The page looks like the product because the materials come from the product.
+The site sells NsVim the way a maker sells a precision part. Each page is a datasheet. It shows real screen plates, measured characteristics in tables, a functional block diagram and ordering information. The world uses the app's own dark palette and the app's own panel form. The page looks like the product because the materials come from the product.
 
 Density is high but calm. Hairline rules divide the content. Titled-border panels hold it. Numbers sit in a monospace face with tabular figures. Colour is functional coding. The four mode colours mean the four editor modes, and nothing else carries chroma.
 
@@ -311,7 +311,7 @@ the app as it is:
 ### Don't:
 - **Don't** use a mode colour as decoration, as a gradient or as a background wash.
 - **Don't** show the product in a laptop mockup or in a drawn screen. Use a real render.
-- **Don't** set the product name in any case other than lowercase `nsvim`.
+- **Don't** set the product name in any case other than `NsVim`. The command is lowercase `nsvim`.
 - **Don't** separate panels from the page with shadows. The plate lift is for Plate 1 only.
 - **Don't** animate position, size or opacity of content. Content changes in the next frame.
 - **Don't** add light-mode colours to the site. The site uses the app's dark theme only.

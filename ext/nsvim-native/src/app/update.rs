@@ -9,11 +9,11 @@ impl App {
         match checked.result {
             Ok(Some(release)) => {
                 let cur = env!("CARGO_PKG_VERSION");
-                self.ed.message(format!("nsvim {} is available (you have {cur}). Run :Update to install it.", release.version));
+                self.ed.message(format!("NsVim {} is available (you have {cur}). Run :Update to install it.", release.version));
                 self.update = Some(release);
             }
             Ok(None) if checked.manual => {
-                self.ed.message(format!("nsvim {} is the latest version", env!("CARGO_PKG_VERSION")));
+                self.ed.message(format!("NsVim {} is the latest version", env!("CARGO_PKG_VERSION")));
             }
             Err(e) if checked.manual => self.ed.error(e),
             _ => {}
@@ -42,14 +42,15 @@ impl App {
         let exe = std::env::current_exe().ok().and_then(|e| e.canonicalize().ok());
         let Some((exe, at)) = exe.and_then(|e| update::installed(&e, std::env::consts::OS).map(|at| (e, at))) else {
             self.ed.error(format!(
-                "nsvim {} is out: this copy was not installed by the install script, so update it the way you installed it ({})",
+                "NsVim {} is out: this copy was not installed by the install script, so update it the way you installed it ({})",
                 release.version, release.url
             ));
             return;
         };
+        let exe = update::relaunch(&at, &exe, std::env::consts::OS);
         match update::start_helper(&at, &exe) {
             Ok(()) => {
-                self.ed.message(format!("Installing nsvim {}; nsvim restarts when it is done", release.version));
+                self.ed.message(format!("Installing NsVim {}; NsVim restarts when it is done", release.version));
                 self.quit_all(true, tx);
             }
             Err(e) => self.ed.error(e),
@@ -58,6 +59,6 @@ impl App {
 
     #[cfg(target_arch = "wasm32")]
     fn install_update(&mut self, release: &update::Release, _tx: &mut Tx) {
-        self.ed.message(format!("nsvim {} is out: {}", release.version, release.url));
+        self.ed.message(format!("NsVim {} is out: {}", release.version, release.url));
     }
 }

@@ -70,7 +70,7 @@ fn on_a_mac_cmd_w_hides_the_app_and_does_not_quit_it() {
     app.ed.keymap = editor::editor::Keymap::Vim;
     assert_eq!(close_window(&app.app_menu(&[], true)), Some(Entry::Hide("Close Window".into(), Some("mod+w".into()))));
     let Some(Entry::Menu(_, first)) = app.app_menu(&[], true).into_iter().next() else { panic!() };
-    assert!(first.contains(&Entry::Hide("Hide nsvim".into(), None)) && first.contains(&Entry::Quit));
+    assert!(first.contains(&Entry::Hide("Hide NsVim".into(), None)) && first.contains(&Entry::Quit));
     // Off a Mac there is no Hide, and Ctrl W stays Vim's window key.
     assert_eq!(close_window(&app.app_menu(&[], false)), None);
 }

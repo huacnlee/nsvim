@@ -44,7 +44,7 @@ def interface(nsh_dir, stage):
     # The runner reads the window title from `name`. `nsh build` writes only the id.
     app = json.loads((stage / "app.json").read_text()) if (stage / "app.json").is_file() else {}
     app.setdefault("id", APP_ID)
-    app.setdefault("name", "nsvim")
+    app.setdefault("name", "NsVim")
     (stage / "app.json").write_text(json.dumps(app, separators=(",", ":")))
 
 
@@ -53,7 +53,7 @@ def desktop_entry():
     text = (ROOT / "assets/editor.desktop").read_text()
     for old, new in (
         ("Exec=editor %F", "Exec=nsvim %F"),
-        ("Name=editor", "Name=nsvim"),
+        ("Name=editor", "Name=NsVim"),
         ("Icon=editor", "Icon=nsvim"),
         ("StartupWMClass=editor", f"StartupWMClass={APP_ID}"),
     ):
@@ -113,7 +113,7 @@ def windows_icon(exe, ico):
 
 
 def macos_app(stage, binary, nsh_dir, version):
-    app = stage / "nsvim.app"
+    app = stage / "NsVim.app"
     contents = app / "Contents"
     (contents / "MacOS").mkdir(parents=True)
     (contents / "Resources").mkdir()
@@ -126,8 +126,8 @@ def macos_app(stage, binary, nsh_dir, version):
             {
                 "CFBundleDevelopmentRegion": "en",
                 "CFBundleIdentifier": APP_ID,
-                "CFBundleName": "nsvim",
-                "CFBundleDisplayName": "nsvim",
+                "CFBundleName": "NsVim",
+                "CFBundleDisplayName": "NsVim",
                 "CFBundleExecutable": "nsvim",
                 "CFBundleIconFile": "nsvim.icns",
                 "CFBundlePackageType": "APPL",

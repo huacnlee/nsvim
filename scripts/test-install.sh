@@ -51,13 +51,16 @@ sha256() {
   if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi | awk '{print $1}'
 }
 
-# release TARGET [unsafe|link|no-bundle]: write the archive for TARGET and its SHA256SUMS.
+# release TARGET [unsafe|link|no-bundle|old-app]: write the archive for TARGET and its SHA256SUMS.
+# old-app: a macOS release from before the bundle was NsVim.app.
 release() {
   rm -rf "$root/stage" && mkdir -p "$root/stage/pack"
   pack="$root/stage/pack"
   case "$1" in
     *apple-darwin)
-      contents="$pack/nsvim.app/Contents"
+      bundle=NsVim.app
+      if [ "${2:-}" = old-app ]; then bundle=nsvim.app; fi
+      contents="$pack/$bundle/Contents"
       mkdir -p "$contents/MacOS" "$contents/Resources/nsh"
       printf '#!/bin/sh\necho "nsvim %s"\n' "$version" > "$contents/MacOS/nsvim"
       chmod 755 "$contents/MacOS/nsvim"
@@ -202,10 +205,21 @@ MOCK_OS=Darwin MOCK_ARCH=arm64; export MOCK_OS MOCK_ARCH
 run_install --dir "$dest"
 check "$name" '[ "$status" -eq 0 ]' &&
   run_install --dir "$dest" &&
-  check "$name" '[ "$status" -eq 0 ] && [ -f "$dest/nsvim.app/Contents/Resources/nsh/bundle.nshc" ]' &&
-  check "$name" '[ "$(ls -A "$dest")" = nsvim.app ]' &&
+  check "$name" '[ "$status" -eq 0 ] && [ -f "$dest/NsVim.app/Contents/Resources/nsh/bundle.nshc" ]' &&
+  check "$name" '[ "$(ls -A "$dest")" = NsVim.app ]' &&
   check "$name" '[ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' &&
-  check "$name" 'grep -q "run: $dest/nsvim.app/Contents/MacOS/nsvim \." "$root/out"' && ok "$name"
+  check "$name" 'grep -q "run: $dest/NsVim.app/Contents/MacOS/nsvim \." "$root/out"' && ok "$name"
+
+name='macOS upgrade from nsvim.app to NsVim.app'
+fresh
+release aarch64-apple-darwin old-app
+MOCK_OS=Darwin MOCK_ARCH=arm64; export MOCK_OS MOCK_ARCH
+run_install --dir "$dest"
+check "$name" '[ "$status" -eq 0 ] && [ -d "$dest/nsvim.app" ]' &&
+  release aarch64-apple-darwin &&
+  run_install --dir "$dest" &&
+  check "$name" '[ "$status" -eq 0 ] && [ "$(ls -A "$dest")" = NsVim.app ]' &&
+  check "$name" '[ "$("$root/home/.local/bin/nsvim")" = "nsvim $version" ]' && ok "$name"
 
 name='the command on PATH, in --bin-dir'
 fresh

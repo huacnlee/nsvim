@@ -114,7 +114,7 @@ export function MouseStep(props: Step) {
   const vim = () => st().vim;
   return (
     <View class="gap-5.5" testID="setup-step-2">
-      <Heading title="Use the mouse?" sub="nsvim is keyboard-first. This only changes the text area and panes." />
+      <Heading title="Use the mouse?" sub="NsVim is keyboard-first. This only changes the text area and panes." />
       <RadioGroup accessibilityLabel="Mouse" class="flex-row gap-4 flex-wrap items-start">
         <Card
           st={st}

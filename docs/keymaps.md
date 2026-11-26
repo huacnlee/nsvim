@@ -1,6 +1,6 @@
 # Keys
 
-nsvim has two keymaps. Setup asks which one you want. To switch later, run
+NsVim has two keymaps. Setup asks which one you want. To switch later, run
 `:set keymap=classic` or `:set keymap=neovim`, use Settings › keys & mouse, or pick
 `Keymap: Neovim` or `Keymap: classic` in the command palette.
 
@@ -683,7 +683,7 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 ### Command palette
 
 The command palette runs any command by name. It holds every item of the application menu,
-so it is the menu on Linux and Windows, where nsvim's title bar hides the menu bar, and in
+so it is the menu on Linux and Windows, where NsVim's title bar hides the menu bar, and in
 the terminal editor. It holds the same commands as the [leader menu](#leader-menu). Each row
 shows its keys in the keymap you use: in the Neovim keymap, its own keys first, then the
 leader keys. Type to filter.
@@ -774,7 +774,7 @@ app menu. Each step then starts from the config in use.
 | Chars, `Backspace` | Type, delete the name of the terminal command, on the name field |
 
 The `skip`, `back` and `next →` buttons on the bottom line do the same with the mouse. On the
-last step, click `open nsvim →`, or go to the last choice and press `Enter`. The editor then
+last step, click `Open NsVim`, or go to the last choice and press `Enter`. The editor then
 writes `config.toml` and opens. When setup runs again, the last button is `save →`, and
 `cancel` goes back to the editor with nothing changed.
 
@@ -882,11 +882,11 @@ that shows.
 
 ## Open a project
 
-You can start nsvim first and pick the project after. `SPC o` (`Ctrl O` in the classic
+You can start NsVim first and pick the project after. `SPC o` (`Ctrl O` in the classic
 keymap, `⌘ O` on macOS, `:Projects`, or `Open project…` in the palette) lists:
 
 - `Open folder…`: the system's folder dialog.
-- The recent projects, newest first. A project is recent once nsvim has closed in it.
+- The recent projects, newest first. A project is recent once NsVim has closed in it.
 
 Type to filter, `Enter` opens. The project opens as `nvim <folder>` does: in the window
 already running for it, or in a new one. A window with no file open closes and gives its
@@ -897,17 +897,17 @@ Recent, with the recent projects as they were when the window opened.
 
 ## Application menu
 
-A window has an application menu: the menu bar on macOS. On Windows and Linux nsvim draws its
+A window has an application menu: the menu bar on macOS. On Windows and Linux NsVim draws its
 own title bar, which hides the window's menu bar. The terminal editor has none. The
 [command palette](#command-palette) holds every item of the menu, so use it there.
 
-On macOS, Close Window hides nsvim as `⌘ H` does, and does not quit it: your files, tabs
-and undo stay as they were. Click the Dock icon or pick nsvim with `⌘ Tab` to show the
+On macOS, Close Window hides NsVim as `⌘ H` does, and does not quit it: your files, tabs
+and undo stay as they were. Click the Dock icon or pick NsVim with `⌘ Tab` to show the
 window again. Its shortcut is `⌘ W` with the Neovim keymap. With the classic keymap `⌘ W`
 closes the tab, so Close Window is `⇧ ⌘ W`, as in VS Code. While Settings shows, `⌘ W`
 closes Settings. To quit, use `⌘ Q`, `:qa` or the close button.
 
-- **nsvim**: Settings…, Quit. On macOS also Hide nsvim (`⌘ H`), Hide Others and Show All.
+- **NsVim**: Settings…, Quit. On macOS also Hide NsVim (`⌘ H`), Hide Others and Show All.
 - **File**: Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
   On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….

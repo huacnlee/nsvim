@@ -67,7 +67,7 @@ pub fn main(args: &[String]) -> i32 {
     }
     let cwd = std::env::current_dir().unwrap_or_default();
     let Some(socket) = socket.or_else(|| super::find(&cwd)) else {
-        eprintln!("nsvim ctl: no nsvim is running for {}. Start one with `nvim .`", cwd.display());
+        eprintln!("nsvim ctl: no NsVim is running for {}. Start one with `nvim .`", cwd.display());
         return 2;
     };
     let (req, args_json, shape) = match build(&cmd, args) {

@@ -20,7 +20,7 @@ Linux desktop users (Omarchy among them). The site speaks to all of them; neithe
 
 ## Product Purpose
 
-nsvim opens code fast, makes it pleasant to read, and makes quick edits quick. It is not an
+NsVim opens code fast, makes it pleasant to read, and makes quick edits quick. It is not an
 IDE and not for writing all day. Success: a developer reaches for it for every "look at this
 file" moment, and it opens before they finish the thought.
 
@@ -56,7 +56,7 @@ messages. Used alongside git checkouts and AI agents that change files underneat
 
 ## Brand Commitments
 
-- Name: `nsvim`, lowercase.
+- Name: `NsVim`. The command is `nsvim`, lowercase.
 - Tagline: "Read fast. Edit quick."
 - Icon: a letter N of round strokes on a black tile. The left stem is blue (primary) and the
   right stem is green (insert). The diagonal is white and lies over both stems. A ring in the

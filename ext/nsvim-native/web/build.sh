@@ -21,6 +21,6 @@ nsh package --target web --out "$work"
 # The site's server compresses files itself. The .br and .gz copies only make the site larger.
 rm -rf "$dest"
 mkdir -p "$dest"
-cp -R "$work/nsvim/." "$dest"
+cp -R "$work/NsVim/." "$dest"
 find "$dest" -type f \( -name '*.br' -o -name '*.gz' \) -delete
-echo "nsvim for the web: $dest ($(du -sh "$dest" | cut -f1))"
+echo "NsVim for the web: $dest ($(du -sh "$dest" | cut -f1))"
