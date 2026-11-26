@@ -275,7 +275,7 @@ if command -v python3 >/dev/null; then
   run_install --dir "$dest"
   check "$name" '[ "$status" -eq 0 ] && [ "$("$dest/share/nsvim/nsvim")" = packaged ]' &&
     check "$name" '[ -f "$dest/share/nsvim/nsh/bundle.nshc" ] && [ -f "$dest/share/nsvim/nsh/bundle.js" ] && [ ! -e "$dest/share/nsvim/nsh/bundle.js.map" ]' &&
-    check "$name" 'grep -q "\"name\":\"nsvim\"" "$dest/share/nsvim/nsh/app.json"' &&
+    check "$name" 'grep -q "\"name\":\"NsVim\"" "$dest/share/nsvim/nsh/app.json"' &&
     check "$name" 'grep -qx "StartupWMClass=dev.nsvim.app" "$dest/share/applications/nsvim.desktop"' &&
     check "$name" 'grep -qx "Icon=nsvim" "$dest/share/applications/nsvim.desktop"' && ok "$name"
 else

@@ -98,6 +98,8 @@ if [ "$platform" = macos ]; then
   replace "$destination" "$bundle" "$app"
   # On a case-sensitive volume the bundle under its other name is a second copy: remove it.
   for other in NsVim.app nsvim.app; do
+    # Compare inode numbers; the names are fixed, so ls is safe here.
+    # shellcheck disable=SC2012
     if [ "$other" != "$bundle" ] && [ -d "$destination/$other" ] &&
       [ "$(ls -di "$destination/$other" | awk '{print $1}')" != "$(ls -di "$destination/$bundle" | awk '{print $1}')" ]; then
       rm -rf "${destination:?}/$other"
