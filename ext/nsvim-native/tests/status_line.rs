@@ -24,11 +24,6 @@ fn wait_text(app: &mut Headless, sel: &str, want: &str) -> Result<(), String> {
     app.wait_until(&format!("`{sel}` reads `{want}`"), WAIT, |s| name(s, sel).as_deref() == Some(want))
 }
 
-/// The background of the view `sel`.
-fn background(app: &Headless, sel: &str) -> Option<u32> {
-    app.screen().view_style(sel).unwrap().and_then(|s| s.background_color)
-}
-
 #[test]
 fn the_status_line_counts_diagnostics_and_outside_changes() -> Result<(), String> {
     let dir = scratch();
@@ -65,21 +60,48 @@ fn the_mode_badge_is_not_bold() -> Result<(), String> {
     Ok(())
 }
 
+/// Waits until the view `sel` reads `want`, after the figure spaces that pad it.
+fn wait_padded(app: &mut Headless, sel: &str, want: &str) -> Result<(), String> {
+    app.wait_until(&format!("`{sel}` reads `{want}`"), WAIT, |s| name(s, sel).is_some_and(|n| n.trim_start() == want))
+}
+
+/// The width of the view `sel`.
+fn width(app: &Headless, sel: &str) -> f64 {
+    app.screen().layout(sel).unwrap().unwrap().bounds.size.width.0 as f64
+}
+
 #[test]
-fn the_position_takes_the_colour_of_the_mode() -> Result<(), String> {
+fn the_position_is_quiet_text_like_the_other_parts() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start_files(&[&a], None);
-    wait_text(&mut app, "id:position", "1:1")?;
-    let normal = background(&app, "id:position-fill");
-    assert_eq!(normal, background(&app, "id:mode-badge"));
+    wait_padded(&mut app, "id:position", "1:1")?;
+    assert!(!app.screen().matches("id:position-fill")?, "no fill behind the position");
+    let text = |app: &Headless, sel: &str| app.screen().span_style(&format!("id:status-line >> text:{sel}")).unwrap();
+    let lang_name = name(app.screen(), "id:language").unwrap().trim().to_string();
+    let (pos, lang) = (text(&app, "/1:1/"), text(&app, &lang_name));
+    assert_eq!(pos.color, lang.color, "the position takes the colour of the language");
+    assert_eq!(pos.font_weight, lang.font_weight, "and its weight");
     typ(&mut app, &["i"]);
     wait_text(&mut app, "id:mode", "INSERT")?;
-    let insert = background(&app, "id:mode-badge");
-    app.wait_until("the position takes the insert colour", WAIT, |s| {
-        s.view_style("id:position-fill").unwrap().and_then(|v| v.background_color) == insert
-    })?;
-    assert_ne!(insert, normal);
+    assert_eq!(text(&app, "/1:1/").color, lang.color, "the mode does not colour the position");
+    Ok(())
+}
+
+#[test]
+fn the_position_keeps_its_width_when_the_column_gets_a_digit() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "short\na line with more than ten characters\n");
+    let mut app = start_files(&[&a], None);
+    wait_padded(&mut app, "id:position", "1:1")?;
+    typ(&mut app, &["shift+4"]);
+    wait_padded(&mut app, "id:position", "1:5")?;
+    let narrow = (width(&app, "id:position"), width(&app, "id:language"));
+    type_text(&mut app, "j");
+    // `$` sticks to the line end, so `j` lands on the last column of line 2.
+    wait_padded(&mut app, "id:position", "2:36")?;
+    let wide = (width(&app, "id:position"), width(&app, "id:language"));
+    assert!((narrow.0 - wide.0).abs() < 0.5, "the position keeps its width: {narrow:?} then {wide:?}");
     Ok(())
 }
 
@@ -118,7 +140,7 @@ fn a_search_shows_its_prompt_and_its_text() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\n");
     let mut app = start_files(&[&a], None);
-    wait_text(&mut app, "id:position", "1:1")?;
+    wait_padded(&mut app, "id:position", "1:1")?;
     type_text(&mut app, "/alp");
     wait_text(&mut app, "id:command-input", "/alp")?;
     typ(&mut app, &["escape"]);
