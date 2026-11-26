@@ -72,11 +72,14 @@ fn a_middle_click_closes_a_clean_tab() {
     f.settle("the tab closes", |a| a.ed.docs.len() == 1);
 }
 
+/// The files are plain text: a Rust file starts rust-analyzer, whose messages ("started", or
+/// "exited before it started" where it is not installed) arrive on their own time and only add
+/// noise to this test.
 #[test]
 fn a_middle_click_on_a_dirty_tab_asks_and_cancel_keeps_it() {
     let dir = common::scratch();
-    let two = common::write(dir.path(), "two.rs", "two\n");
-    let main = common::write(dir.path(), "main.rs", SRC);
+    let two = common::write(dir.path(), "two.txt", "two\n");
+    let main = common::write(dir.path(), "main.txt", SRC);
     let mut f = common::flow_files(&[&main, &two], None);
     f.settle("both files open", |a| a.ed.docs.len() == 2);
     f.keys("x");
