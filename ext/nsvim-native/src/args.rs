@@ -262,8 +262,8 @@ mod tests {
         assert_eq!(command(&argv(&["mcp", "--help"])), Command::McpHelp);
         assert_eq!(command(&argv(&["-h"])), Command::Help);
         assert_eq!(command(&argv(&["--version"])), Command::Version);
-        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false, window: false });
-        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true, window: false });
+        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false, tui: false });
+        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true, tui: false });
         assert_eq!(command(&argv(&[])), Command::Open { wait: false, new: false, tui: false });
         assert_eq!(command(&argv(&["--tui", "a.rs"])), Command::Open { wait: false, new: false, tui: true });
         assert_eq!(command(&argv(&["-g", "a.rs"])), Command::Open { wait: false, new: false, tui: false });
