@@ -272,22 +272,7 @@ impl Session {
                 spawn(async move {
                     let picked = answer.await;
                     me.update(|a, tx| then(a, picked, tx));
-                });
-            }
-            Effect::Confirm(dialog, then) => {
-                use crate::app::fx::Role;
-                let mut alert = nsh_base::alert_dialog().title(dialog.title).description(dialog.description);
-                for (id, label, role) in dialog.buttons {
-                    alert = match role {
-                        Role::Default => alert.action(id, label),
-                        Role::Cancel => alert.cancel(id, label),
-                        Role::Destructive => alert.destructive(id, label),
-                    };
-                }
-                let answer = alert.show();
-                spawn(async move {
-                    let chosen = answer.await.map(|r| r.action.map(|a| a.to_string()));
-                    me.update(|a, tx| then(a, chosen, tx));
+                    crate::exports::refocus_keys();
                 });
             }
         }
