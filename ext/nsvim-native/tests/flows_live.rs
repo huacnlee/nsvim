@@ -498,3 +498,113 @@ fn an_edit_when_the_app_is_quiet_reaches_the_title_the_server_the_signs_and_the_
         a.title.contains("[+]") && m.lsp_sent == next && m.signs_asked == next && m.swapped == next
     });
 }
+
+/// Waits until a dialog titled `title` shows, and returns its button labels.
+fn dialog_buttons(f: &mut Flow, title: &str) -> Vec<String> {
+    let t = title.to_string();
+    f.ui.wait_until("the dialog", Duration::from_secs(10), move |s| s.dialogs().iter().any(|d| d.title.as_deref() == Some(t.as_str())))
+        .unwrap();
+    let d = f.ui.pending_dialog().expect("a dialog");
+    d.buttons.iter().map(|b| b.text.clone()).collect()
+}
+
+fn press_dialog(f: &mut Flow, button: &str) {
+    f.ui.answer_dialog(nsh_testing::DialogAnswer::Press(button.into())).unwrap();
+}
+
+fn conflicted(a: &App, path: &std::path::Path) -> bool {
+    a.meta.get(path).is_some_and(|m| m.conflict)
+}
+
+/// `a.txt` edited here, then changed on disk by another program: the editor asks in a dialog.
+fn changed_on_disk_and_here() -> (tempfile::TempDir, std::path::PathBuf, Flow) {
+    let dir = scratch();
+    let path = write(dir.path(), "a.txt", "alpha\n");
+    let mut f = flow(&path, None);
+    f.ui.answer_dialogs_myself();
+    f.keys("x");
+    f.settle("the edit", |a| a.ed.buf().is_dirty());
+    // The watcher starts with the workers. Write until it sees a change.
+    let title = "\"a.txt\" changed on disk";
+    for n in 0..20 {
+        std::fs::write(&path, format!("from disk {n}\n")).unwrap();
+        let ok =
+            f.ui.wait_until("the dialog", Duration::from_millis(500), |s| s.dialogs().iter().any(|d| d.title.as_deref() == Some(title)));
+        if ok.is_ok() {
+            break;
+        }
+    }
+    assert_eq!(dialog_buttons(&mut f, title), ["Reload from disk", "Keep mine"]);
+    assert!(f.said("W12"), "the message line still names :e! and :w: {:?}", f.msg());
+    (dir, path, f)
+}
+
+/// Reload from disk drops the edit and shows the disk copy, with no Vim command.
+#[test]
+fn reload_from_disk_in_the_changed_on_disk_dialog_drops_the_edit() {
+    let (_dir, path, mut f) = changed_on_disk_and_here();
+    press_dialog(&mut f, "Reload from disk");
+    let p = path.clone();
+    f.settle("the disk copy", move |a| a.ed.buf().text().starts_with("from disk") && !a.ed.buf().is_dirty() && !conflicted(a, &p));
+    assert_eq!(f.text(), std::fs::read_to_string(&path).unwrap());
+}
+
+/// Keep mine leaves the edit, and the next save writes it over the disk copy.
+#[test]
+fn keep_mine_in_the_changed_on_disk_dialog_keeps_the_edit() {
+    let (_dir, path, mut f) = changed_on_disk_and_here();
+    press_dialog(&mut f, "Keep mine");
+    f.settle("the answer", |a| said(a, "kept your edits"));
+    assert_eq!(f.text(), "lpha\n");
+    let p = path.clone();
+    assert!(f.read(move |a| a.ed.buf().is_dirty() && conflicted(a, &p)), "still edited, still marked changed on disk");
+    f.keys(":w\n");
+    let p = path.clone();
+    f.settle("the save", move |a| !a.ed.buf().is_dirty() && !conflicted(a, &p));
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "lpha\n");
+}
+
+/// `b.txt` opened with a swap file a crash left: the editor shows the recovered edits and asks.
+fn opened_with_recovered_edits() -> (tempfile::TempDir, std::path::PathBuf, Flow) {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "on disk\n");
+    common::isolate_home();
+    nsvim_native::services::io::write_swap(b.clone(), "recovered\n".into());
+    let mut f = flow(&a, None);
+    f.ui.answer_dialogs_myself();
+    let p = b.clone();
+    f.update(move |a, _| a.open_path(p, None));
+    let buttons = dialog_buttons(&mut f, "Recover unsaved edits to \"b.txt\"?");
+    assert_eq!(buttons, ["Keep recovered edits", "Discard"]);
+    assert!(f.said("E325"), "the message line still names :w and :e!: {:?}", f.msg());
+    assert_eq!(f.text(), "recovered\n", "the buffer holds the recovered edits while the dialog shows");
+    (dir, b, f)
+}
+
+/// Keep recovered edits leaves them in the buffer, unsaved, and a save writes them.
+#[test]
+fn keep_in_the_recovered_edits_dialog_keeps_them() {
+    let (_dir, path, mut f) = opened_with_recovered_edits();
+    press_dialog(&mut f, "Keep recovered edits");
+    f.settle("the answer", |a| said(a, "kept the recovered edits"));
+    assert_eq!(f.text(), "recovered\n");
+    assert!(f.read(|a| a.ed.buf().is_dirty()));
+    f.keys(":w\n");
+    f.settle("the save", |a| !a.ed.buf().is_dirty());
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "recovered\n");
+}
+
+/// Discard drops the recovered edits and their swap file, and shows the disk copy.
+#[test]
+fn discard_in_the_recovered_edits_dialog_drops_them() {
+    let (_dir, path, mut f) = opened_with_recovered_edits();
+    press_dialog(&mut f, "Discard");
+    f.settle("the disk copy", |a| a.ed.buf().text() == "on disk\n" && !a.ed.buf().is_dirty());
+    let swap = nsvim_native::services::io::swap_file(&path);
+    let start = Instant::now();
+    while swap.exists() {
+        assert!(start.elapsed() < Duration::from_secs(5), "the swap file stays");
+        f.ui.wait(Duration::from_millis(50)).unwrap();
+    }
+}
