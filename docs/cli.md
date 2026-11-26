@@ -23,7 +23,7 @@ claude mcp add nsvim -- ~/.local/share/nsvim/nsvim mcp
 ## Open files and folders
 
 ```text
-nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
+nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
 ```
 
 | Form | Does |
@@ -37,7 +37,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
 | `nvim . src/lib.rs` | Opens the folder as the project, and the file in it. Paths are relative to the current folder. |
 | `nvim --wait NOTES.md` | Returns when you close that buffer. See [Use NsVim as `$EDITOR`](#use-nsvim-as-editor). |
 | `nvim --new` | Opens a new window, also when NsVim runs for the project already. |
-| `nvim -g src/main.rs` | Opens a window from a terminal. See [The terminal editor](#the-terminal-editor). |
+| `nvim --tui src/main.rs` | Edits in the terminal instead of a window. See [The terminal editor](#the-terminal-editor). |
 | `nvim --help`, `nvim -h` | Prints the usage. |
 | `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.2.0`. |
 
@@ -57,16 +57,16 @@ this way:
 
 ### One window per project
 
-This applies to windows (`-g`, or a launcher). When NsVim already runs for the project, `nvim PATH` opens the file in that window,
+This applies to windows, not to `--tui`. When NsVim already runs for the project, `nvim PATH` opens the file in that window,
 brings the window forward, and exits at once. On Wayland, the new process passes its
 `XDG_ACTIVATION_TOKEN`, so the window takes focus. `nvim` with no file only brings the
 window forward. `--new` skips this and always opens a new window.
 
 ### The terminal editor
 
-Started in a terminal, NsVim edits in that terminal, as vim does: over SSH, in tmux, or
-anywhere you type `nvim`. Started from a launcher (Finder, the Start menu, a desktop entry),
-it opens a window. `-g` opens a window from a terminal, like `gvim`. It is the same editor. It runs the same screens and the same Rust core, so
+NsVim opens a window, from a launcher (Finder, the Start menu, a desktop entry) and from a
+terminal alike. `--tui` edits in the terminal instead, as vim does: over SSH, in tmux, or
+anywhere you type `nvim --tui`. The old `-g` flag is still accepted and changes nothing. It is the same editor. It runs the same screens and the same Rust core, so
 the keymaps, the finder, search, the file tree, git signs, the language servers, settings and
 the session all work as in the window. On Linux, NsVim also starts in the terminal when there
 is no display (`DISPLAY` and `WAYLAND_DISPLAY` are not set).
