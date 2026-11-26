@@ -298,11 +298,13 @@ fn every_palette_command_does_what_it_says() {
     f.update(|a, t| a.run_command("save", t));
     f.settle("the edits are saved", |a| !a.ed.buf().is_dirty());
     f.keys("x");
-    // The test's dialog handler presses Cancel: the edits and the window stay.
-    run_check(&mut f, t, "quit", "quit asks before it drops unsaved edits", |a| a.ed.buf().is_dirty() && !a.asking_quit);
+    run_check(&mut f, t, "quit", "quit asks before it drops unsaved edits", |a| a.ed.buf().is_dirty() && a.asking_quit);
+    // The next step answers the dialog as the test's handler does: Cancel. The edits and the
+    // window stay.
+    f.keys("u");
     let asked = f.ui.screen().dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Save changes to")));
     assert!(asked, "quit shows the unsaved changes dialog");
-    f.keys("u");
+    f.settle("cancel keeps the window", |a| !a.asking_quit && a.ed.has_doc());
     run_check(&mut f, t, "close", "close closes the buffer", |a| a.ed.docs.len() == 1);
 
     // `:set theme=` takes a theme id too.
