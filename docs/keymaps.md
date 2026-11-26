@@ -817,3 +817,21 @@ keymap, `⌘ O` on macOS, `:Projects`, or `Open project…` in the palette) list
 Type to filter, `Enter` opens. The project opens as `nvim <folder>` does: in the window
 already running for it, or in a new one. A window with no file open closes and gives its
 place to the new one. A window with files open stays.
+
+In a window, the application menu has the same: File › Open Project…, Open Folder… and Open
+Recent, with the recent projects as they were when the window opened.
+
+## Application menu
+
+A window has an application menu: the menu bar on macOS. On Windows and Linux nsvim draws its
+own title bar, which hides the window's menu bar. The terminal editor has none: use the
+command palette there.
+
+- **nsvim**: Settings…, Quit.
+- **File**: Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
+- **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….
+- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
+- **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
+- **Help**: Keyboard Shortcuts….
+
+The items show no keys: the keymap's own keys stay as they are.
