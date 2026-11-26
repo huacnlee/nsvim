@@ -55,6 +55,9 @@ pub struct Session {
     pub frame: Memo<Frame>,
     /// The code font, from config.toml.
     pub font: Memo<CodeFont>,
+    /// Where the text area's top left corner is in the window, once it is laid out: the
+    /// hidden text input sits at the cursor, where input methods put their candidates.
+    pub area_at: Signal<Option<(f32, f32)>>,
 }
 
 impl Session {
@@ -87,6 +90,7 @@ impl Session {
             win: stored(None),
             frame,
             font,
+            area_at: signal(None),
         }
     }
 
