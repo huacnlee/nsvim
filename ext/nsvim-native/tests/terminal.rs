@@ -126,17 +126,22 @@ fn the_finder_rows_fill_its_list_in_a_terminal() -> Result<(), String> {
     terminal();
     let dir = scratch();
     let f = write(dir.path(), "a.txt", "alpha\n");
+    // More files than the list has rows.
+    for i in 0..60 {
+        write(dir.path(), &format!("f{i:02}.txt"), "x\n");
+    }
     let mut app = flow(&f, None);
-    // The palette has more commands than the list has rows.
-    keys(&mut app, &text(" :"));
+    keys(&mut app, &text(" f"));
     app.ui.wait_for("id:picker-list >> role:option")?;
     let cell = nsvim_native::TERMINAL_CELL_H;
-    let row = app.ui.screen().layout("id:picker-list >> role:option")?.ok_or("no row")?.bounds.size.height.0;
+    let row = app.ui.screen().layout("id:picker-list >> role:option >> nth=0")?.ok_or("no row")?.bounds.size.height.0;
     assert_eq!(row, cell, "a row is one cell");
-    // Every whole row of the list shows a command: no row of the list stays empty.
+    // Every row of the list shows an entry: no row of the list stays empty.
+    // Headless borders take 1pt where the terminal host gives them a whole
+    // cell, so the list is a little shorter than a whole number of rows here.
     let full = |s: &nsh_testing::Screen| {
         let list = s.layout("id:picker-list").ok().flatten().map_or(0.0, |l| l.bounds.size.height.0);
-        list > 0.0 && s.count("id:picker-list >> role:option").ok() == Some((list / cell).floor() as usize)
+        list > 0.0 && s.count("id:picker-list >> role:option").ok() == Some((list / cell).round() as usize)
     };
     app.ui.wait_until("the rows fill the list", std::time::Duration::from_secs(5), full)?;
     Ok(())
