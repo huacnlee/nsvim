@@ -1,6 +1,6 @@
 //! The command palette: every command of the application menu and more, by name, with the
 //! keys of the active keymap beside each one. `Ctrl ⇧ P` (`⇧ ⌘ P` on macOS) opens it in every
-//! keymap, `SPC :` and `:Commands` in the Neovim keymap. On Linux and Windows nsvim's own title
+//! keymap, `SPC p` and `:Commands` in the Neovim keymap. On Linux and Windows nsvim's own title
 //! bar hides the window's menu bar, and the terminal editor has no menu, so the palette must
 //! hold every item of the menu. `app_menu_tests` checks this.
 
@@ -30,7 +30,7 @@ const fn cmd(label: &'static str, id: &'static str, vim: &'static str, classic: 
 pub const COMMANDS: &[Command] = &[
     cmd("Find file…", "find", "SPC f", "Mod P"),
     cmd("Find in project…", "grep", "SPC /", "Mod ⇧ F"),
-    cmd("Open project…", "project", "SPC p", "Mod O"),
+    cmd("Open project…", "project", "SPC o", "Mod O"),
     cmd("Open folder…", "folder", "", ""),
     cmd("Save", "save", "SPC w", "Mod S"),
     cmd("Save all", "save-all", ":wa", ""),

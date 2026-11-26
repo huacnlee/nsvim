@@ -93,8 +93,8 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" ?");
     f.settle("SPC ? shows every key", |a| picking(a, PickKind::Keys));
     f.keys("\x1b");
-    f.keys(" :");
-    f.settle("SPC : opens the command palette", |a| picking(a, PickKind::Commands));
+    f.keys(" p");
+    f.settle("SPC p opens the command palette", |a| picking(a, PickKind::Commands));
     f.keys("\x1b");
 
     // +git: the two changed blocks, in order and around.
@@ -175,9 +175,9 @@ fn every_leader_menu_key_does_what_it_says() {
     f.settle("SPC a p shows the proposal", |a| active_ends_with(a, "main.c") && a.proposal_here().is_some());
     f.keys("n");
 
-    // SPC p lists the projects to open.
-    f.keys(" p");
-    f.settle("SPC p opens the project list", |a| picking(a, PickKind::Projects));
+    // SPC o lists the projects to open.
+    f.keys(" o");
+    f.settle("SPC o opens the project list", |a| picking(a, PickKind::Projects));
     f.keys("\x1b");
 
     // SPC q closes the buffer.

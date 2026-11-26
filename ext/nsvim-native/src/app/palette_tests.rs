@@ -55,18 +55,18 @@ fn ctrl_shift_p_toggles_the_palette_in_every_keymap() {
 }
 
 #[test]
-fn the_neovim_keymap_opens_the_palette_with_the_leader_and_colon() {
+fn the_neovim_keymap_opens_the_palette_with_the_leader_and_p() {
     let mut a = with_doc(Keymap::Vim, "x\n");
     key(&mut a, KeyInput::ch(' '));
     assert!(matches!(a.overlay, Overlay::Leader(None)));
-    key(&mut a, KeyInput::ch(':'));
-    assert!(palette_open(&a), "SPC :");
+    key(&mut a, KeyInput::ch('p'));
+    assert!(palette_open(&a), "SPC p");
     a.overlay = Overlay::None;
     // With no file open too.
     let mut a = app(Keymap::Vim);
     key(&mut a, KeyInput::ch(' '));
-    key(&mut a, KeyInput::ch(':'));
-    assert!(palette_open(&a), "SPC : with no file open");
+    key(&mut a, KeyInput::ch('p'));
+    assert!(palette_open(&a), "SPC p with no file open");
 }
 
 #[test]

@@ -25,7 +25,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | Keys | Does |
 | --- | --- |
 | `SPC f` | Find a file |
-| `SPC p` | Open a project: a recent one, or a folder from the system's dialog. See [Open a project](#open-a-project) |
+| `SPC o` | Open a project: a recent one, or a folder from the system's dialog. See [Open a project](#open-a-project) |
 | `SPC /` | Search the project with ripgrep |
 | `SPC b` | Pick an open buffer |
 | `SPC e` | Show and focus the file tree. From the tree, hide it |
@@ -34,7 +34,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC d` | List the diagnostics of this file |
 | `SPC ,` | Open Settings |
 | `SPC ?` | Show every key, with search. See [Key list](#key-list) |
-| `SPC :` | Open the command palette. See [Command palette](#command-palette) |
+| `SPC p` | Open the command palette. See [Command palette](#command-palette) |
 | `SPC g n`, `SPC g p` | Next, previous git change against `HEAD`. Wraps around |
 | `SPC g s` | Show and focus the file tree, with its git status letters |
 | `SPC l d` | Go to the definition |
@@ -671,7 +671,7 @@ These keys open it:
 | Keys | Opens the palette |
 | --- | --- |
 | `Ctrl ⇧ P` | In both keymaps, from a file, the tree or no file. `⇧ ⌘ P` on macOS. Again closes it |
-| `SPC :` | In the Neovim keymap |
+| `SPC p` | In the Neovim keymap |
 | `:Commands` | In the Neovim keymap |
 
 It has these commands:
@@ -825,7 +825,7 @@ on its own.
 
 ## Open a project
 
-You can start nsvim first and pick the project after. `SPC p` (`Ctrl O` in the classic
+You can start nsvim first and pick the project after. `SPC o` (`Ctrl O` in the classic
 keymap, `⌘ O` on macOS, `:Projects`, or `Open project…` in the palette) lists:
 
 - `Open folder…`: the system's folder dialog.

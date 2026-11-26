@@ -9,7 +9,8 @@ use super::{App, Overlay, Screen};
 /// The leader menu's entries: key, label, and whether it opens a group.
 pub const LEADER: &[(char, &str, bool)] = &[
     ('f', "Find file…", false),
-    ('p', "Open project…", false),
+    ('p', "Commands…", false),
+    ('o', "Open project…", false),
     ('e', "File tree", false),
     ('/', "Grep project…", false),
     ('b', "Buffers…", false),
@@ -18,7 +19,6 @@ pub const LEADER: &[(char, &str, bool)] = &[
     ('d', "Diagnostics…", false),
     (',', "Settings…", false),
     ('?', "Every key…", false),
-    (':', "Commands…", false),
     ('g', "+Git", true),
     ('l', "+LSP", true),
     ('a', "+Agent", true),
@@ -194,7 +194,8 @@ impl App {
         let KeyCode::Char(c) = k.code else { return };
         let actions = match (group, c) {
             (None, 'f') => vec![Action::FindFile],
-            (None, 'p') => vec![Action::OpenProject],
+            (None, 'o') => vec![Action::OpenProject],
+            (None, 'p') => vec![Action::Palette],
             (None, 'e') => {
                 // Show and focus the tree; from the tree, hide it again.
                 if self.tree.show && self.tree.focus {
@@ -207,7 +208,6 @@ impl App {
             }
             (None, '/') => vec![Action::GrepProject],
             (None, '?') => vec![Action::KeyList(String::new())],
-            (None, ':') => vec![Action::Palette],
             (None, 'b') => vec![Action::PickBuffer],
             (None, 'w') => vec![Action::Save(None)],
             (None, 'q') => vec![Action::CloseBuffer],
