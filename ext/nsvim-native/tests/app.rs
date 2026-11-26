@@ -66,3 +66,29 @@ fn an_input_method_types_chinese_in_insert_mode() -> Result<(), String> {
     app.wait_for("NORMAL")?;
     Ok(())
 }
+
+#[test]
+fn the_hidden_input_follows_the_cursor_so_candidates_show_by_it() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "notes.txt", "one\n");
+    let mut app = start(&file);
+    app.wait_for("text:/one/")?;
+    typ(&mut app, &["shift+a"]);
+    app.wait_for("INSERT")?;
+    let at = |s: &nsh_testing::Screen| {
+        let area = s.layout("id:text-area").ok().flatten()?.bounds;
+        let input = s.layout("id:text-input").ok().flatten()?.bounds;
+        Some((input.origin.x.0 - area.origin.x.0, input.origin.y.0 - area.origin.y.0, input.size.height.0))
+    };
+    // After "one", on the first row: past the gutter and three cells, one row tall.
+    app.wait_until("the input at the end of row 1", std::time::Duration::from_secs(5), |s| {
+        at(s).is_some_and(|(x, y, h)| x > 0.0 && y.abs() < 0.5 && h > 1.0)
+    })?;
+    let (end_of_one, _, row_h) = at(app.screen()).unwrap();
+    typ(&mut app, &["enter"]);
+    // The next row, at its start.
+    app.wait_until("the input at the start of row 2", std::time::Duration::from_secs(5), |s| {
+        at(s).is_some_and(|(x, y, _)| x < end_of_one && (y - row_h).abs() < 0.5)
+    })?;
+    Ok(())
+}
