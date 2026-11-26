@@ -152,6 +152,8 @@ pub enum Action {
     OpenFolder(String),
     /// Make an empty file and open it (`:NewFile path`). Relative to the project.
     NewFile(String),
+    /// Open an empty buffer with no file name (`:enew`, `Cmd N` in the classic keymap).
+    NewBuffer,
     /// Make a folder and its parents (`:Mkdir path`). Relative to the project.
     NewFolder(String),
     /// Move or rename the tree's row when the tree has the focus, else the active file

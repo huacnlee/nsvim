@@ -128,6 +128,9 @@ pub enum Effect {
     /// Show the system's folder dialog, starting in this folder. The callback gets the folder
     /// picked, None when cancelled, or why the dialog could not show.
     ChooseFolder(std::path::PathBuf, Then<Result<Option<std::path::PathBuf>, String>>),
+    /// Show the system's save dialog, starting in this folder. The callback gets the path
+    /// chosen, None when cancelled, or why the dialog could not show.
+    ChooseSavePath(std::path::PathBuf, Then<Result<Option<std::path::PathBuf>, String>>),
     /// Show a native alert. The callback gets the id of the button chosen, None when it
     /// closed without one, or why it could not show.
     Confirm(Confirm, Then<Result<Option<String>, String>>),
@@ -197,6 +200,14 @@ impl Tx {
         then: impl FnOnce(&mut App, Result<Option<std::path::PathBuf>, String>, &mut Tx) + 'static,
     ) {
         self.effects.push(Effect::ChooseFolder(start, Box::new(then)));
+    }
+
+    pub fn choose_save_path(
+        &mut self,
+        start: std::path::PathBuf,
+        then: impl FnOnce(&mut App, Result<Option<std::path::PathBuf>, String>, &mut Tx) + 'static,
+    ) {
+        self.effects.push(Effect::ChooseSavePath(start, Box::new(then)));
     }
 
     pub fn confirm(&mut self, dialog: Confirm, then: impl FnOnce(&mut App, Result<Option<String>, String>, &mut Tx) + 'static) {

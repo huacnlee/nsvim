@@ -266,6 +266,15 @@ impl Session {
                     crate::exports::refocus_keys();
                 });
             }
+            Effect::ChooseSavePath(start, then) => {
+                let dialog = nsh_core::file_dialog::SaveDialog::new().directory(start);
+                let answer = nsh_core::element::pick_save_path(dialog);
+                spawn(async move {
+                    let picked = answer.await;
+                    me.update(|a, tx| then(a, picked, tx));
+                    crate::exports::refocus_keys();
+                });
+            }
         }
     }
 

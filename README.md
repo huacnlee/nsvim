@@ -126,6 +126,7 @@ NsVim is for opening code, reading it, finding your way around it and making qui
 | Action | Neovim | Classic |
 | --- | --- | --- |
 | Save | `:w` | `Ctrl S` |
+| New file | `:enew`, `SPC n` | `Ctrl N` |
 | Go to file | `SPC f` | `Ctrl P` |
 | Open a project | `SPC o` | `Ctrl O` |
 | Find in project | `SPC /` | `Ctrl ⇧ F` |

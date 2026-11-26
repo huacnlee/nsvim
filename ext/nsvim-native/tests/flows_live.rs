@@ -240,6 +240,10 @@ fn every_palette_command_does_what_it_says() {
     f.settle("cancel goes back to the editor", |a| matches!(a.screen, Screen::Editor));
     run_check(&mut f, t, "next", "next goes to the next buffer", |a| active_ends_with(a, "a.txt"));
     run_check(&mut f, t, "prev", "prev goes to the previous buffer", |a| active_ends_with(a, "b.txt"));
+    run_check(&mut f, t, "new", "new opens an empty buffer with no name", |a| a.ed.docs.len() == 3 && a.ed.buf().path.is_none());
+    // Close it again: a clean buffer closes without a dialog.
+    f.update(|a, t| a.close_tab(a.ed.active, t));
+    f.settle("the new buffer closes", |a| a.ed.docs.len() == 2 && active_ends_with(a, "b.txt"));
     run_check(&mut f, t, "keymap=classic", "the classic keymap", |a| a.ed.keymap == Keymap::Classic);
     run_check(&mut f, t, "keymap=neovim", "the Neovim keymap", |a| a.ed.keymap == Keymap::Vim);
     for (id, mode) in [("theme=light", "light"), ("theme=system", "system"), ("theme=dark", "dark")] {

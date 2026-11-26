@@ -82,6 +82,7 @@ fn alt_arrows_move_lines() {
 fn app_shortcuts() {
     let mut e = classic("x");
     assert_eq!(feed(&mut e, "<c-s>"), vec![Action::Save(None)]);
+    assert_eq!(feed(&mut e, "<c-n>"), vec![Action::NewBuffer]);
     assert_eq!(feed(&mut e, "<c-p>"), vec![Action::FindFile]);
     assert_eq!(feed(&mut e, "<c-s-p>"), vec![Action::Palette]);
     assert_eq!(feed(&mut e, "<c-b>"), vec![Action::ToggleTree]);

@@ -23,6 +23,9 @@ mod palette_tests;
 pub mod picker;
 pub mod project;
 pub mod review;
+pub mod save_as;
+#[cfg(test)]
+mod save_as_tests;
 pub mod session;
 pub mod settings;
 pub mod setup;

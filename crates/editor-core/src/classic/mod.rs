@@ -58,6 +58,7 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
     if k.cmd {
         let act = match letter(&k) {
             Some('s') => Some(Action::Save(None)),
+            Some('n') => Some(Action::NewBuffer),
             Some('p') if k.shift => Some(Action::Palette),
             Some('p') => Some(Action::FindFile),
             Some('o') => Some(Action::OpenProject),
