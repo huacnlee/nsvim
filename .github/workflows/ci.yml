@@ -17,10 +17,6 @@ jobs:
           toolchain: "1.99.1"
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
-      - name: Repeat flows_mouse (temporary)
-        run: |
-          cargo test --locked -p nsvim-native --test flows_mouse --no-run
-          for i in $(seq 30); do cargo test --locked -p nsvim-native --test flows_mouse -q > out.txt 2>&1 || { cat out.txt; echo "run $i failed"; exit 1; }; echo "run $i ok"; done
       - name: Format
         run: cargo fmt --all --check
       - name: Lint
