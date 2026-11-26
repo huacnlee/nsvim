@@ -24,11 +24,6 @@ fn wait_text(app: &mut Headless, sel: &str, want: &str) -> Result<(), String> {
     app.wait_until(&format!("`{sel}` reads `{want}`"), WAIT, |s| name(s, sel).as_deref() == Some(want))
 }
 
-/// The background of the view `sel`.
-fn background(app: &Headless, sel: &str) -> Option<u32> {
-    app.screen().view_style(sel).unwrap().and_then(|s| s.background_color)
-}
-
 #[test]
 fn the_status_line_counts_diagnostics_and_outside_changes() -> Result<(), String> {
     let dir = scratch();
