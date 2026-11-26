@@ -163,8 +163,8 @@ pub struct App {
     pub restore_active: Option<PathBuf>,
     /// Saves still on their way to disk before `:wqa` can quit.
     pub quit_after_saves: Option<usize>,
-    /// A text drag in progress started at this position.
-    pub drag_from: Option<Pos>,
+    /// The mouse's drag over the text.
+    pub drag: mouse::TextDrag,
     /// When the last edit happened, for diffing against git after a pause.
     pub last_edit: f64,
     pub clock: f64,
@@ -292,7 +292,7 @@ impl App {
             to_open: Vec::new(),
             restore_active: None,
             quit_after_saves: None,
-            drag_from: None,
+            drag: mouse::TextDrag::default(),
             last_edit: 0.0,
             clock: 0.0,
             font_family,
@@ -360,6 +360,7 @@ impl App {
             self.event(e, tx);
         }
         changed |= self.play_scripted(clock, tx);
+        changed |= self.drag_scroll(clock, tx);
         if self.ask_signs(clock, tx) {
             changed = true;
         }
