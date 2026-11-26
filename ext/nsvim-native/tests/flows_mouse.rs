@@ -205,3 +205,54 @@ fn the_wheel_over_the_text_scrolls_it() {
     f.ui.wheel("id:text-area", point(0.0, 10.0 * rh)).unwrap();
     f.settle("the text scrolls down", |a| a.ed.doc().view.top > 0);
 }
+
+/// The wheel moves only the view: a selection stays as it is, also when it goes off screen.
+#[test]
+fn the_wheel_keeps_a_selection() {
+    let src: String = (1..=300).map(|i| format!("line {i}\n")).collect();
+    for (map, select) in [("neovim", "Vjj"), ("classic", "")] {
+        let (_dir, mut f) = rust_flow(map, &src);
+        f.keys(select);
+        if map == "classic" {
+            f.press("shift+down");
+            f.press("shift+down");
+        }
+        let before = f.read(|a| (a.ed.doc().view.anchor, a.ed.cursor()));
+        assert!(before.0.is_some(), "{map}: a selection");
+        let rh = f.read(|a| a.m.row_h);
+        f.ui.wheel("id:text-area", point(0.0, 40.0 * rh)).unwrap();
+        f.settle("the text scrolls down", |a| a.ed.doc().view.top > 0);
+        assert_eq!(f.read(|a| (a.ed.doc().view.anchor, a.ed.cursor())), before, "{map}: the selection holds");
+    }
+}
+
+/// A drag past the bottom edge scrolls on a timer, also while the pointer holds still, and the
+/// selection follows the text under the pointer. The release stops it.
+#[test]
+fn a_drag_held_past_the_bottom_edge_keeps_scrolling() {
+    use nsvim_native::app::fx::{Mods, Phase};
+    let src: String = (1..=300).map(|i| format!("line {i}\n")).collect();
+    let (_dir, mut f) = rust_flow("classic", &src);
+    let [_, _, w, h] = f.read(|a| a.m.text);
+    f.on_engine(move |s| {
+        s.drag(w / 2.0, h / 2.0, Phase::Down, 1, Mods::default());
+        s.drag(w / 2.0, h + 5.0, Phase::Move, 1, Mods::default());
+    });
+    f.settle("the text scrolls with the pointer still", |a| a.ed.doc().view.top >= 5);
+    let (top, cursor, rows) = f.read(|a| (a.ed.doc().view.top, a.ed.cursor().line, a.ed.rows));
+    assert_eq!(cursor, top + rows - 1, "the selection ends in the bottom row");
+    f.on_engine(move |s| s.drag(w / 2.0, h + 5.0, Phase::Up, 1, Mods::default()));
+    let stopped = f.read(|a| a.ed.doc().view.top);
+    f.ui.wait(std::time::Duration::from_millis(300)).unwrap();
+    assert_eq!(f.read(|a| a.ed.doc().view.top), stopped, "the release stops the scroll");
+}
+
+/// Vim's Normal mode keeps the cursor on screen when the wheel scrolls past it.
+#[test]
+fn the_wheel_in_normal_mode_keeps_the_cursor_on_screen() {
+    let src: String = (1..=300).map(|i| format!("line {i}\n")).collect();
+    let (_dir, mut f) = rust_flow("neovim", &src);
+    let rh = f.read(|a| a.m.row_h);
+    f.ui.wheel("id:text-area", point(0.0, 40.0 * rh)).unwrap();
+    f.settle("the cursor follows the view", |a| a.ed.cursor().line >= a.ed.doc().view.top);
+}

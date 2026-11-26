@@ -2,11 +2,34 @@
 //! Neovim keymap), double-click for a word, triple-click or a click on a line number for a
 //! line, and the wheel to scroll. With `mouse.enabled` off, only the wheel works.
 
+use std::time::Duration;
+
 use super::fx::{Drag, Phase, Tx, WheelEvent};
 use editor::buffer::Pos;
 use editor::editor::{KeyCode, KeyInput, Keymap, Mode, VisualKind};
 
 use super::App;
+
+/// How often a drag past the top or bottom edge scrolls.
+const EDGE_STEP: Duration = Duration::from_millis(50);
+/// The most lines one step of that scroll moves.
+const EDGE_MAX_LINES: f32 = 8.0;
+
+/// A mouse drag over the text.
+#[derive(Default)]
+pub struct TextDrag {
+    /// Where the drag started, while the button is down.
+    pub from: Option<Pos>,
+    /// Where the pointer is, in the text area's points. A wheel turn or an edge scroll selects
+    /// to the text that comes under it.
+    pub at: (f32, f32),
+    /// The drag selects whole lines (a triple-click or a press on the line numbers).
+    pub lines: bool,
+    /// The half cell under the pointer, from [`App::drag_cell`].
+    pub cell: (i32, i32),
+    /// When the next step of a scroll past an edge is due, on the app's clock.
+    pub scroll_at: Option<f64>,
+}
 
 impl App {
     /// The text area's rect, from layout. Sets the rows and columns the keymaps scroll by.
@@ -42,17 +65,30 @@ impl App {
         crate::model::pos_at(&self.ed, row, (x - self.m.gutter).max(0.0) / self.m.cw)
     }
 
+    /// The row and half column under a point of a drag. Moves in one half cell select the same
+    /// text. Past an edge, the row also sets how fast the text scrolls.
+    pub fn drag_cell(&self, x: f32, y: f32) -> (i32, i32) {
+        ((y / self.m.row_h).floor() as i32, (2.0 * (x - self.m.gutter) / self.m.cw).floor() as i32)
+    }
+
+    /// True when a move of the drag to `(x, y)` changes nothing: it is in the same half cell.
+    pub fn drag_holds(&self, x: f32, y: f32) -> bool {
+        self.drag.from.is_some() && self.drag_cell(x, y) == self.drag.cell
+    }
+
     pub fn text_drag(&mut self, d: &mut Drag, tx: &mut Tx) {
+        self.drag.cell = self.drag_cell(d.x, d.y);
         if !self.cfg.mouse.enabled || !self.ed.has_doc() || self.on_settings {
             return;
         }
         self.tree.focus = false;
         tx.instant();
-        let Some(pos) = self.pos_at(d.x, d.y) else { return };
         let vim = self.ed.keymap == Keymap::Vim;
         let in_gutter = d.start_x < self.m.gutter;
         match d.phase {
             Phase::Down => {
+                let Some(pos) = self.pos_at(d.x, d.y) else { return };
+                self.drag = TextDrag { at: (d.x, d.y), cell: self.drag.cell, ..TextDrag::default() };
                 if self.ed.mode == Mode::Command {
                     return;
                 }
@@ -74,7 +110,8 @@ impl App {
                 }
                 if in_gutter || d.clicks >= 3 {
                     self.select_lines(pos.line, pos.line);
-                    self.drag_from = Some(Pos::new(pos.line, 0));
+                    self.drag.from = Some(Pos::new(pos.line, 0));
+                    self.drag.lines = true;
                     d.data = 3.0;
                 } else if d.clicks == 2 && self.cfg.mouse.double_click {
                     let (a, b) = editor::vim::word_range_at(&self.ed.doc().buf, pos);
@@ -91,7 +128,7 @@ impl App {
                     self.ed.doc_mut().extra.clear();
                     self.ed.doc_mut().view.anchor = None;
                     self.ed.set_cursor(pos);
-                    self.drag_from = Some(self.ed.cursor());
+                    self.drag.from = Some(self.ed.cursor());
                     d.data = 1.0;
                 }
             }
@@ -99,29 +136,63 @@ impl App {
                 if !self.cfg.mouse.drag {
                     return;
                 }
-                let Some(from) = self.drag_from else { return };
-                // The pointer picks the line, so the text under it must hold still: scrolloff
-                // would scroll at every move near an edge and run the selection away.
-                let top = self.ed.doc().view.top;
-                if d.data >= 3.0 {
-                    self.select_lines(from.line, pos.line);
-                } else if pos != from {
-                    if vim && self.ed.mode == Mode::Insert {
-                        editor::vim::handle_key(&mut self.ed, KeyInput::plain(KeyCode::Esc));
-                    }
-                    self.select_range_inclusive(from, pos);
+                if self.drag.from.is_none() {
+                    return;
                 }
-                self.ed.doc_mut().view.top = top;
-                // Dragging past the top or bottom edge scrolls.
-                if d.y < 0.0 {
-                    self.ed.scroll_by(-1);
-                } else if d.y > self.m.text[3] {
-                    self.ed.scroll_by(1);
+                self.drag.at = (d.x, d.y);
+                self.drag_select();
+                // Past the top or bottom edge, a timer scrolls also while the pointer holds still.
+                if self.drag.scroll_at.is_none() {
+                    self.drag_scroll(self.clock, tx);
                 }
                 tx.instant();
             }
-            Phase::Up => self.drag_from = None,
+            Phase::Up => self.drag = TextDrag { cell: self.drag.cell, ..TextDrag::default() },
         }
+    }
+
+    /// One step of the scroll of a drag past the top or bottom edge, when it is time. The
+    /// further past the edge, the more lines a step scrolls. Only the view moves: the selection
+    /// then goes to the text under the pointer. Returns true when it scrolled.
+    pub fn drag_scroll(&mut self, clock: f64, tx: &mut Tx) -> bool {
+        let y = self.drag.at.1;
+        let past = if y < 0.0 { y } else { (y - self.m.text[3]).max(0.0) };
+        if self.drag.from.is_none() || past == 0.0 {
+            self.drag.scroll_at = None;
+            return false;
+        }
+        let at = self.drag.scroll_at.unwrap_or(clock);
+        if clock < at {
+            tx.wake_after(Duration::from_secs_f64(at - clock));
+            return false;
+        }
+        let lines = (1.0 + (past.abs() / self.m.row_h).floor()).min(EDGE_MAX_LINES) as isize;
+        self.ed.scroll_view(if past < 0.0 { -lines } else { lines });
+        self.drag_select();
+        self.drag.scroll_at = Some(clock + EDGE_STEP.as_secs_f64());
+        tx.wake_after(EDGE_STEP);
+        true
+    }
+
+    /// Selects from the drag's start to the text under its pointer.
+    fn drag_select(&mut self) {
+        let Some(from) = self.drag.from else { return };
+        // A pointer past an edge selects in the full row at that edge.
+        let (x, y) = self.drag.at;
+        let y = y.clamp(0.0, (self.ed.rows as f32 * self.m.row_h - 1.0).max(0.0));
+        let Some(pos) = self.pos_at(x, y) else { return };
+        // The pointer picks the line, so the text under it must hold still: scrolloff
+        // would scroll at every move near an edge and run the selection away.
+        let top = self.ed.doc().view.top;
+        if self.drag.lines {
+            self.select_lines(from.line, pos.line);
+        } else if pos != from {
+            if self.ed.keymap == Keymap::Vim && self.ed.mode == Mode::Insert {
+                editor::vim::handle_key(&mut self.ed, KeyInput::plain(KeyCode::Esc));
+            }
+            self.select_range_inclusive(from, pos);
+        }
+        self.ed.doc_mut().view.top = top;
     }
 
     /// Selects from `a` to `b`, both included (Visual), or `a` to after `b` (classic).
@@ -156,7 +227,7 @@ impl App {
                 self.ed.set_cursor(b);
             }
         }
-        self.drag_from = Some(a);
+        self.drag.from = Some(a);
     }
 
     fn select_lines(&mut self, a: usize, b: usize) {
@@ -193,7 +264,15 @@ impl App {
         let lines = self.wheel_rest.trunc();
         self.wheel_rest -= lines;
         if lines != 0.0 {
-            self.ed.scroll_by(lines as isize);
+            // A selection, a drag or the classic keymap keeps the cursor where it is, so the
+            // wheel does not change what is selected. Vim's Normal mode keeps it on screen.
+            let keep = self.drag.from.is_some() || self.ed.keymap == Keymap::Classic || matches!(self.ed.mode, Mode::Visual(_));
+            if keep {
+                self.ed.scroll_view(lines as isize);
+                self.drag_select();
+            } else {
+                self.ed.scroll_by(lines as isize);
+            }
             tx.instant();
         }
         true

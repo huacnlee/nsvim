@@ -368,6 +368,11 @@ impl Session {
 
     /// A press, drag or release on the text area, in points from its top left.
     pub fn drag(&self, x: f32, y: f32, phase: Phase, clicks: u32, mods: Mods) {
+        // A mouse can report a thousand moves a second. A move in the same half cell selects
+        // the same text: it skips the update, which runs every view of the app again.
+        if phase == Phase::Move && self.app.with(|a| a.drag_holds(x, y)) {
+            return;
+        }
         let mut d = Drag { x, y, start_x: x, start_y: y, phase, clicks, data: self.drag_data.with(|v| *v) };
         self.update_with(Tx::with_input(mods, PointerButton::Primary), |a, tx| a.text_drag(&mut d, tx));
         self.drag_data.with(|v| *v = d.data);

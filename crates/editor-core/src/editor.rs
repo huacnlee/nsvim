@@ -516,6 +516,17 @@ impl Editor {
         }
     }
 
+    /// Scrolls the view by `lines` (negative up). The cursor stays where it is, also off screen.
+    /// The next cursor move scrolls back to it.
+    pub fn scroll_view(&mut self, lines: isize) {
+        if !self.has_doc() {
+            return;
+        }
+        let doc = self.doc_mut();
+        let last = doc.buf.last_line();
+        doc.view.top = (doc.view.top as isize + lines).clamp(0, last as isize) as usize;
+    }
+
     /// Scrolls the view by `lines` (negative up) and keeps the cursor on screen.
     pub fn scroll_by(&mut self, lines: isize) {
         if !self.has_doc() {
