@@ -107,7 +107,10 @@ fn kind_token(kind: &str) -> &'static str {
 fn completion(s: Session, font: &CodeFont, l: List) -> impl IntoElement {
     let cw = s.grid().cell_w;
     let small = CodeFont { size: (font.size - 1.0).max(9.0), ..font.clone() };
-    let mut list = panel().min_w(px(36.0 * cw)).py(px(3.0)).test_id("completion");
+    // Padding left and right of the rows, so the selected row's fill does not touch the
+    // border: one cell in a terminal.
+    let pad_x = if crate::terminal() { cw } else { 4.0 };
+    let mut list = panel().min_w(px(36.0 * cw)).py(px(3.0)).px(px(pad_x)).test_id("completion");
     for (j, (label, kind)) in l.items.into_iter().enumerate() {
         let head: String = label.chars().take(l.typed).collect();
         let rest: String = label.chars().skip(l.typed).collect();
@@ -122,6 +125,7 @@ fn completion(s: Session, font: &CodeFont, l: List) -> impl IntoElement {
                 .px(px(8.0))
                 .gap(px(8.0))
                 .items_center()
+                .rounded(px(2.0))
                 .bg(move || if on { color("selection") } else { color("selection").opacity(0.0) })
                 .role(AccessibilityRole::Option)
                 .on_press(move || s.update(|a, _| a.pick_completion(j)))
