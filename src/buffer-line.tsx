@@ -2,7 +2,9 @@
 // window's title bar (`./title-bar.tsx`): a press on it outside a tab drags the window. A click on
 // a tab shows it. A click on its close button or a middle click closes it. A right-click opens
 // the tab's menu (close the others, the tabs to its left or right, the clean tabs, all of them,
-// copy its path). A tab with unsaved changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
+// copy its path). A tab with unsaved changes shows a small square in place of the close mark. A
+// tab dragged along the line moves to where it drops, as a tab of NSH's `DockArea` does. Rust owns
+// the state (`Tabs` in
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
 import { effect, platform, Scroll, signal, Text, View, type ContextMenuEvent, type MouseEvent, type ViewRef } from "nsh";
@@ -75,9 +77,48 @@ function Mark(props: { font: () => Font; index: number; dirty: boolean }) {
   );
 }
 
+/** How far the pointer moves on a tab before it drags the tab: `DRAG_SLOP` of NSH's `DockArea`. */
+const DRAG_SLOP = 4;
+
+/** Where each tab is along the line, in the tabs' scroll content: from `onLayout`. */
+type Span = { x: number; width: number };
+
+/** A tab that the pointer drags: tab `from`, the pointer at `x` in the tabs' content, `dx` past
+ * where it took the tab. */
+type Drag = { from: number; x: number; dx: number };
+
+/** The place among the other tabs where a tab dragged with the pointer at `x` lands: the count of
+ * the other tabs whose middle is before the pointer. As `DockArea`, it counts the places without
+ * the dragged tab, which is how `Tabs.moveTab` reads `to`. */
+function slotOf(spans: Span[], from: number, x: number): number {
+  let slot = 0;
+  spans.forEach((s, i) => {
+    if (i !== from && s && s.x + s.width / 2 < x) slot += 1;
+  });
+  return slot;
+}
+
+/** The x of the drop indicator for `slot`: the start of the other tab at that place, else the end of
+ * the last other tab. */
+function indicatorX(spans: Span[], from: number, slot: number): number {
+  const others = spans.filter((s, i) => i !== from && s);
+  if (others.length === 0) return 0;
+  return slot < others.length ? others[slot].x : others[others.length - 1].x + others[others.length - 1].width;
+}
+
 /** Tab `index`. */
-function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
+function Tab(props: {
+  tab: () => TabState;
+  index: number;
+  font: () => Font;
+  drag: () => Drag | null;
+  onLayout: (span: Span) => void;
+  onDrag: (drag: Drag | null, drop: boolean) => void;
+}) {
   const i = props.index;
+  // The pointer's page x and its x in the tab when the drag took the tab.
+  let start = { page: 0, x: 0 };
+  const dragged = () => props.drag()?.from === i;
   let node: ViewRef | undefined;
   // The tab that shows always stays in sight: when it becomes the one that shows, the line
   // scrolls just enough to bring it in.
@@ -90,7 +131,8 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
         node = n;
         if (props.tab().on) n?.reveal({ horizontal: "nearest", animated: false });
       }}
-      class={frame(props.tab().on)}
+      class={`${frame(props.tab().on)} ${dragged() ? "opacity-70 z-10" : ""}`}
+      style={{ transform: [{ translateX: dragged() ? (props.drag()?.dx ?? 0) : 0 }] }}
       role="tab"
       accessibilityLabel={props.tab().name}
       accessibilityState={{ selected: props.tab().on }}
@@ -100,6 +142,19 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
         if (e.button === "middle") then(() => Tabs.close(i));
       }}
       onContextMenu={(e: ContextMenuEvent) => then(() => Tabs.openMenu(i, e.pagePosition.x, e.pagePosition.y))}
+      onLayout={({ bounds }) => props.onLayout({ x: bounds.origin.x, width: bounds.size.width })}
+      // A move past a few points takes the tab, and the pointer carries it. The responder is
+      // claimed only then, so a click keeps its press. The drop moves the tab.
+      onMoveShouldSetResponder={(_: unknown, g: { dx: number; dy: number }) => Math.abs(g.dx) > DRAG_SLOP}
+      onResponderTerminationRequest={() => false}
+      onResponderGrant={(e: { pageX: number; locationX: number }) => {
+        start = { page: e.pageX, x: e.locationX };
+        props.onDrag({ from: i, x: 0, dx: 0 }, false);
+        return true;
+      }}
+      onResponderMove={(e: { pageX: number }) => props.onDrag({ from: i, x: start.x, dx: e.pageX - start.page }, false)}
+      onResponderRelease={(e: { pageX: number }) => props.onDrag({ from: i, x: start.x, dx: e.pageX - start.page }, true)}
+      onResponderTerminate={() => props.onDrag(null, false)}
     >
       <Label font={props.font} on={props.tab().on} text={props.tab().name} />
       {/* Only the mark's square takes the click, not the tab's full height. */}
@@ -125,14 +180,36 @@ export function BufferLine() {
   const project = signal<BufferLineState["project"]>(undefined);
   const tabs = signal<TabState[]>([]);
   const font = signal<Font>({ family: "system-ui", size: 13 });
+  // The tabs' places, for a drag, in order.
+  const spans: Span[] = [];
   // Rust posts the state only when it changed. The project and the font are set only when
   // their own part changed, so a change to a tab redraws only the tabs.
   Tabs.onChange((s) => {
     const p = project();
     if (!s.project || !p || p.path !== s.project.path || p.width !== s.project.width) project.set(s.project);
+    spans.length = s.tabs.length;
     tabs.set(s.tabs);
     if (font().family !== s.fontFamily || font().size !== s.fontSize) font.set({ family: s.fontFamily, size: s.fontSize });
   });
+  // The drag that runs.
+  const drag = signal<Drag | null>(null);
+  /** The pointer's x in the tabs' content during `d`. */
+  const pointer = (d: Drag) => (spans[d.from]?.x ?? 0) + d.x + d.dx;
+  const slot = () => {
+    const d = drag();
+    return d ? slotOf(spans, d.from, pointer(d)) : null;
+  };
+  const onDrag = (d: Drag | null, drop: boolean) => {
+    if (drop && d) {
+      const to = slotOf(spans, d.from, pointer(d));
+      drag.set(null);
+      then(() => {
+        if (to !== d.from) Tabs.moveTab(d.from, to);
+      });
+      return;
+    }
+    drag.set(d);
+  };
   return (
     <View class="flex-row items-center h-9 shrink-0 overflow-hidden bg-muted" role="tablist" testID="buffer-line" desktop={DRAG}>
       <If when={project()} else={<Controls side="left" />}>
@@ -160,8 +237,25 @@ export function BufferLine() {
         desktop={DRAG}
       >
         <Each of={tabs()} key="index">
-          {(tab, index) => <Tab tab={tab} index={index()} font={font} />}
+          {(tab, index) => (
+            <Tab
+              tab={tab}
+              index={index()}
+              font={font}
+              drag={drag}
+              onLayout={(span) => (spans[index()] = span)}
+              onDrag={onDrag}
+            />
+          )}
         </Each>
+        {/* Where the dragged tab lands, while it moves to another place. */}
+        <If when={slot() !== null && slot() !== drag()?.from}>
+          <View
+            class="absolute top-1 bottom-1 w-0.5 bg-primary"
+            style={{ left: indicatorX(spans, drag()?.from ?? 0, slot() ?? 0) - 1 }}
+            testID="tab-drop"
+          />
+        </If>
         <View class="flex-1 self-stretch" desktop={DRAG} />
       </Scroll>
       <Controls side="right" />

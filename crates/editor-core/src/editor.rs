@@ -171,6 +171,8 @@ pub enum Action {
     PrevBuffer,
     Diagnostics,
     Settings,
+    /// Show first-launch setup again, to change its picks (`:Setup`).
+    Setup,
     /// Check for a new release and install it (`:Update`).
     Update,
     /// Open the leader (Space) key menu.
@@ -455,6 +457,27 @@ impl Editor {
         }
     }
 
+    /// Moves document `from` to place `to` among the documents, as a tab dragged along the buffer
+    /// line does. `to` counts the places without `from`. The active document stays active.
+    /// An index past the end does nothing.
+    pub fn move_doc(&mut self, from: usize, to: usize) {
+        if from >= self.docs.len() || to >= self.docs.len() || from == to {
+            return;
+        }
+        let active = self.active;
+        let doc = self.docs.remove(from);
+        self.docs.insert(to, doc);
+        self.active = if active == from {
+            to
+        } else if from < active && active <= to {
+            active - 1
+        } else if to <= active && active < from {
+            active + 1
+        } else {
+            active
+        };
+    }
+
     /// Moves the cursor to `p`, clamped for the mode, and forgets the wanted column.
     pub fn set_cursor(&mut self, p: Pos) {
         let past_end = self.mode == Mode::Insert || matches!(self.mode, Mode::Visual(_));
@@ -553,3 +576,7 @@ impl Editor {
 pub fn absolute(p: &Path) -> PathBuf {
     if p.is_absolute() { p.to_path_buf() } else { std::env::current_dir().map(|d| d.join(p)).unwrap_or_else(|_| p.to_path_buf()) }
 }
+
+#[cfg(test)]
+#[path = "editor_tests.rs"]
+mod tests;

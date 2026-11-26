@@ -66,6 +66,7 @@ impl App {
                 Action::GotoDefinition => self.goto_definition(),
                 Action::Hover => self.hover_here(),
                 Action::Settings => self.open_settings(),
+                Action::Setup => self.open_setup(),
                 Action::Update => self.run_update(tx),
                 Action::LeaderMenu => self.overlay = Overlay::Leader(None),
                 Action::Copy(text) => tx.copy(text),

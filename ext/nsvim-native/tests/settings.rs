@@ -98,6 +98,41 @@ fn setup_shows_on_first_launch_and_not_otherwise() -> Result<(), String> {
     Ok(())
 }
 
+/// `:Setup` shows setup again over the editor, from the config in use. Cancel leaves it as it
+/// was; Save writes the new picks and goes back to the open file.
+#[test]
+fn setup_runs_again_from_the_editor_with_the_current_picks() -> Result<(), String> {
+    let _lock = config_lock();
+    let dir = scratch();
+    let file = write(dir.path(), "a.txt", "hello\n");
+    let mut app = common::start_files(&[&file], Some(&common::keymap_config("neovim")));
+    app.wait_for("text:/hello/")?;
+    type_text(&mut app, ":Setup\n");
+    app.wait_for("How do you want to edit?")?;
+    assert!(app.shows("Setup 1/5 · Keys"), "{:?}", app.screen().texts());
+    assert!(app.screen().matches("label:Cancel")?, "setup run again can be left");
+    // Esc on the first step leaves it too, with nothing changed.
+    typ(&mut app, &["escape"]);
+    app.wait_for("text:/hello/")?;
+    assert!(!app.screen().matches("id:setup")?);
+    app.wait_for("text:/nothing changed/")?;
+
+    type_text(&mut app, ":Setup\n");
+    app.wait_for("How do you want to edit?")?;
+    app.press("label:Classic shortcuts")?;
+    app.press("label:Skip")?;
+    app.wait_for("Ready")?;
+    assert!(!app.screen().matches("label:Open nsvim")?, "the editor is open already");
+    app.press("label:Save")?;
+    app.wait_for("text:/hello/")?;
+    assert!(!app.screen().matches("id:setup")?);
+    let cfg =
+        written(&mut app, "config.toml with the classic keymap", |t| get(t, "keys", "map").and_then(|v| v.as_str()) == Some("classic"))?;
+    assert_eq!(get(&cfg, "keys", "map").and_then(|v| v.as_str()), Some("classic"));
+    assert!(!app.screen().matches("id:mode-badge")?, "the classic keymap shows no vim mode");
+    Ok(())
+}
+
 #[test]
 fn setup_steps_go_forward_and_back_by_press_and_by_key() -> Result<(), String> {
     let (mut app, _dir) = first_launch();

@@ -1,4 +1,5 @@
-// First-launch setup: keys, mouse, look, terminal, ready. Each step is cards and checkboxes. The
+// First-launch setup: keys, mouse, look, terminal, ready. `:Setup` shows it again later, from the
+// current config, with Cancel to leave it as it was. Each step is cards and checkboxes. The
 // status line shows where you are and moves on. The keys work as the hint line says: Rust owns
 // them and the state (`SetupFlow`).
 
@@ -168,13 +169,16 @@ function Status(props: { st: () => SetupState }) {
         }}
       </Each>
       <View class="flex-1" />
+      <If when={props.st().again}>
+        <StepButton label="Cancel" onPress={() => SetupFlow.cancel()} />
+      </If>
       <If when={step() < last()}>
         <StepButton label="Skip" onPress={() => SetupFlow.skip()} />
       </If>
       <If when={step() > 1}>
         <StepButton label="Back" onPress={() => SetupFlow.go(-1)} />
       </If>
-      <If when={step() < last()} else={<StepButton label="Open nsvim" go onPress={() => SetupFlow.finish()} />}>
+      <If when={step() < last()} else={<StepButton label={props.st().again ? "Save" : "Open nsvim"} go onPress={() => SetupFlow.finish()} />}>
         <StepButton label="Next" go onPress={() => SetupFlow.go(1)} />
       </If>
     </View>
