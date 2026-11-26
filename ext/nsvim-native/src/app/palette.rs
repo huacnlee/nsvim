@@ -66,6 +66,11 @@ pub const COMMANDS: &[Command] = &[
     cmd("Agent: clear the note", "clear-note", "a n", "", ""),
     cmd("Next tab", "next", "t n", "gt", "Ctrl Tab"),
     cmd("Previous tab", "prev", "t p", "gT", "Ctrl ⇧ Tab"),
+    cmd("Close other tabs", "close-others", "t o", "", ""),
+    cmd("Close tabs to the left", "close-left", "t l", "", ""),
+    cmd("Close tabs to the right", "close-right", "t r", "", ""),
+    cmd("Close clean tabs", "close-clean", "t c", "", ""),
+    cmd("Close all tabs", "close-all", "t a", "", ""),
     cmd("Undo", "undo", "y u", "u", "Mod Z"),
     cmd("Redo", "redo", "y r", "Ctrl r", "Mod ⇧ Z"),
     cmd("Cut", "cut", "y x", "d", "Mod X"),
@@ -152,6 +157,12 @@ impl App {
         if ON_FILE.contains(&id) && (!self.ed.has_doc() || self.on_settings) {
             if !self.on_settings {
                 self.ed.message("no file is open");
+            }
+            return;
+        }
+        if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
+            if self.ed.has_doc() && !self.on_settings {
+                self.close_tabs(self.ed.active, which);
             }
             return;
         }

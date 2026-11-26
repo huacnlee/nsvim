@@ -92,6 +92,25 @@ fn a_middle_click_keeps_a_dirty_tab_open() {
     assert_eq!(f.read(|a| a.ed.docs.len()), 2, "a dirty tab stays open");
 }
 
+/// A right-click on a tab opens its menu. Close others there closes every other clean tab,
+/// and the tab shows.
+#[test]
+fn a_right_click_on_a_tab_opens_its_menu_and_close_others_keeps_it() {
+    let dir = common::scratch();
+    let one = common::write(dir.path(), "one.rs", "one\n");
+    let two = common::write(dir.path(), "two.rs", "two\n");
+    let main = common::write(dir.path(), "main.rs", SRC);
+    let mut f = common::flow_files(&[&one, &two, &main], None);
+    f.settle("three files open", |a| a.ed.docs.len() == 3);
+    f.ui.wait_for("role:tab[two.rs]").unwrap();
+    f.ui.right_click("role:tab[two.rs]").unwrap();
+    let menu = f.ui.menu().expect("the tab's menu shows");
+    assert!(format!("{menu:?}").contains("Close right"), "{menu:?}");
+    let title = f.read(|a| if a.is_vim() { "Close others    SPC t o" } else { "Close others" });
+    f.ui.choose_menu_item(title).unwrap();
+    f.settle("only two.rs stays open", |a| a.ed.docs.len() == 1 && a.ed.buf().name() == "two.rs");
+}
+
 /// After a click on a tab, the keys go to the editor again.
 #[test]
 fn a_click_on_a_tab_gives_the_keys_back_to_the_editor() {

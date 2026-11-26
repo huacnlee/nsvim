@@ -70,6 +70,12 @@ impl Tabs {
         crate::bridge::update(move |a, _| a.show_tab(index as usize));
     }
 
+    /// Opens the menu of tab `index` at `x`, `y` in the window: close it, the others, the tabs
+    /// to its left or right, the clean tabs or all, copy its path, or reveal it in the tree.
+    pub fn open_menu(index: u32, x: f64, y: f64) {
+        crate::bridge::update(move |a, tx| a.tab_menu(index as usize, (x as f32, y as f32), tx));
+    }
+
     /// Closes tab `index`. A file with unsaved changes stays open
     /// and the editor tells why.
     pub fn close(index: u32) {

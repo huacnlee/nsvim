@@ -54,6 +54,10 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC a p` | Show the next agent proposal |
 | `SPC a n` | Clear the agent's note |
 | `SPC t n`, `SPC t p` | Next, previous tab |
+| `SPC t o` | Close the other tabs |
+| `SPC t l`, `SPC t r` | Close the tabs to the left, to the right of this tab |
+| `SPC t c` | Close the tabs with no unsaved changes |
+| `SPC t a` | Close all tabs |
 | `SPC y u`, `SPC y r` | Undo, redo one change |
 | `SPC y x`, `SPC y y`, `SPC y p` | Cut, copy, paste, on the Visual selection |
 | `SPC y a` | Select every line |
@@ -713,6 +717,9 @@ It has these commands:
 | `Agent: show the next proposal` | Show the next agent proposal |
 | `Agent: clear the note` | Clear the agent's note |
 | `Next tab`, `Previous tab` | Go to the next, the previous tab |
+| `Close other tabs` | Close every tab but this one |
+| `Close tabs to the left`, `Close tabs to the right` | Close the tabs before, after this one |
+| `Close clean tabs`, `Close all tabs` | Close the tabs with no unsaved changes, every tab |
 | `Undo`, `Redo` | Undo or redo one change |
 | `Cut`, `Copy`, `Paste`, `Select all` | The clipboard, on the selection or the Visual selection |
 | `Toggle soft wrap` | Turn soft wrap on or off |
@@ -835,6 +842,7 @@ Turn the mouse on or off in setup, in Settings or with `:set mouse`. When it is 
 - A right-click opens the context menu, when `mouse.right_click` is on.
 - A click on a tab goes to it. A click on its `×`, or a middle-click on the tab, closes it.
   A tab with unsaved changes stays open.
+- A right-click on a tab opens its menu. See [Tab menu](#tab-menu).
 - A click on a row of the file tree opens the file or folder. The wheel over the tree scrolls
   it, and the keyboard row stays where it was. Drag the tree's edge to resize it.
 - A click on a row of a picker or the leader menu runs it.
@@ -844,6 +852,25 @@ Turn the mouse on or off in setup, in Settings or with `:set mouse`. When it is 
 
 `mouse.click`, `mouse.drag` and `mouse.double_click` in `config.toml` turn each of these off
 on its own.
+
+### Tab menu
+
+A right-click on a tab opens its menu. The names and the order come from Zed. It does not
+need `mouse.right_click`.
+
+| Item | Does |
+| --- | --- |
+| `Close` | Close this tab |
+| `Close others` | Close every tab but this one |
+| `Close left`, `Close right` | Close the tabs before, after this one |
+| `Close clean` | Close every tab with no unsaved changes |
+| `Close all` | Close every tab |
+| `Copy path`, `Copy relative path` | Copy the file's path, or its path in the project |
+| `Reveal in file tree` | Show the file in the file tree |
+
+A tab with unsaved changes stays open, and the status line names it. The tab that showed
+still shows when it stays open. The palette and the `SPC t` keys do the same from the tab
+that shows.
 
 ## Open a project
 

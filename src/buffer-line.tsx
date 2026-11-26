@@ -1,10 +1,11 @@
 // The buffer line: the project folder over the tree, then the tabs that Rust lists. It is the
 // window's title bar (`./title-bar.tsx`): a press on it outside a tab drags the window. A click on
-// a tab shows it. A click on its close button or a middle click closes it. A tab with unsaved
-// changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
+// a tab shows it. A click on its close button or a middle click closes it. A right-click opens
+// the tab's menu (close the others, the tabs to its left or right, the clean tabs, all of them,
+// copy its path). A tab with unsaved changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
-import { effect, platform, Scroll, signal, Text, View, type MouseEvent, type ViewRef } from "nsh";
+import { effect, platform, Scroll, signal, Text, View, type ContextMenuEvent, type MouseEvent, type ViewRef } from "nsh";
 import { Icon, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
@@ -98,6 +99,7 @@ function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
       onMouseUp={(e: MouseEvent) => {
         if (e.button === "middle") then(() => Tabs.close(i));
       }}
+      onContextMenu={(e: ContextMenuEvent) => then(() => Tabs.openMenu(i, e.pagePosition.x, e.pagePosition.y))}
     >
       <Label font={props.font} on={props.tab().on} text={props.tab().name} />
       {/* Only the mark's square takes the click, not the tab's full height. */}
