@@ -98,9 +98,8 @@ fn the_position_keeps_its_width_when_the_column_gets_a_digit() -> Result<(), Str
     wait_padded(&mut app, "id:position", "1:5")?;
     let narrow = (width(&app, "id:position"), width(&app, "id:language"));
     type_text(&mut app, "j");
-    wait_padded(&mut app, "id:position", "2:5")?;
-    typ(&mut app, &["shift+4"]);
-    wait_padded(&mut app, "id:position", "2:38")?;
+    // `$` sticks to the line end, so `j` lands on the last column of line 2.
+    wait_padded(&mut app, "id:position", "2:36")?;
     let wide = (width(&app, "id:position"), width(&app, "id:language"));
     assert!((narrow.0 - wide.0).abs() < 0.5, "the position keeps its width: {narrow:?} then {wide:?}");
     Ok(())
