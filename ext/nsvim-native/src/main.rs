@@ -21,7 +21,10 @@ use nsvim_native::args::{self, Command};
 use nsvim_native::{ipc, timing};
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-fn main() -> impl std::process::Termination {
+mod tui;
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+fn main() -> std::process::ExitCode {
     timing::start();
     if let Some(code) = without_window() {
         use std::io::Write;
@@ -29,6 +32,9 @@ fn main() -> impl std::process::Termination {
         std::process::exit(code);
     }
     timing::mark("arguments and running-editor check");
+    if args::wants_tui() {
+        return tui::main();
+    }
     // The screens are App.tsx, built to `nsh/bundle.nshc` next to this program (`nsh build`, or
     // `nsh run` in development). The runner reads it and links the app's Rust components.
     platform::set_ui_sets(vec![nsh_base::registry(), nsvim_native::registry()]);
@@ -55,8 +61,11 @@ fn without_window() -> Option<i32> {
             println!("nsvim {}", env!("CARGO_PKG_VERSION"));
             return Some(0);
         }
-        Command::Open { wait, new } => (wait, new),
+        Command::Open { wait, new, .. } => (wait, new),
     };
+    if args::wants_tui() {
+        return None;
+    }
     if new {
         return None;
     }

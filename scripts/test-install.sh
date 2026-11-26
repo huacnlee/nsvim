@@ -253,13 +253,14 @@ if command -v python3 >/dev/null; then
   printf '#!/bin/sh\necho packaged\n' > "$root/stage/build/nsvim"
   echo bytecode > "$root/stage/build/nsh/bundle.nshc"
   echo 'export {}' > "$root/stage/build/nsh/bundle.js"
+  echo "{}" > "$root/stage/build/nsh/bundle.js.map"
   echo '{"id":"dev.nsvim.app"}' > "$root/stage/build/nsh/app.json"
   TMPDIR="$root/tmp" python3 "$here/package-release.py" --target x86_64-unknown-linux-gnu --version "$version" \
     --binary "$root/stage/build/nsvim" --nsh "$root/stage/build/nsh" --output "$root/fixtures" > "$root/out" 2>&1
   mv "$root/fixtures/nsvim-$version-x86_64-unknown-linux-gnu.tar.gz.sha256" "$root/fixtures/SHA256SUMS"
   run_install --dir "$dest"
   check "$name" '[ "$status" -eq 0 ] && [ "$("$dest/share/nsvim/nsvim")" = packaged ]' &&
-    check "$name" '[ -f "$dest/share/nsvim/nsh/bundle.nshc" ] && [ ! -e "$dest/share/nsvim/nsh/bundle.js" ]' &&
+    check "$name" '[ -f "$dest/share/nsvim/nsh/bundle.nshc" ] && [ -f "$dest/share/nsvim/nsh/bundle.js" ] && [ ! -e "$dest/share/nsvim/nsh/bundle.js.map" ]' &&
     check "$name" 'grep -q "\"name\":\"nsvim\"" "$dest/share/nsvim/nsh/app.json"' &&
     check "$name" 'grep -qx "StartupWMClass=dev.nsvim.app" "$dest/share/applications/nsvim.desktop"' &&
     check "$name" 'grep -qx "Icon=nsvim" "$dest/share/applications/nsvim.desktop"' && ok "$name"

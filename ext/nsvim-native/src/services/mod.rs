@@ -102,6 +102,11 @@ pub enum Event {
     Setup(probe::Answer),
     /// The old folders were copied to the new names: the line to show.
     Migrated(String),
+    /// A change to the project's files that the tree asked for is done, or failed.
+    FsDone {
+        op: io::FsOp,
+        result: Result<(), String>,
+    },
     /// The start of a file, for the finder's preview.
     Preview {
         path: PathBuf,
@@ -258,7 +263,13 @@ impl Services {
         let _ = self.io.send(io::Job::Write { what, path, text });
     }
 
+    /// Makes, moves or deletes a file or folder. Sends `Event::FsDone`.
+    pub fn fs(&self, op: io::FsOp) {
+        let _ = self.io.send(io::Job::Fs(op));
+    }
+
     /// Tells the index these paths changed. It walks the project again when one came or went.
+    /// An empty list makes it walk the project again in any case.
     pub fn files_changed(&self, paths: Vec<PathBuf>) {
         let _ = self.index.send(paths);
     }

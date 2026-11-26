@@ -341,3 +341,22 @@ fn cmdline_moves_deletes_and_recalls() {
     assert_eq!(e.doc().view.top, 0);
     assert!(!super::confirming(&e.vim));
 }
+
+#[test]
+fn file_commands_return_actions() {
+    let mut e = ed("x\n");
+    assert_eq!(run_ex(&mut e, "NewFile src/a.rs"), vec![Action::NewFile("src/a.rs".into())]);
+    assert_eq!(run_ex(&mut e, "Mkdir  docs/notes "), vec![Action::NewFolder("docs/notes".into())]);
+    assert_eq!(run_ex(&mut e, "Move src/b.rs"), vec![Action::MovePath("src/b.rs".into())]);
+    assert_eq!(run_ex(&mut e, "Delete"), vec![Action::DeletePath { force: false }]);
+    assert_eq!(run_ex(&mut e, "Delete!"), vec![Action::DeletePath { force: true }]);
+    assert_eq!(run_ex(&mut e, "Open ../other"), vec![Action::OpenFolder("../other".into())]);
+    assert_eq!(run_ex(&mut e, "cd ~/work"), vec![Action::OpenFolder("~/work".into())]);
+    assert_eq!(run_ex(&mut e, "Open"), vec![Action::OpenProject]);
+    for line in ["NewFile", "Mkdir", "Move ", "cd"] {
+        assert_eq!(run_ex(&mut e, line), vec![Action::Error("E471: Argument required".into())], "{line}");
+    }
+    // Vim's own `:delete` still deletes lines.
+    run_ex(&mut e, "delete");
+    assert_eq!(text(&e), "");
+}

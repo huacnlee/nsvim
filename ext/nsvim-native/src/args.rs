@@ -12,7 +12,7 @@ use editor::buffer::Pos;
 const USAGE: &str = "nsvim: a modal code editor. Read fast. Edit quick.
 
 Usage:
-  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new]
+  nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
   PROGRAM ctl COMMAND [ARGS]
   PROGRAM mcp
 
@@ -26,14 +26,18 @@ Examples:
   nvim src/main.rs:42         open a file at line 42, in the project around it
   nvim --wait NOTES.md        return when its buffer closes, for $EDITOR and git
   nvim --new                  open a new window, also when one runs for the project
+  nvim -g src/main.rs         open a window, from a terminal
   PROGRAM ctl --help          drive the running editor
   PROGRAM mcp                 serve the running editor to AI agents, over stdio
 
-A path opens in the editor already running for its project, when there is one.
+In a terminal, nsvim edits in that terminal, like vim. Started from a launcher, or with -g,
+it opens a window. A path opens in the window already running for its project, when there
+is one.
 
 Options:
   --wait          return when the last file's buffer closes
   --new           open a new window
+  -g              open a window, also from a terminal
   -h, --help      print this help
   -V, --version   print the version
 
@@ -85,6 +89,8 @@ pub enum Command {
     Open {
         wait: bool,
         new: bool,
+        /// `-g`: open a window, also when started in a terminal.
+        window: bool,
     },
 }
 
@@ -96,8 +102,28 @@ pub fn command(argv: &[String]) -> Command {
         Some("mcp") => Command::Mcp,
         Some("-h" | "--help") => Command::Help,
         Some("-V" | "--version") => Command::Version,
-        _ => Command::Open { wait: argv.iter().any(|a| a == "--wait"), new: argv.iter().any(|a| a == "--new") },
+        _ => {
+            let has = |flag: &str| argv.iter().skip(1).any(|a| a == flag);
+            Command::Open { wait: has("--wait"), new: has("--new"), window: has("-g") }
+        }
     }
+}
+
+/// True when this run edits in the terminal, as vim does: it was started in a terminal
+/// (stdin and stdout are one) without `-g`, or on Linux with no display. A launcher, `nsh run`
+/// and the Windows window program have no terminal, so they open a window.
+pub fn wants_tui() -> bool {
+    use std::io::IsTerminal;
+    let argv: Vec<String> = std::env::args().collect();
+    let window = matches!(command(&argv), Command::Open { window: true, .. });
+    let terminal = std::io::stdin().is_terminal() && std::io::stdout().is_terminal();
+    let no_display = cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none();
+    in_terminal(window, terminal, no_display, std::env::var_os("NSH_DEV_APP_DIR").is_some())
+}
+
+/// `wants_tui` with its inputs given. No display wins over `-g`: there is no window to open.
+fn in_terminal(window: bool, terminal: bool, no_display: bool, dev: bool) -> bool {
+    !dev && (no_display || (terminal && !window))
 }
 
 /// The project root and the files to open, with a cursor position when one was given.
@@ -119,7 +145,7 @@ pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option
             line = n.parse::<usize>().ok().map(|n| n.saturating_sub(1));
             continue;
         }
-        if a.starts_with("--") {
+        if a.starts_with("--") || a == "-g" {
             continue;
         }
         let (p, at) = split_line(a.as_str());
@@ -237,9 +263,19 @@ mod tests {
         assert_eq!(command(&argv(&["mcp", "--help"])), Command::McpHelp);
         assert_eq!(command(&argv(&["-h"])), Command::Help);
         assert_eq!(command(&argv(&["--version"])), Command::Version);
-        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false });
-        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true });
-        assert_eq!(command(&argv(&[])), Command::Open { wait: false, new: false });
+        assert_eq!(command(&argv(&["a.rs", "--wait"])), Command::Open { wait: true, new: false, window: false });
+        assert_eq!(command(&argv(&["--new"])), Command::Open { wait: false, new: true, window: false });
+        assert_eq!(command(&argv(&[])), Command::Open { wait: false, new: false, window: false });
+        assert_eq!(command(&argv(&["-g", "a.rs"])), Command::Open { wait: false, new: false, window: true });
+    }
+
+    #[test]
+    fn a_terminal_start_edits_in_the_terminal() {
+        assert!(in_terminal(false, true, false, false));
+        assert!(!in_terminal(true, true, false, false), "-g opens a window");
+        assert!(!in_terminal(false, false, false, false), "a launcher opens a window");
+        assert!(in_terminal(true, false, true, false), "no display, no window");
+        assert!(!in_terminal(false, true, false, true), "nsh run opens a window");
     }
 
     #[test]

@@ -22,8 +22,12 @@ pub fn family(name: &str) -> &'static str {
     list
 }
 
-/// Rows of code are this tall: the font size times the line height, on whole points.
+/// Rows of code are this tall: the font size times the line height, on whole points. In a
+/// terminal a row is one cell, whatever the font settings say.
 pub fn row_height(app: &App) -> f32 {
+    if crate::terminal() {
+        return crate::TERMINAL_CELL_H;
+    }
     (app.cfg.font.size * app.cfg.font.line_height).round().max(app.cfg.font.size + 2.0)
 }
 

@@ -2,6 +2,7 @@
 //! setup, git, the project index). `poll` applies what the background workers send.
 
 pub mod actions;
+pub mod files;
 pub mod fx;
 pub mod ipc;
 pub mod key_list;
@@ -96,6 +97,10 @@ pub struct Tree {
     pub width: f32,
     /// Each folder's children, rebuilt when the project's files change.
     pub index: tree::TreeIndex,
+    /// A delete that waits for `y`.
+    pub confirm: Option<PathBuf>,
+    /// The file or folder that `x` cut, which `p` moves.
+    pub cut: Option<PathBuf>,
 }
 
 /// Sizes the view measured, which key handling needs (rows for Ctrl-d, columns for clicks).
@@ -251,6 +256,8 @@ impl App {
                 follow: tree::Follow::No,
                 width: cfg.ui.tree_width,
                 index: tree::TreeIndex::default(),
+                confirm: None,
+                cut: None,
             },
             cfg,
             screen,
@@ -480,6 +487,7 @@ impl App {
             Event::Setup(answer) => self.setup_answer(answer),
             Event::Update(checked) => self.update_checked(checked),
             Event::Migrated(line) => self.ed.message(line),
+            Event::FsDone { op, result } => self.fs_done(op, result),
             Event::Omarchy(o) => {
                 if o.is_some() {
                     self.omarchy = o;
@@ -662,24 +670,6 @@ impl App {
         self.font_family = crate::geometry::family(&self.cfg.font.family);
         self.tree.width = self.cfg.ui.tree_width;
         self.apply_doc_opts();
-    }
-
-    /// Opens the folders above `path` in the tree.
-    pub fn reveal_in_tree(&mut self, path: &Path) {
-        let Ok(rel) = path.strip_prefix(&self.ed.root) else { return };
-        self.settle_tree_top();
-        self.tree.follow = tree::Follow::Center;
-        let mut acc = String::new();
-        if let Some(parent) = rel.parent() {
-            for c in parent.components() {
-                if !acc.is_empty() {
-                    acc.push('/');
-                }
-                acc.push_str(&c.as_os_str().to_string_lossy());
-                self.tree.open.insert(acc.clone());
-            }
-        }
-        self.tree.sel = Some(rel.to_string_lossy().replace('\\', "/"));
     }
 
     /// Opens `path` (relative to the root, or absolute), or switches to it when it is open.

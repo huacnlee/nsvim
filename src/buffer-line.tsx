@@ -4,7 +4,7 @@
 // changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
-import { signal, Text, View, type MouseEvent } from "nsh";
+import { platform, signal, Text, View, type MouseEvent } from "nsh";
 import { Icon, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
@@ -46,6 +46,14 @@ function Label(props: { font: () => Font; on?: boolean; text: string; class?: st
 /** The mark of a tab: a small solid square while it has unsaved changes, else an X. The square sits in a
  * box as large as the X, so the tab keeps its width. */
 function Mark(props: { font: () => Font; index: number; dirty: boolean }) {
+  // A terminal has no box smaller than a cell: the square is a char there, or the button
+  // would show its label ("Close") as its text.
+  if (props.dirty && platform.idiom === "terminal")
+    return (
+      <Text class="text-warning" accessibilityLabel="Unsaved changes" testID={`tab-mark-${props.index}`}>
+        ●
+      </Text>
+    );
   return (
     <If
       when={props.dirty}

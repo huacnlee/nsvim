@@ -42,7 +42,11 @@ impl App {
         tx.choose_folder(start, |a, picked, tx| match picked {
             Ok(Some(root)) => a.open_project(root, tx),
             Ok(None) => {}
-            Err(e) => a.ed.error(format!("no folder dialog: {e}. Run `nvim <folder>` instead")),
+            // A terminal has no folder dialog: type the folder on the command line.
+            Err(_) => {
+                let start = super::tilde(&a.ed.root.parent().map(Path::to_path_buf).unwrap_or_else(|| a.ed.root.clone()));
+                editor::vim::open_cmdline(&mut a.ed, ':', &format!("Open {}/", start.trim_end_matches('/')));
+            }
         });
     }
 }

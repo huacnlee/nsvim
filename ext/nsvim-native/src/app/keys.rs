@@ -112,6 +112,10 @@ impl App {
             self.after_keymap(actions, tx);
             return;
         }
+        // A delete waits for `y` only while the tree keeps the keyboard.
+        if !(self.tree.focus && self.tree.show) {
+            self.tree.confirm = None;
+        }
         if self.tree.focus && self.tree.show && self.tree_key(k, tx) {
             return;
         }

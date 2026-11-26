@@ -129,11 +129,18 @@ jobs:
           TARGETS: ${{ matrix.targets }}
         run: |
           for target in $TARGETS; do
-            cargo build --release --locked -p nsvim-native --bin nsvim --target "$target"
             binary="target/$target/release/nsvim"
-            if [ "$RUNNER_OS" = Windows ]; then binary="$binary.exe"; fi
+            tui=()
+            if [ "$RUNNER_OS" = Windows ]; then
+              # nsvim.exe is a window program. The terminal editor is its own console program.
+              cargo build --release --locked -p nsvim-native --bin nsvim --bin nsvim-tui --target "$target"
+              binary="$binary.exe"
+              tui=(--tui-binary "target/$target/release/nsvim-tui.exe")
+            else
+              cargo build --release --locked -p nsvim-native --bin nsvim --target "$target"
+            fi
             python scripts/package-release.py --target "$target" --version "$RELEASE_VERSION" \
-              --binary "$binary" --nsh .nsh/release --output dist
+              --binary "$binary" "${tui[@]}" --nsh .nsh/release --output dist
           done
 
       - name: Check the archives
@@ -144,10 +151,10 @@ jobs:
         run: |
           for target in $TARGETS; do
             case "$target" in
-              *windows*) archive="dist/nsvim-$RELEASE_VERSION-$target.zip"; need="nsvim.exe nsh/bundle.nshc nsh/app.json nsh/icon.ico" ;;
+              *windows*) archive="dist/nsvim-$RELEASE_VERSION-$target.zip"; need="nsvim.exe nsvim-tui.exe nsh/bundle.nshc nsh/bundle.js nsh/app.json nsh/icon.ico" ;;
               *apple-darwin) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"
-                need="nsvim.app/Contents/MacOS/nsvim nsvim.app/Contents/Info.plist nsvim.app/Contents/Resources/nsh/bundle.nshc" ;;
-              *) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"; need="nsvim nsh/bundle.nshc packaging/nsvim.desktop packaging/nsvim.svg" ;;
+                need="nsvim.app/Contents/MacOS/nsvim nsvim.app/Contents/Info.plist nsvim.app/Contents/Resources/nsh/bundle.nshc nsvim.app/Contents/Resources/nsh/bundle.js" ;;
+              *) archive="dist/nsvim-$RELEASE_VERSION-$target.tar.gz"; need="nsvim nsh/bundle.nshc nsh/bundle.js packaging/nsvim.desktop packaging/nsvim.svg" ;;
             esac
             python - "$archive" $need <<'PY'
           import sys, tarfile, zipfile

@@ -37,6 +37,25 @@ pub enum IconName {
 }
 
 impl IconName {
+    /// The text that stands for the icon in a terminal, one cell wide.
+    pub fn glyph(self) -> &'static str {
+        match self {
+            IconName::ArrowRight => "→",
+            IconName::Check => "✓",
+            IconName::ChevronDown => "▾",
+            IconName::ChevronRight => "▸",
+            IconName::Circle => "○",
+            IconName::CircleDot => "◉",
+            IconName::Diff => "±",
+            IconName::Dot => "●",
+            IconName::GitBranch => "⎇",
+            IconName::GitCompareArrows => "⇄",
+            IconName::Minus => "-",
+            IconName::Plus => "+",
+            IconName::X => "×",
+        }
+    }
+
     fn icon(self) -> icons::Icon {
         match self {
             IconName::ArrowRight => Lucide::ArrowRight,
@@ -78,13 +97,20 @@ pub struct IconProps {
 #[component]
 pub fn Icon(props: IconProps) -> impl IntoElement {
     let (name, width) = (props.name, props.stroke_width);
+    let label = props.label;
+    // A terminal draws no vectors: the icon is a char in the text colour.
+    if crate::terminal() {
+        return text(move || name.get().glyph())
+            .flex_shrink_0()
+            .accessibility_elements_hidden(move || label.get().is_none())
+            .into_element();
+    }
     let src = move || {
         let icon = name.get().icon();
         let w = width.get();
         if w == 2.0 { icons::src(icon) } else { icons::src_with_stroke_width(icon, w) }
     };
     let size = props.size;
-    let label = props.label;
     svg(src)
         .size(move || px(size.get()))
         .flex_shrink_0()
@@ -92,4 +118,5 @@ pub fn Icon(props: IconProps) -> impl IntoElement {
         .accessibility_elements_hidden(move || label.get().is_none())
         .role(AccessibilityRole::Image)
         .label(move || label.get().unwrap_or_default())
+        .into_element()
 }

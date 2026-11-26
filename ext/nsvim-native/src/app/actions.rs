@@ -54,6 +54,11 @@ impl App {
                     self.tree.focus = false;
                 }
                 Action::FocusTree => self.focus_tree(),
+                a @ (Action::OpenFolder(_)
+                | Action::NewFile(_)
+                | Action::NewFolder(_)
+                | Action::MovePath(_)
+                | Action::DeletePath { .. }) => self.file_action(a, tx),
                 Action::CloseBuffer => self.close_active(false, false, tx),
                 Action::NextBuffer => self.cycle_buffer(1),
                 Action::PrevBuffer => self.cycle_buffer(-1),

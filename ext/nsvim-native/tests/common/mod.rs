@@ -64,6 +64,11 @@ pub fn engine(pending: nsvim_native::Pending) -> Headless {
     nsvim_native::launch_next(pending);
     let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ui_sets: ui_sets(), ..EngineConfig::new(app) };
     config.environment.os = Os::Linux;
+    // The terminal editor (`nsvim` in a terminal): a terminal of 110 x 24 cells of 8 x 16 points.
+    if nsvim_native::terminal() {
+        config.environment.idiom = nsh_core::platform::Idiom::Terminal;
+        config.viewport = Size::new(Points(880.0), Points(384.0));
+    }
     let mut ui = Headless::start(config).unwrap();
     let start = std::time::Instant::now();
     while !nsvim_native::launch_taken() {
