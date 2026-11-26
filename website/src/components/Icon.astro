@@ -1,0 +1,11 @@
+---
+// The page's small icons, drawn as SVG in the text's colour. The page uses icons, never emoji
+// or symbol characters such as ↗ or ✓, which some systems draw as coloured emoji.
+interface Props { name: 'external' | 'check' | 'chevron-down' }
+const { name } = Astro.props;
+---
+<svg class={`icon icon-${name}`} aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  {name === 'external' && <path d="M5.5 4.5h6v6M11.5 4.5l-7 7" />}
+  {name === 'check' && <path d="M3.5 8.5l3 3 6-7" />}
+  {name === 'chevron-down' && <path d="M4 6l4 4 4-4" />}
+</svg>

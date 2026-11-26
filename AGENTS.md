@@ -66,6 +66,9 @@ HOME=$S/home XDG_CONFIG_HOME=$S/config XDG_STATE_HOME=$S/state nsh run
 - Keep files under 800 lines. Tests go in a sibling `*_tests.rs` file or in `ext/nsvim-native/tests/`.
 - Text: ASD-STE100 Simplified Technical English in comments, docs and messages. Short
   sentences, active voice, no em dashes or semicolons in prose.
+- No emoji in any interface: the app, the website or the docs site. Where a mark helps, draw an
+  icon (SVG, as `website/src/components/Icon.astro`). Symbol characters such as ↗ or ✓ count
+  as emoji, because some systems draw them in colour.
 - Never add AI attribution to commits, code or docs.
 
 ## Talking to a running editor

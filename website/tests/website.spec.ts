@@ -38,8 +38,8 @@ test('the origin section credits the original authors in both languages', async 
     await page.goto(route);
     const origin = page.locator('#origin');
     await expect(origin).toContainText('Bjarne Oeverli');
-    await expect(origin.getByRole('link', { name: 'bjarneo/editor ↗' })).toHaveAttribute('href', 'https://github.com/bjarneo/editor');
-    await expect(origin.getByRole('link', { name: 'LICENSE ↗' })).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/LICENSE');
+    await expect(origin.getByRole('link', { name: 'bjarneo/editor', exact: true })).toHaveAttribute('href', 'https://github.com/bjarneo/editor');
+    await expect(origin.getByRole('link', { name: 'LICENSE', exact: true })).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/LICENSE');
   }
 });
 
@@ -53,27 +53,39 @@ test('the header draws the N with its left stroke in the brand color', async ({ 
   }
 });
 
-test('the editor slot changes mode with keys and buttons', async ({ page }) => {
+test('the editor slot shows a still model with the classic keys', async ({ page }) => {
   test.skip(live, 'the live editor takes its own keys');
   await page.goto('./');
   const mock = page.locator('.editor-demo .mock');
-  await expect(mock).toHaveAttribute('data-mode', 'normal');
+  await expect(mock).toBeVisible();
+  await expect(mock.locator('.m-pos')).toHaveText('Ln 5, Col 9');
+  await expect(page.locator('.editor-demo button')).toHaveCount(0);
   await page.locator('body').press('i');
-  await expect(mock).toHaveAttribute('data-mode', 'insert');
-  await expect(page.locator('#mock-pill')).toHaveText('INSERT');
-  await page.getByRole('button', { name: /VISUAL/ }).click();
-  await expect(mock).toHaveAttribute('data-mode', 'visual');
-  await page.locator('body').press(':');
-  await expect(mock).toHaveAttribute('data-mode', 'command');
-  await page.locator('body').press('Escape');
-  await expect(mock).toHaveAttribute('data-mode', 'normal');
-  await expect(page.getByRole('button', { name: /NORMAL/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(mock).not.toHaveAttribute('data-mode');
 });
 
 test('the editor slot shows the live build when public/demo has one', async ({ page }) => {
   test.skip(!live, 'no live build in public/demo');
   await page.goto('./');
   await expect(page.locator('.editor-demo iframe')).toHaveAttribute('src', '/nsvim/demo/');
+  // A phone lays the frame out at the editor's least width and scales it down to fit.
+  await page.setViewportSize({ width: 375, height: 800 });
+  const frame = page.locator('.editor-demo iframe');
+  await expect(frame).toHaveCSS('width', '640px');
+  await expect(frame).toHaveCSS('transform', /^matrix\(0\.5/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
+
+test('the page draws icons, never emoji or symbol characters', async ({ page }) => {
+  for (const route of ['./', './zh-CN/']) {
+    await page.goto(route);
+    const text = await page.locator('body').innerText();
+    expect(text).not.toMatch(/[\u2190-\u21ff\u2300-\u23ff\u25a0-\u27bf\u2b00-\u2bff\u{1f000}-\u{1faff}\ufe0f]/u);
+    expect(await page.locator('#origin .icon-external').count()).toBe(3);
+    await page.locator('#language-toggle').click();
+    await expect(page.locator('#language-menu [aria-checked=true] .icon-check')).toBeVisible();
+    await expect(page.locator('#language-menu [aria-checked=false] .icon-check')).toBeHidden();
+  }
 });
 
 test('related projects link to the other projects in both languages', async ({ page }) => {
@@ -162,7 +174,7 @@ test('the installers are served next to the pages', async ({ page }) => {
   await expect(page.locator('#panel-linux .script-link')).toHaveAttribute('href', 'https://github.com/huacnlee/nsvim/blob/main/scripts/install.sh');
   await page.goto('./zh-CN/');
   await expect(page.getByRole('tab', { name: '从源码构建', exact: true })).toBeVisible();
-  await expect(page.locator('#panel-linux .script-link')).toHaveText('查看安装脚本 ↗');
+  await expect(page.locator('#panel-linux .script-link')).toHaveText('查看安装脚本');
 });
 
 for (const [width, height] of [[360, 640], [1440, 900]]) {
