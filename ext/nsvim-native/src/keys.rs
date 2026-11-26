@@ -2,6 +2,19 @@
 
 use editor::editor::{KeyCode, KeyInput};
 use nsh_core::KeyEvent;
+use nsh_core::platform::Os;
+
+/// macOS's quit key (`⌘ Q`): whether `ev` is it, and if so, whether the editor must answer
+/// it. `Workspace` captures every key (`KeyCapture::All`), so NSH gives it the keys that macOS
+/// keeps for its menu too. The Quit item then never sees `⌘ Q`, and the editor asks to quit
+/// itself (`Some(true)`). A `⌘ Q` that the view did not capture goes on to the Quit item, which
+/// asks once (`Some(false)`). A second ask here would count as the second close press and quit
+/// over unsaved edits. No keymap gets `⌘ Q` on macOS.
+pub fn mac_quit_key(ev: &KeyEvent, os: Os) -> Option<bool> {
+    let m = ev.modifiers;
+    let quit = os == Os::MacOs && m.cmd && !m.ctrl && !m.alt && !m.shift && ev.key.eq_ignore_ascii_case("q");
+    quit.then_some(ev.default_prevented)
+}
 
 /// The core's key for `ev`, or `None` for a key the keymaps do not use (a modifier alone).
 /// `apple` says whether Command is the shortcut key here (macOS). Elsewhere Control is, so it
@@ -61,6 +74,27 @@ mod tests {
         let mut shifted = ev("a", false);
         shifted.modifiers.shift = true;
         assert_eq!(convert(&shifted, false).map(|k| k.code), Some(KeyCode::Char('A')));
+    }
+
+    fn cmd(key: &str, captured: bool) -> KeyEvent {
+        let mut e = ev(key, false);
+        e.modifiers.cmd = true;
+        e.default_prevented = captured;
+        e
+    }
+
+    #[test]
+    fn cmd_q_on_macos_is_the_quit_key() {
+        assert_eq!(mac_quit_key(&cmd("q", true), Os::MacOs), Some(true));
+        assert_eq!(mac_quit_key(&cmd("Q", true), Os::MacOs), Some(true));
+        // Left to the menu: the Quit item asks, and no keymap gets the key.
+        assert_eq!(mac_quit_key(&cmd("q", false), Os::MacOs), Some(false));
+        // Off a Mac, Command is not the quit key.
+        assert_eq!(mac_quit_key(&cmd("q", true), Os::Linux), None);
+        let mut shifted = cmd("q", true);
+        shifted.modifiers.shift = true;
+        assert_eq!(mac_quit_key(&shifted, Os::MacOs), None);
+        assert_eq!(mac_quit_key(&ev("q", true), Os::MacOs), None);
     }
 
     #[test]

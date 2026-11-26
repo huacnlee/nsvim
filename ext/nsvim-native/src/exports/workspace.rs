@@ -138,6 +138,12 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
             if sink_focused.get_untracked() {
                 return;
             }
+            if let Some(captured) = keys::mac_quit_key(e, os()) {
+                if captured {
+                    s.close_requested();
+                }
+                return;
+            }
             if let Some(k) = keys::convert(e, apple_keys()) {
                 s.key(k);
             }
