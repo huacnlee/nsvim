@@ -227,7 +227,7 @@ fn setup_terminal_step_shows_what_runs() -> Result<(), String> {
     app.wait_until("no git command", Duration::from_secs(2), |s| !git(s))?;
     app.press("label:Set as $EDITOR and $VISUAL")?;
     app.press("label:Open NsVim with nvim, vim and vi")?;
-    app.wait_for("Nothing. nsvim stays inside its window.")?;
+    app.wait_for("Nothing. NsVim stays inside its window.")?;
     Ok(())
 }
 
