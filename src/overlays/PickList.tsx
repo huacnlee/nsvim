@@ -4,10 +4,13 @@
 import { signal, Text, View, type WheelEvent } from "nsh";
 import { Icon, Overlays, Shell, type PickList as Rows, type PickRow } from "nsvim-native";
 
-import { SIZE } from "./Titled";
+import { SIZE, TERM } from "./Titled";
 
-/** One row's height, in points. */
-const ROW_H = 22;
+/** One row's height, in points: one cell in a terminal. */
+const ROW_H = TERM ? 16 : 22;
+/** The list's padding above and below its rows (`pt-[10px] pb-[6px]`). A terminal has none:
+ * the border's cell is the gap. */
+const PAD_Y = TERM ? 0 : 16;
 /** Rows one notch of a mouse wheel scrolls. */
 const WHEEL_LINES = 3;
 
@@ -36,7 +39,7 @@ function Line(props: { row: PickRow }) {
 function Row(props: { row: PickRow; picked: boolean }) {
   return (
     <View
-      class="flex-row h-[22px] px-[8px] items-center cursor-pointer"
+      class={`flex-row ${TERM ? "h-[16px]" : "h-[22px]"} px-[8px] items-center cursor-pointer`}
       classList={{ "bg-surface-raised": props.picked, "hover:bg-surface-raised": !props.picked }}
       role="option"
       accessibilityLabel={props.row.label}
@@ -59,6 +62,11 @@ function Row(props: { row: PickRow; picked: boolean }) {
   );
 }
 
+/** How many whole rows fit in a list `height` points high, after its padding. */
+function fit(height: number) {
+  return Math.max(1, Math.floor((height - PAD_Y) / ROW_H));
+}
+
 /** The rows, or what the list shows when it has none (`empty`). */
 export function PickList(props: { empty: string }) {
   const list = signal<Rows>({ total: 0, rows: [] });
@@ -71,8 +79,8 @@ export function PickList(props: { empty: string }) {
   };
   return (
     <View
-      class="flex-1 min-h-0 pt-[10px] pb-[6px] overflow-hidden"
-      onLayout={({ bounds }) => Overlays.setPickFit(Math.max(1, Math.floor((bounds.size.height - 16) / ROW_H)))}
+      class={`flex-1 min-h-0 overflow-hidden ${TERM ? "" : "pt-[10px] pb-[6px]"}`}
+      onLayout={({ bounds }) => Overlays.setPickFit(fit(bounds.size.height))}
       onWheel={wheel}
     >
       <View class="flex-1" testID="picker-list">
