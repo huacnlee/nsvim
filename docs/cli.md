@@ -28,7 +28,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
 
 | Form | Does |
 | --- | --- |
-| `nvim` | Opens the current folder as the project, with the files of the last session. |
+| `nvim` | Opens the current folder as the project, with the files of the last session. In your home folder, it opens the last project you had open. |
 | `nvim .` | The same, for the folder you name. |
 | `nvim src/main.rs` | Opens the file, in the project around it. |
 | `nvim src/main.rs:42` | Opens the file with the cursor on line 42. |
@@ -66,7 +66,7 @@ window forward. `--new` skips this and always opens a new window.
 
 Started in a terminal, NsVim edits in that terminal, as vim does: over SSH, in tmux, or
 anywhere you type `nvim`. Started from a launcher (Finder, the Start menu, a desktop entry),
-it opens a window. `-g` opens a window from a terminal, like `gvim`. It is the same editor. It runs the same screens and the same Rust core, so
+it opens a window on the last project you had open, with its files and cursors. `-g` opens a window from a terminal, like `gvim`. It is the same editor. It runs the same screens and the same Rust core, so
 the keymaps, the finder, search, the file tree, git signs, the language servers, settings and
 the session all work as in the window. On Linux, NsVim also starts in the terminal when there
 is no display (`DISPLAY` and `WAYLAND_DISPLAY` are not set).
