@@ -4,7 +4,7 @@
 // changes shows a small square in place of the close mark. Rust owns the state (`Tabs` in
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
-import { platform, signal, Text, View, type MouseEvent } from "nsh";
+import { effect, platform, Scroll, signal, Text, View, type MouseEvent, type ViewRef } from "nsh";
 import { Icon, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
@@ -77,8 +77,18 @@ function Mark(props: { font: () => Font; index: number; dirty: boolean }) {
 /** Tab `index`. */
 function Tab(props: { tab: () => TabState; index: number; font: () => Font }) {
   const i = props.index;
+  let node: ViewRef | undefined;
+  // The tab that shows always stays in sight: when it becomes the one that shows, the line
+  // scrolls just enough to bring it in.
+  effect(() => {
+    if (props.tab().on) node?.reveal({ horizontal: "nearest", animated: false });
+  });
   return (
     <View
+      ref={(n) => {
+        node = n;
+        if (props.tab().on) n?.reveal({ horizontal: "nearest", animated: false });
+      }}
       class={frame(props.tab().on)}
       role="tab"
       accessibilityLabel={props.tab().name}
@@ -137,10 +147,21 @@ export function BufferLine() {
           </View>
         )}
       </If>
-      <Each of={tabs()} key="index">
-        {(tab, index) => <Tab tab={tab} index={index()} font={font} />}
-      </Each>
-      <View class="flex-1 self-stretch" />
+      {/* The tabs scroll sideways when they do not fit, and stop before the window controls.
+          The space after the last tab still drags the window. */}
+      <Scroll
+        horizontal
+        scrollbar={false}
+        class="flex-1 min-w-0 self-stretch"
+        contentClass="flex-row grow items-stretch"
+        testID="tabs"
+        desktop={DRAG}
+      >
+        <Each of={tabs()} key="index">
+          {(tab, index) => <Tab tab={tab} index={index()} font={font} />}
+        </Each>
+        <View class="flex-1 self-stretch" desktop={DRAG} />
+      </Scroll>
       <Controls side="right" />
     </View>
   );

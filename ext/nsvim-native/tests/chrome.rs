@@ -401,3 +401,41 @@ fn the_close_button_takes_only_its_square() -> Result<(), String> {
     assert_eq!(app.screen().count("role:tab")?, 2, "a press above the close button does not close the tab");
     Ok(())
 }
+
+/// The bounds of the view with test ID `id`, in the root's points, scroll offsets applied.
+fn page_bounds(app: &Headless, id: &str) -> Option<nsh_engine::Bounds<Points>> {
+    app.screen().layout_nodes().into_iter().find(|n| n.test_id.as_deref() == Some(id)).map(|n| n.bounds)
+}
+
+/// Whether the view `id` lies inside the tabs' scroll view, which stops before the window
+/// controls.
+fn tab_in_sight(app: &Headless, id: &str) -> bool {
+    let (Some(line), Some(tab)) = (page_bounds(app, "tabs"), page_bounds(app, id)) else { return false };
+    let (l0, l1) = (line.origin.x.0, line.origin.x.0 + line.size.width.0);
+    let (t0, t1) = (tab.origin.x.0, tab.origin.x.0 + tab.size.width.0);
+    t0 >= l0 - 0.5 && t1 <= l1 + 0.5
+}
+
+/// With more tabs than fit, the line scrolls sideways and keeps the tab that shows in sight,
+/// and the tabs never run under the window controls at its end.
+#[test]
+fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String> {
+    let dir = scratch();
+    let names: Vec<String> = (0..30).map(|i| format!("a_long_file_name_{i:02}.txt")).collect();
+    let paths: Vec<_> = names.iter().map(|n| write(dir.path(), n, &format!("text {n}\n"))).collect();
+    let refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
+    let mut app = start_files(&refs, None);
+    app.wait_for("text:/text a_long_file_name_29/")?;
+    let line = page_bounds(&app, "buffer-line").ok_or("no buffer line")?;
+    let tabs = page_bounds(&app, "tabs").ok_or("no tabs")?;
+    assert!(tabs.origin.x.0 + tabs.size.width.0 <= line.origin.x.0 + line.size.width.0 + 0.5, "tabs {tabs:?} in {line:?}");
+    let _ = app.wait_until("the last tab is in sight", WAIT, |_| false);
+    assert!(tab_in_sight(&app, "tab-29"), "tab {:?} in {tabs:?}", page_bounds(&app, "tab-29"));
+    assert!(!tab_in_sight(&app, "tab-0"), "the first tab scrolled away");
+    // Back to the first tab (as a key or the tree would): the line scrolls back to it.
+    app.press("id:tab-0")?;
+    app.wait_for("text:/text a_long_file_name_00/")?;
+    let _ = app.wait_until("settle", Duration::from_millis(300), |_| false);
+    assert!(tab_in_sight(&app, "tab-0"), "tab {:?} in {tabs:?}", page_bounds(&app, "tab-0"));
+    Ok(())
+}
