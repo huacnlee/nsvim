@@ -330,6 +330,7 @@ fn every_palette_command_does_what_it_says() {
     f.keys("x");
     run_check(&mut f, t, "close-others", "close-others keeps only e.txt", move |a| names(a) == "e.txt");
     open(&mut f, &more[0]);
+    f.update(|a, _| a.ed.msg = None);
     run_check(&mut f, t, "close-clean", "close-clean keeps the modified e.txt", move |a| {
         names(a) == "e.txt" && a.ed.msg.as_ref().is_none_or(|m| !m.error)
     });
