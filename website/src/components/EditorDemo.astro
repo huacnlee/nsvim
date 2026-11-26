@@ -1,58 +1,51 @@
 ---
 // The editor slot on the page. When `public/demo/index.html` exists (a static build of NsVim
 // for the web), the slot shows it in a frame at `<base>/demo/`. Without it, the slot shows
-// `Mock.astro`, a model of the window in HTML, with buttons for the four modes.
+// `Mock.astro`, a still model of the window in HTML.
 //
 // To ship the live editor: build it as static files and put them in `website/public/demo/`,
 // with `index.html` at the top. Use relative paths inside the bundle, as the site lives under
 // a base path (`/nsvim/demo/`). Nothing else on the page changes.
+//
+// The editor in the frame uses the classic keymap (`services::web::demo_app`): no modes.
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Mock from './Mock.astro';
 
-interface Props { label: string; intro: string; modes: { normal: string; visual: string; insert: string; command: string } }
-const { label, intro, modes } = Astro.props;
+interface Props { label: string }
+const { label } = Astro.props;
 const live = existsSync(resolve(process.cwd(), 'public/demo/index.html'));
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const keys = [
-  ['normal', 'Esc', modes.normal],
-  ['insert', 'i', modes.insert],
-  ['visual', 'v', modes.visual],
-  ['command', ':', modes.command],
-] as const;
 ---
 <div class="editor-demo" data-live={live ? 'true' : 'false'}>
   {live ? (
-    <iframe class="demo-frame" src={`${base}/demo/`} title={label} loading="lazy"></iframe>
+    <div class="demo-viewport"><iframe class="demo-frame" src={`${base}/demo/`} title={label} loading="lazy"></iframe></div>
   ) : (
-    <>
-      <div class="demo-screen" role="img" aria-label={label}><Mock /></div>
-      <div class="demo-modes" role="group" aria-label={intro}>
-        {keys.map(([id, key, name], i) => <button type="button" data-mode={id} aria-pressed={i === 0 ? 'true' : 'false'}><kbd>{key}</kbd>{name}</button>)}
-      </div>
-    </>
+    <div class="demo-screen" role="img" aria-label={label}><Mock /></div>
   )}
 </div>
 
 <script>
-  // The model answers the mode keys, as the editor does. The live editor takes its own keys.
-  const demo = document.querySelector<HTMLElement>('.editor-demo[data-live="false"]');
-  const mock = demo?.querySelector<HTMLElement>('.mock');
-  if (demo && mock) {
-    const pills: Record<string, string> = { normal: 'NORMAL', insert: 'INSERT', visual: 'V-LINE', command: 'COMMAND' };
-    const set = (mode: string) => {
-      mock.dataset.mode = mode;
-      demo.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-      const pill = mock.querySelector('#mock-pill');
-      if (pill) pill.textContent = pills[mode];
+  // The editor needs 640 points of width (its least window size). A narrower slot, as on a
+  // phone, lays the frame out 640 wide and scales it down to fit, so the whole window shows.
+  const LEAST = 640;
+  const viewport = document.querySelector<HTMLElement>('.demo-viewport');
+  const frame = viewport?.querySelector<HTMLIFrameElement>('iframe');
+  if (viewport && frame) {
+    const fit = () => {
+      const width = viewport.clientWidth;
+      const scale = Math.min(1, width / LEAST);
+      if (scale < 1) {
+        const height = width * 5 / 4;
+        frame.style.width = `${LEAST}px`;
+        frame.style.height = `${height / scale}px`;
+        frame.style.transform = `scale(${scale})`;
+        viewport.style.height = `${height}px`;
+      } else {
+        frame.style.width = frame.style.height = frame.style.transform = viewport.style.height = '';
+      }
     };
-    demo.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => b.addEventListener('click', () => set(b.dataset.mode || 'normal')));
-    document.addEventListener('keydown', event => {
-      if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
-      if ((event.target as Element | null)?.closest?.('input, textarea, select, [contenteditable], [role=menu]')) return;
-      const mode = ({ i: 'insert', v: 'visual', ':': 'command', Escape: 'normal' } as Record<string, string>)[event.key];
-      if (!mode || (mode === 'normal' && mock.dataset.mode === 'normal')) return;
-      set(mode);
-    });
+    new ResizeObserver(fit).observe(viewport);
+    fit();
   }
 </script>

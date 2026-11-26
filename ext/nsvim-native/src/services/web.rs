@@ -121,11 +121,15 @@ impl Disk {
     }
 }
 
-/// The app of the web build: the editor on the demo project, with the default config and the
-/// first file open. No setup, no control socket.
+/// The app of the web build: the editor on the demo project, with the first file open. No
+/// setup, no control socket. A visitor of the page may not know Vim, so the demo takes the
+/// classic keymap: typing types, as in any editor. The tree is narrower than the default, so
+/// that a small frame keeps room for the text.
 pub fn demo_app() -> crate::app::App {
     let mut cfg = crate::config::Config::default();
     cfg.ipc.enabled = false;
+    cfg.keys.map = "classic".into();
+    cfg.ui.tree_width = 200.0;
     let root = PathBuf::from(ROOT);
     let mut app = crate::app::App::new(cfg, root.clone(), false, None);
     app.to_open = vec![(root.join(FIRST), None)];
@@ -298,10 +302,11 @@ mod tests {
     }
 
     #[test]
-    fn the_demo_starts_in_the_editor_with_vim_keys_and_the_first_file() {
+    fn the_demo_starts_in_the_editor_with_classic_keys_and_the_first_file() {
         let app = demo_app();
         assert!(matches!(app.screen, crate::app::Screen::Editor), "the web has no setup screen");
-        assert!(app.is_vim());
+        assert!(!app.is_vim(), "the page's editor has no modes");
+        assert_eq!(app.cfg.keymap(), editor::editor::Keymap::Classic);
         assert!(!app.cfg.ipc.enabled);
         assert_eq!(app.to_open, [(at(FIRST), None)]);
     }
