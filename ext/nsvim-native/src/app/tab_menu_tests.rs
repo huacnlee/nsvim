@@ -60,6 +60,7 @@ fn close_clean_and_close_all_keep_the_tabs_with_unsaved_changes() {
     let mut a = app(&["a", "b", "c", "d"], 0, &[1, 3]);
     a.close_tabs(0, CloseTabs::Clean);
     assert_eq!(tabs(&a).0, names(&["b", "d"]));
+    assert!(a.ed.msg.is_none(), "close clean does not aim at the modified tabs");
     let mut a = app(&["a", "b", "c", "d"], 2, &[1, 3]);
     a.close_tabs(2, CloseTabs::All);
     assert_eq!(tabs(&a).0, names(&["b", "d"]));

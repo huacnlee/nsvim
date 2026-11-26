@@ -154,7 +154,12 @@ impl App {
             return;
         }
         let take: Vec<bool> = (0..n).map(|j| which.takes(i, j) && !self.ed.docs[j].buf.is_dirty()).collect();
-        let kept: Vec<String> = (0..n).filter(|&j| which.takes(i, j) && !take[j]).map(|j| self.ed.docs[j].buf.name()).collect();
+        // Close clean does not aim at the modified tabs, so it does not name them.
+        let kept: Vec<String> = if which == CloseTabs::Clean {
+            Vec::new()
+        } else {
+            (0..n).filter(|&j| which.takes(i, j) && !take[j]).map(|j| self.ed.docs[j].buf.name()).collect()
+        };
         let want = [self.ed.active, i].into_iter().find(|&j| j < n && !take[j]);
         for j in (0..n).rev().filter(|&j| take[j]) {
             self.drop_doc(j);
