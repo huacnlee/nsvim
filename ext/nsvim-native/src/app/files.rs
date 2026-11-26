@@ -153,13 +153,13 @@ impl App {
     }
 
     /// Open files at `path` or inside it with unsaved changes, by buffer index.
-    fn dirty_under(&self, path: &Path) -> Vec<usize> {
+    pub(super) fn dirty_under(&self, path: &Path) -> Vec<usize> {
         (0..self.ed.docs.len())
             .filter(|&i| self.ed.docs[i].buf.is_dirty() && self.ed.docs[i].buf.path.as_ref().is_some_and(|p| p.starts_with(path)))
             .collect()
     }
 
-    fn delete(&mut self, path: PathBuf, force: bool) {
+    pub(super) fn delete(&mut self, path: PathBuf, force: bool) {
         if path == self.ed.root || !path.starts_with(&self.ed.root) {
             return self.ed.error(format!("only files inside the project can be deleted: {}", path.display()));
         }
@@ -169,7 +169,7 @@ impl App {
         self.fs(FsOp::Delete(path));
     }
 
-    fn fs(&mut self, op: FsOp) {
+    pub(super) fn fs(&mut self, op: FsOp) {
         match &self.svc {
             Some(svc) => svc.fs(op),
             None => self.ed.error("the file worker is not running"),
