@@ -6,37 +6,6 @@ use editor::editor::{Action, KeyCode, KeyInput, Keymap, Mode};
 
 use super::{App, Overlay, Screen};
 
-/// The leader menu's entries: key, label, and whether it opens a group.
-pub const LEADER: &[(char, &str, bool)] = &[
-    ('f', "Find file…", false),
-    ('p', "Commands…", false),
-    ('o', "Open project…", false),
-    ('e', "File tree", false),
-    ('/', "Grep project…", false),
-    ('b', "Buffers…", false),
-    ('w', "Write", false),
-    ('q', "Close buffer", false),
-    ('d', "Diagnostics…", false),
-    (',', "Settings…", false),
-    ('?', "Every key…", false),
-    ('g', "+Git", true),
-    ('l', "+LSP", true),
-    ('a', "+Agent", true),
-];
-
-pub const LEADER_AGENT: &[(char, &str, bool)] =
-    &[('l', "Outside changes…", false), ('c', "Clear change marks", false), ('p', "Next proposal", false), ('n', "Clear the note", false)];
-
-pub const LEADER_GIT: &[(char, &str, bool)] =
-    &[('n', "Next change", false), ('p', "Previous change", false), ('s', "Status in tree", false)];
-pub const LEADER_LSP: &[(char, &str, bool)] = &[
-    ('d', "Definition", false),
-    ('r', "References…", false),
-    ('h', "Hover", false),
-    ('n', "Rename…", false),
-    ('a', "Code actions…", false),
-];
-
 /// The classic keymap's window shortcuts. They work with no file open. Settings keeps them out.
 pub fn classic_window_key(k: &KeyInput) -> Option<Action> {
     if !k.cmd {
@@ -189,15 +158,21 @@ impl App {
         self.run_actions(actions, tx);
     }
 
+    /// A key of the leader menu: a group opens, any other key runs its command. `SPC e` shows
+    /// and focuses the tree, and from the tree hides it. The leader menu and the palette run
+    /// the same commands, see `palette`.
     fn leader_key(&mut self, group: Option<char>, k: KeyInput, tx: &mut Tx) {
         self.overlay = Overlay::None;
         let KeyCode::Char(c) = k.code else { return };
-        let actions = match (group, c) {
-            (None, 'f') => vec![Action::FindFile],
-            (None, 'o') => vec![Action::OpenProject],
-            (None, 'p') => vec![Action::Palette],
-            (None, 'e') => {
-                // Show and focus the tree; from the tree, hide it again.
+        if group.is_none() {
+            if c == super::palette::PALETTE_KEY {
+                return self.run_actions(vec![Action::Palette], tx);
+            }
+            if super::palette::GROUPS.iter().any(|g| g.0 == c) {
+                self.overlay = Overlay::Leader(Some(c));
+                return;
+            }
+            if c == 'e' {
                 if self.tree.show && self.tree.focus {
                     self.tree.show = false;
                     self.tree.focus = false;
@@ -206,64 +181,14 @@ impl App {
                 }
                 return;
             }
-            (None, '/') => vec![Action::GrepProject],
-            (None, '?') => vec![Action::KeyList(String::new())],
-            (None, 'b') => vec![Action::PickBuffer],
-            (None, 'w') => vec![Action::Save(None)],
-            (None, 'q') => vec![Action::CloseBuffer],
-            (None, 'd') => vec![Action::Diagnostics],
-            (None, ',') => vec![Action::Settings],
-            (None, 'g') | (None, 'l') | (None, 'a') => {
-                self.overlay = Overlay::Leader(Some(c));
-                return;
-            }
-            (Some('g'), 'n') => {
-                self.jump_sign(true);
-                return;
-            }
-            (Some('g'), 'p') => {
-                self.jump_sign(false);
-                return;
-            }
-            (Some('g'), 's') => vec![Action::FocusTree],
-            (Some('l'), 'd') => vec![Action::GotoDefinition],
-            (Some('l'), 'r') => {
-                self.references();
-                return;
-            }
-            (Some('l'), 'n') => {
-                self.start_rename();
-                return;
-            }
-            (Some('l'), 'a') => vec![Action::CodeActions],
-            (Some('a'), 'l') => {
-                self.show_outside();
-                return;
-            }
-            (Some('a'), 'c') => {
-                self.clear_outside(None);
-                self.ed.message("change marks cleared");
-                return;
-            }
-            (Some('a'), 'p') => {
-                match self.proposals.first().map(|p| p.path.clone()) {
-                    Some(p) => self.open_path(p, None),
-                    None => self.ed.message("no proposals"),
-                }
-                return;
-            }
-            (Some('a'), 'n') => {
-                self.note = None;
-                return;
-            }
-            (Some('l'), 'h') => vec![Action::Hover],
-            _ => Vec::new(),
-        };
-        self.run_actions(actions, tx);
+        }
+        if let Some(cmd) = super::palette::leader_command(group, c) {
+            self.run_command(cmd.id, tx);
+        }
     }
 
     /// Moves to the next (or previous) git change in the gutter.
-    fn jump_sign(&mut self, forward: bool) {
+    pub(super) fn jump_sign(&mut self, forward: bool) {
         if !self.ed.has_doc() {
             return;
         }

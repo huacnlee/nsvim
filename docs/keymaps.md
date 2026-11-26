@@ -18,6 +18,10 @@ mode too.
 
 ### Leader menu
 
+The leader menu and the [command palette](#command-palette) run the same commands: each
+palette command has leader keys, and each leader key runs a palette command. The palette
+finds a command by name, the leader menu by keys.
+
 Press the leader alone to see these keys in a popup. Press a key from the popup, or click
 it. `Esc` or any other key closes the popup. With the Space leader, the status line shows
 `Space for keys`. A click on it opens the popup too.
@@ -26,11 +30,14 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | --- | --- |
 | `SPC f` | Find a file |
 | `SPC o` | Open a project: a recent one, or a folder from the system's dialog. See [Open a project](#open-a-project) |
+| `SPC O` | Open a folder from the system's dialog |
 | `SPC /` | Search the project with ripgrep |
 | `SPC b` | Pick an open buffer |
 | `SPC e` | Show and focus the file tree. From the tree, hide it |
 | `SPC w` | Write the buffer |
+| `SPC W` | Write every modified buffer |
 | `SPC q` | Close the buffer. A modified buffer stays open |
+| `SPC Q` | Quit. A modified buffer stops it |
 | `SPC d` | List the diagnostics of this file |
 | `SPC ,` | Open Settings |
 | `SPC ?` | Show every key, with search. See [Key list](#key-list) |
@@ -46,6 +53,13 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC a c` | Clear the outside-change marks |
 | `SPC a p` | Show the next agent proposal |
 | `SPC a n` | Clear the agent's note |
+| `SPC t n`, `SPC t p` | Next, previous tab |
+| `SPC y u`, `SPC y r` | Undo, redo one change |
+| `SPC y x`, `SPC y y`, `SPC y p` | Cut, copy, paste, on the Visual selection |
+| `SPC y a` | Select every line |
+| `SPC u w` | Turn soft wrap on or off |
+| `SPC u v`, `SPC u c` | Switch to the Neovim keymap, to the classic keymap |
+| `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
 
 The `SPC l` keys need a language server. See `docs/lsp.md`.
 
@@ -664,7 +678,9 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 
 The command palette runs any command by name. It holds every item of the application menu,
 so it is the menu on Linux and Windows, where nsvim's title bar hides the menu bar, and in
-the terminal editor. Each row shows its keys in the keymap you use. Type to filter.
+the terminal editor. It holds the same commands as the [leader menu](#leader-menu). Each row
+shows its keys in the keymap you use: in the Neovim keymap, its own keys first, then the
+leader keys. Type to filter.
 
 These keys open it:
 
@@ -679,23 +695,29 @@ It has these commands:
 | Command | Does |
 | --- | --- |
 | `Find file…` | Find a file |
-| `Find in project…` | Search the project |
 | `Open project…`, `Open folder…` | Open a project from the list, or from the system's folder dialog |
-| `Save`, `Save all` | Write the buffer, every modified buffer |
-| `Close tab`, `Next tab`, `Previous tab` | Close, go to the next, go to the previous tab |
-| `Undo`, `Redo` | Undo or redo one change |
-| `Cut`, `Copy`, `Paste`, `Select all` | The clipboard, on the selection or the Visual selection |
-| `Go to definition`, `Find references…`, `Rename symbol…`, `Code actions…` | Ask the language server |
 | `Toggle file tree` | Show or hide the file tree |
-| `Toggle soft wrap` | Turn soft wrap on or off |
+| `Find in project…` | Search the project |
+| `Buffers…` | Pick an open buffer |
+| `Save`, `Save all` | Write the buffer, every modified buffer |
+| `Close tab` | Close the tab |
+| `Quit` | Quit. A modified buffer stops it |
+| `Diagnostics…` | List the diagnostics of this file |
 | `Open settings…` | Open Settings |
-| `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
-| `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 | `Show every key…` | Show every key, with search |
+| `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
+| `Git: status in the tree` | Show and focus the file tree, with its git status letters |
+| `Go to definition`, `Find references…`, `Hover`, `Rename symbol…`, `Code actions…` | Ask the language server |
 | `Agent: list outside changes…` | List the changes made on disk from outside the editor |
 | `Agent: clear change marks` | Clear the outside-change marks |
 | `Agent: show the next proposal` | Show the next agent proposal |
-| `Quit` | Quit. A modified buffer stops it |
+| `Agent: clear the note` | Clear the agent's note |
+| `Next tab`, `Previous tab` | Go to the next, the previous tab |
+| `Undo`, `Redo` | Undo or redo one change |
+| `Cut`, `Copy`, `Paste`, `Select all` | The clipboard, on the selection or the Visual selection |
+| `Toggle soft wrap` | Turn soft wrap on or off |
+| `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
+| `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 
 ### Key list
 

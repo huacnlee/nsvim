@@ -265,11 +265,10 @@ impl App {
     /// The active file's diagnostics, in the picker.
     pub fn show_diagnostics(&mut self) {
         let Some((path, _)) = self.here() else { return };
-        let Some(m) = self.meta.get(&path) else { return };
-        if m.diags.is_empty() {
+        let Some(m) = self.meta.get(&path).filter(|m| !m.diags.is_empty()) else {
             self.ed.message("no diagnostics");
             return;
-        }
+        };
         let i = self.ed.active;
         let locs = m
             .diags

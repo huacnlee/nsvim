@@ -8,8 +8,8 @@ use editor::buffer::Buffer;
 use editor::syntax::highlight::{self, Kind};
 use nsh_core::prelude::*;
 
-use crate::app::keys::{LEADER, LEADER_AGENT, LEADER_GIT, LEADER_LSP};
 use crate::app::menu::ITEMS;
+use crate::app::palette::leader_menu;
 use crate::app::{App, Overlay, PickKind, Picker};
 use crate::ui::style::code_token;
 
@@ -176,15 +176,14 @@ pub(super) fn leader(a: &App) -> LeaderState {
         Overlay::Leader(g) => g,
         _ => None,
     };
-    let (title, items) = match group {
-        Some('g') => ("SPC g", LEADER_GIT),
-        Some('l') => ("SPC l", LEADER_LSP),
-        Some('a') => ("SPC a", LEADER_AGENT),
-        _ => (if a.ed.vim.leader == ' ' { "SPC" } else { "\\" }, LEADER),
+    let spc = if a.ed.vim.leader == ' ' { "SPC".to_string() } else { a.ed.vim.leader.to_string() };
+    let title = match group {
+        Some(g) => format!("{spc} {g}"),
+        None => spc,
     };
-    let items = items.iter().map(|&(k, label, group)| LeaderItem { key: k.to_string(), label: label.into(), group }).collect();
+    let items = leader_menu(group).into_iter().map(|(k, label, group)| LeaderItem { key: k.to_string(), label, group }).collect();
     let bottom = if a.is_vim() || a.ed.msg.is_some() { 54.0 } else { 32.0 };
-    LeaderState { title: title.into(), items, bottom }
+    LeaderState { title, items, bottom }
 }
 
 /// Whether the context menu's item `id` can run now. Cut and copy need a selection.
