@@ -60,6 +60,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC u w` | Turn soft wrap on or off |
 | `SPC u v`, `SPC u c` | Switch to the Neovim keymap, to the classic keymap |
 | `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
+| `SPC u S` | Run setup again. See [Setup](#setup) |
 
 The `SPC l` keys need a language server. See `docs/lsp.md`.
 
@@ -423,6 +424,7 @@ A command takes a range when the table shows one. The next section explains rang
 | `:Grep`, `:grep`, `:rg` | Search the project |
 | `:Explore`, `:Ex`, `:Tree` | Show or hide the file tree |
 | `:Settings`, `:settings` | Open Settings |
+| `:Setup` | Run setup again, from the config in use. See [Setup](#setup) |
 | `:Keys [words]`, `:help [words]`, `:h [words]` | Show every key. The words go in the search line |
 | `:Commands` | Open the command palette |
 | `:Rename name`, `:rename name` | Rename the symbol under the cursor, with the language server |
@@ -704,6 +706,7 @@ It has these commands:
 | `Quit` | Quit. A modified buffer stops it |
 | `Diagnostics…` | List the diagnostics of this file |
 | `Open settings…` | Open Settings |
+| `Run setup again…` | Show setup again, from the config in use |
 | `Show every key…` | Show every key, with search |
 | `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
 | `Git: status in the tree` | Show and focus the file tree, with its git status letters |
@@ -750,7 +753,9 @@ there.
 
 ### Setup
 
-The first launch runs setup in five steps.
+The first launch runs setup in five steps. To change those picks later, run `:Setup`, press
+`SPC u S`, pick `Run setup again…` in the command palette, or pick `Run Setup Again…` in the
+app menu. Each step then starts from the config in use.
 
 | Keys | Does |
 | --- | --- |
@@ -758,12 +763,13 @@ The first launch runs setup in five steps.
 | `k` `↑` `h` `←` | Go to the previous choice |
 | `Enter` `Space` | Pick the choice |
 | `Tab` | Go to the next step |
-| `⇧ Tab` `Esc` | Go to the previous step |
+| `⇧ Tab` `Esc` | Go to the previous step. On the first step of setup run again, `Esc` leaves it with nothing changed |
 | Chars, `Backspace` | Type, delete the name of the terminal command, on the name field |
 
 The `skip`, `back` and `next →` buttons on the bottom line do the same with the mouse. On the
 last step, click `open nsvim →`, or go to the last choice and press `Enter`. The editor then
-writes `config.toml` and opens.
+writes `config.toml` and opens. When setup runs again, the last button is `save →`, and
+`cancel` goes back to the editor with nothing changed.
 
 ### Agent proposals
 

@@ -84,6 +84,8 @@ pub struct SetupState {
     pub dev_build: bool,
     /// The commands that finishing setup runs. A line that starts with `# ` is a note.
     pub commands: Vec<String>,
+    /// Setup runs again over the editor (`:Setup`): it can be left with nothing changed.
+    pub again: bool,
 }
 
 /// First-launch setup: its state, and the picks of its controls. A pick works as Enter does on
@@ -120,6 +122,12 @@ impl SetupFlow {
     /// Writes config.toml, runs the terminal steps that are on, and opens the editor.
     pub fn finish() {
         crate::bridge::update(|a, tx| a.finish_setup(tx));
+    }
+
+    /// Leaves setup run again (`:Setup`) with nothing changed. First launch has no editor to
+    /// go back to, so there it does nothing.
+    pub fn cancel() {
+        crate::bridge::update(|a, _| a.cancel_setup());
     }
 }
 
@@ -196,6 +204,7 @@ fn of(s: &Setup, app: &App, system_dark: bool) -> SetupState {
         desktop_entry: s.desktop_entry,
         dev_build: s.dev_build,
         commands: if s.step >= 4 { s.commands() } else { Vec::new() },
+        again: s.prior.is_some(),
     }
 }
 
