@@ -64,6 +64,15 @@ pub fn current() -> (Session, ElementRef) {
     CURRENT.with(|c| *c.borrow()).expect("a component of nsvim-native inside <Workspace>")
 }
 
+/// Gives the keyboard back to the editor's key view, when a `Workspace` is on this thread.
+/// A native dialog or a close press can leave the window with no focused view: then no key,
+/// `:` included, reaches the editor until the user clicks the text.
+pub(crate) fn refocus_keys() {
+    if let Some((_, keys)) = CURRENT.with(|c| *c.borrow()) {
+        keys.focus();
+    }
+}
+
 pub(crate) fn set_current(s: Session, keys: ElementRef) {
     CURRENT.with(|c| *c.borrow_mut() = Some((s, keys)));
 }

@@ -138,7 +138,7 @@ impl App {
             }
             "definition" => self.run_actions(vec![Action::GotoDefinition], tx),
             "references" => self.references(),
-            "rename" => self.start_rename(),
+            "rename" => self.ask_rename(tx),
             "actions" => self.run_actions(vec![Action::CodeActions], tx),
             "grep" => {
                 let cur = self.ed.cursor();

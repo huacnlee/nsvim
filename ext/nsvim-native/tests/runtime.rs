@@ -311,6 +311,22 @@ fn the_close_button_asks_in_a_dialog_over_unsaved_edits() -> Result<(), String> 
     Ok(())
 }
 
+/// After the close dialog, the keyboard is the editor's again: `:` opens the command line, and
+/// `:w` writes the file, with no click on the text first.
+#[test]
+fn the_command_line_opens_after_the_close_dialog() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let (file, mut app) = edited(dir.path());
+    app.press_window_close("main")?;
+    press(&mut app, "Cancel")?;
+    assert!(!app.quit(), "cancel keeps the window");
+    ex(&mut app, "w");
+    let f = file.clone();
+    app.wait_until("the file written", Duration::from_secs(5), move |_| std::fs::read_to_string(&f).unwrap() == "lpha\n")?;
+    Ok(())
+}
+
 #[test]
 fn save_in_the_close_dialog_writes_the_file_then_quits() -> Result<(), String> {
     isolate();

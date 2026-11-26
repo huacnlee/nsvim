@@ -131,6 +131,10 @@ pub enum Effect {
     /// Show a native alert. The callback gets the id of the button chosen, None when it
     /// closed without one, or why it could not show.
     Confirm(Confirm, Then<Result<Option<String>, String>>),
+    /// Show a native alert with a text field that starts with this text. The callback gets
+    /// the text when the user pressed the default button, None when cancelled, or why it
+    /// could not show.
+    Prompt(Confirm, String, Then<Result<Option<String>, String>>),
 }
 
 /// The effects of one update, and the state of the input event that caused it.
@@ -197,6 +201,17 @@ impl Tx {
 
     pub fn confirm(&mut self, dialog: Confirm, then: impl FnOnce(&mut App, Result<Option<String>, String>, &mut Tx) + 'static) {
         self.effects.push(Effect::Confirm(dialog, Box::new(then)));
+    }
+
+    /// Asks for a line of text in a native dialog. `dialog` holds the buttons: the answer is the
+    /// text when a `Role::Default` button closed it, else None.
+    pub fn prompt(
+        &mut self,
+        dialog: Confirm,
+        text: impl Into<String>,
+        then: impl FnOnce(&mut App, Result<Option<String>, String>, &mut Tx) + 'static,
+    ) {
+        self.effects.push(Effect::Prompt(dialog, text.into(), Box::new(then)));
     }
 
     pub fn wake_after(&mut self, delay: Duration) {
