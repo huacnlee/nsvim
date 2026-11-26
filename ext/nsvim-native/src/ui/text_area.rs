@@ -37,6 +37,7 @@ pub fn text_area(s: Session, keys: ElementRef) -> impl IntoElement {
     // reports the pointer in the window.
     let origin = stored((0.0_f32, 0.0_f32));
     let dragging = stored(false);
+    let area = element_ref();
     // A new font changes the cells: fit the grid again.
     effect(move || {
         let w = cell_w.get();
@@ -58,9 +59,15 @@ pub fn text_area(s: Session, keys: ElementRef) -> impl IntoElement {
         .overflow_hidden()
         .bg(move || color("background"))
         .test_id("text-area")
+        .element_ref(&area)
         .on_layout(move |b: &Bounds<Points>| {
             size.with(|s| *s = (b.size.width.0, b.size.height.0));
             s.resize(b.size.width.0, b.size.height.0, cell_w.get_untracked());
+            spawn(async move {
+                if let Some(m) = area.measure().await {
+                    s.area_at.set(Some((m.page.x.0, m.page.y.0)));
+                }
+            });
         })
         // The area takes presses, but it is no Tab stop: the keys go to `keys`.
         .focusable(false)

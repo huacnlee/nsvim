@@ -94,11 +94,20 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     // While the hidden input has the keyboard, the root captures nothing: an ancestor's capture
     // would take the characters before the input method sees them.
     let sink_focused = signal(false);
+    // Where the root is in the window: the hidden input is placed from the text area's corner.
+    let root_at = signal((0.0_f32, 0.0_f32));
     view()
         .flex_1()
         .bg(root_bg)
         .text_color(move || ui::style::color("foreground"))
         .element_ref(&keys)
+        .on_layout(move |_: &Bounds<Points>| {
+            spawn(async move {
+                if let Some(m) = keys.measure().await {
+                    root_at.set((m.page.x.0, m.page.y.0));
+                }
+            });
+        })
         .focusable(true)
         .capture_keys(move || if sink_focused.get() { KeyCapture::None } else { KeyCapture::All })
         .on_focus(move || s.update(|a, _| a.key_focus = true))
@@ -112,14 +121,15 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
             }
         })
         .child(props.children)
-        .child(text_sink(s, keys, sink_focused))
+        .child(text_sink(s, keys, sink_focused, root_at))
 }
 
 /// The hidden input that takes the keyboard where text is typed (Insert mode, the classic
 /// keymap), so the platform's input method can compose there ([`crate::ime`]). Keys that do not
 /// type text are captured and go to the editor as before; nothing is captured while an input
-/// method composes, whose keys (Backspace, Enter, the arrows) are its own. Not in a terminal.
-fn text_sink(s: Session, keys: ElementRef, focused: Signal<bool>) -> AnyElement {
+/// method composes, whose keys (Backspace, Enter, the arrows) are its own. It sits at the
+/// cursor, one row tall, so the input method's candidates show by the cursor. Not in a terminal.
+fn text_sink(s: Session, keys: ElementRef, focused: Signal<bool>, root_at: Signal<(f32, f32)>) -> AnyElement {
     use editor::editor::{KeyCode, KeyInput, Keymap, Mode};
     use std::{cell::RefCell, rc::Rc};
 
@@ -173,15 +183,23 @@ fn text_sink(s: Session, keys: ElementRef, focused: Signal<bool>) -> AnyElement 
             s.key(KeyInput { code, ctrl: false, alt: false, shift: false, cmd: false });
         }
     };
+    // The cursor's cell in the root: the text area's corner, then the cell's row and column.
+    let spot = computed(move || {
+        let (ax, ay) = s.area_at.get()?;
+        let (rx, ry) = root_at.get();
+        let (caret, gutter) = s.frame.with(|f| (f.caret, f.gutter));
+        let (c, g) = (caret?, s.grid());
+        Some(((gutter + c.col) as f32 * g.cell_w + ax - rx, c.row as f32 * g.cell_h + ay - ry, g.cell_h))
+    });
     let (change, compose) = (text.clone(), text);
     nsh_core::element::input()
         .element_ref(&sink)
         .test_id("text-input")
         .absolute()
-        .left(px(0.0))
-        .bottom(px(0.0))
+        .left(move || px(spot.get().map_or(0.0, |p| p.0)))
+        .top(move || px(spot.get().map_or(0.0, |p| p.1)))
         .w(px(1.0))
-        .h(px(1.0))
+        .h(move || px(spot.get().map_or(1.0, |p| p.2)))
         .pointer_events(PointerEvents::None)
         .p_0()
         .border(px(0.0))
