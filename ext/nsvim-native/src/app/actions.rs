@@ -212,12 +212,8 @@ impl App {
         if !self.ed.has_doc() {
             return;
         }
-        if let (Some(path), Some(svc)) = (self.ed.buf().path.clone(), &self.svc) {
-            // `:e!` drops local edits: mark the buffer clean so the reload applies.
-            let v = self.ed.buf().version();
-            self.ed.doc_mut().buf.mark_saved(v, None);
-            svc.unswap(path.clone());
-            svc.read_disk(path);
+        if let Some(path) = self.ed.buf().path.clone() {
+            self.reload_from_disk(&path);
         }
     }
 

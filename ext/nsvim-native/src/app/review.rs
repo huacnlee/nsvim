@@ -310,9 +310,9 @@ impl App {
         true
     }
 
-    /// A file changed on disk: reload a clean buffer and mark the changed lines, or warn when
-    /// the buffer has edits of its own.
-    pub(super) fn disk_text(&mut self, path: PathBuf, text: String, mtime: Option<std::time::SystemTime>) {
+    /// A file changed on disk: reload a clean buffer and mark the changed lines. When the
+    /// buffer has edits of its own, warn and ask in a dialog whether to reload or keep them.
+    pub(super) fn disk_text(&mut self, path: PathBuf, text: String, mtime: Option<std::time::SystemTime>, tx: &mut super::fx::Tx) {
         let Some(i) = self.doc_index(&path) else { return };
         let dirty = self.ed.docs[i].buf.is_dirty();
         let same = self.ed.docs[i].buf.text().replace("\r\n", "\n") == text.replace("\r\n", "\n");
@@ -332,6 +332,7 @@ impl App {
             }
             self.ed.docs[i].buf.disk_mtime = mtime;
             self.ed.error(format!("W12: \"{name}\" changed on disk and here. :e! loads the disk copy, :w keeps yours"));
+            self.ask_about_disk_change(path, tx);
             return;
         }
         let cursor = self.ed.docs[i].view.cursor;

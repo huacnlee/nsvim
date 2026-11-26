@@ -5,6 +5,7 @@ pub mod actions;
 pub mod app_menu;
 #[cfg(test)]
 mod app_menu_tests;
+pub mod disk_dialogs;
 pub mod files;
 pub mod fx;
 pub mod ipc;
@@ -195,6 +196,8 @@ pub struct App {
     pub config_file: Option<PathBuf>,
     /// The dialog about unsaved changes before a quit shows (`close_requested`).
     pub asking_quit: bool,
+    /// Files whose changed-on-disk dialog shows, so a second change does not ask again.
+    pub asking_disk: std::collections::HashSet<PathBuf>,
     /// `exit` ran: the session is written.
     pub exited: bool,
     /// The view that takes every key has the keyboard focus.
@@ -305,6 +308,7 @@ impl App {
             raise: None,
             config_file: None,
             asking_quit: false,
+            asking_disk: Default::default(),
             exited: false,
             key_focus: false,
             migration: Default::default(),
@@ -415,6 +419,7 @@ impl App {
                         self.ed.docs[i].buf.recover(&text);
                         let name = self.rel(&path);
                         self.ed.error(format!("E325: recovered unsaved edits to \"{name}\" from a crash. :w keeps them, :e! drops them"));
+                        self.ask_about_recovered(path.clone(), tx);
                     }
                 }
                 Err(e) => {
@@ -443,7 +448,7 @@ impl App {
                 Err(e) => self.ed.error(e),
             },
             Event::Saved { path, version, mtime, result, then } => self.saved(path, version, mtime, result, then, tx),
-            Event::DiskText { path, text, mtime } => self.disk_text(path, text, mtime),
+            Event::DiskText { path, text, mtime } => self.disk_text(path, text, mtime, tx),
             Event::Wrote { what: WriteKind::Config, result } => self.config_written(result, tx),
             Event::Files(files, index) => {
                 self.tree.index = index;
