@@ -79,4 +79,10 @@ impl Tabs {
             }
         });
     }
+
+    /// Moves tab `from` to place `to`, which counts the places without `from`: the drop of a
+    /// dragged tab. The tab that shows stays the one that shows.
+    pub fn move_tab(from: u32, to: u32) {
+        crate::bridge::update(move |a, _| a.ed.move_doc(from as usize, to as usize));
+    }
 }

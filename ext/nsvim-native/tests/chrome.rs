@@ -463,3 +463,37 @@ fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String>
     assert!(tab_in_sight(&app, "tab-0"), "tab {:?} in {tabs:?}", page_bounds(&app, "tab-0"));
     Ok(())
 }
+
+/// A tab dragged along the line moves to where it drops, as a tab of NSH's `DockArea` does. The
+/// tab that shows stays the one that shows. A short drag that does not pass the middle of the
+/// next tab leaves the order as it was.
+#[test]
+fn a_dragged_tab_moves_to_where_it_drops() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let c = write(dir.path(), "c.txt", "gamma\n");
+    let mut app = start_files(&[&a, &b, &c], None);
+    app.wait_for("text:/gamma/")?;
+    let names = |app: &Headless| (0..3).map(|i| name(&app.screen(), &format!("id:tab-{i}")).unwrap_or_default()).collect::<Vec<_>>();
+    assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
+    // Past the middle of the last tab: a.txt goes to the end.
+    let by = width(&app, "id:tab-0") / 2.0 + width(&app, "id:tab-1") + width(&app, "id:tab-2") * 0.75;
+    app.drag("id:tab-0", Point::new(Points(by as f32), Points(0.0)), DragOptions::default())?;
+    app.wait_until("a.txt at the end", WAIT, |s| name(s, "id:tab-2").as_deref() == Some("a.txt"))?;
+    assert_eq!(names(&app), ["b.txt", "c.txt", "a.txt"]);
+    assert!(app.screen().selected("role:tab[c.txt]")?, "the tab that showed still shows");
+    wait_text(&mut app, "id:file", "c.txt")?;
+    assert!(!has(&app, "id:tab-drop"), "the drop indicator goes with the drop");
+    // Back to the start.
+    let by = width(&app, "id:tab-2") / 2.0 + width(&app, "id:tab-1") + width(&app, "id:tab-0") * 0.75;
+    app.drag("id:tab-2", Point::new(Points(-by as f32), Points(0.0)), DragOptions::default())?;
+    app.wait_until("a.txt at the start", WAIT, |s| name(s, "id:tab-0").as_deref() == Some("a.txt"))?;
+    assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
+    // A short drag keeps the order.
+    app.drag("id:tab-0", Point::new(Points(10.0), Points(0.0)), DragOptions::default())?;
+    std::thread::sleep(Duration::from_millis(200));
+    assert_eq!(names(&app), ["a.txt", "b.txt", "c.txt"]);
+    assert!(app.screen().selected("role:tab[c.txt]")?);
+    Ok(())
+}
