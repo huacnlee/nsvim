@@ -51,7 +51,7 @@ pub const COMMANDS: &[Command] = &[
     cmd("Quit", "quit", "Q", ":qa", "Mod Q"),
     cmd("Diagnostics…", "diagnostics", "d", "", ""),
     cmd("Open settings…", "settings", ",", "", "Mod ,"),
-    cmd("Open setup wizard…", "setup", "u S", ":Setup", ""),
+    cmd("App Setup…", "setup", "u S", ":Setup", ""),
     cmd("Show every key…", "keys", "?", "", "F1"),
     cmd("Git: next change", "git-next", "g n", "", ""),
     cmd("Git: previous change", "git-prev", "g p", "", ""),

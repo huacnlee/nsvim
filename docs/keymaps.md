@@ -60,7 +60,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC u w` | Turn soft wrap on or off |
 | `SPC u v`, `SPC u c` | Switch to the Neovim keymap, to the classic keymap |
 | `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
-| `SPC u S` | Open the setup wizard to change keymap, theme and other picks. See [Setup](#setup) |
+| `SPC u S` | Open App Setup to change keymap, theme and other picks. See [Setup](#setup) |
 
 The `SPC l` keys need a language server. See `docs/lsp.md`.
 
@@ -424,7 +424,7 @@ A command takes a range when the table shows one. The next section explains rang
 | `:Grep`, `:grep`, `:rg` | Search the project |
 | `:Explore`, `:Ex`, `:Tree` | Show or hide the file tree |
 | `:Settings`, `:settings` | Open Settings |
-| `:Setup` | Open the setup wizard, from the config in use. See [Setup](#setup) |
+| `:Setup` | Open App Setup, from the config in use. See [Setup](#setup) |
 | `:Keys [words]`, `:help [words]`, `:h [words]` | Show every key. The words go in the search line |
 | `:Commands` | Open the command palette |
 | `:Rename name`, `:rename name` | Rename the symbol under the cursor, with the language server |
@@ -706,7 +706,7 @@ It has these commands:
 | `Quit` | Quit. A modified buffer stops it |
 | `Diagnostics…` | List the diagnostics of this file |
 | `Open settings…` | Open Settings |
-| `Open setup wizard…` | Open the setup wizard, from the config in use |
+| `App Setup…` | Open App Setup, from the config in use |
 | `Show every key…` | Show every key, with search |
 | `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
 | `Git: status in the tree` | Show and focus the file tree, with its git status letters |
@@ -754,7 +754,7 @@ there.
 ### Setup
 
 The first launch runs setup in five steps. To change those picks later, run `:Setup`, press
-`SPC u S`, pick `Open setup wizard…` in the command palette, or pick `Setup Wizard…` in the
+`SPC u S`, pick `App Setup…` in the command palette or the
 app menu. Each step then starts from the config in use.
 
 | Keys | Does |
