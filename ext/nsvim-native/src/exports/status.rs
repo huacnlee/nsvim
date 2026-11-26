@@ -33,7 +33,7 @@ pub enum ModeColor {
 pub struct StatusState {
     /// The text of the mode badge: the vim mode. None in the classic keymap.
     pub badge: Option<String>,
-    /// The colour of the mode. The badge and, in vim, the position take it.
+    /// The colour of the mode. The badge takes it.
     pub mode_color: ModeColor,
     /// The keymap is vim.
     pub vim: bool,
@@ -60,8 +60,8 @@ pub struct StatusState {
 pub struct PositionState {
     /// `All`, `Top`, `Bot` or a percent. Empty when no file shows.
     pub scroll: String,
-    /// The line and the column: `3:14` in vim, `Ln 3, Col 14` in the classic keymap. Empty
-    /// when no file shows.
+    /// The line and the column: `3:14` in vim, `Ln 3, Col 14` in the classic keymap. Figure
+    /// spaces before it keep its width steady (`position_of`). Empty when no file shows.
     pub pos: String,
 }
 
@@ -189,11 +189,32 @@ pub fn position_of(app: &App) -> PositionState {
     } else if line >= total {
         "Bot".into()
     } else {
-        format!("{}%", line * 100 / total)
+        pad(format!("{}%", line * 100 / total), 3)
     };
     let col = d.view.cursor.col + 1;
-    let pos = if app.is_vim() { format!("{line}:{col}") } else { format!("Ln {line}, Col {col}") };
-    PositionState { scroll, pos }
+    // Room for the longest line number of the file and for three digits of column. The width
+    // changes only when the file passes 10, 100, 1000 lines or the cursor passes column 999.
+    let digits = digits(total) + digits(col).max(3);
+    let (pos, width) = if app.is_vim() {
+        (format!("{line}:{col}"), digits + ":".len())
+    } else {
+        (format!("Ln {line}, Col {col}"), digits + "Ln , Col ".len())
+    };
+    PositionState { scroll, pos: pad(pos, width) }
+}
+
+/// A space as wide as a digit in tabular figures (U+2007 FIGURE SPACE).
+const FIGURE_SPACE: char = '\u{2007}';
+
+/// `text` with figure spaces before it, to `width` characters.
+fn pad(text: String, width: usize) -> String {
+    let n = width.saturating_sub(text.chars().count());
+    std::iter::repeat_n(FIGURE_SPACE, n).chain(text.chars()).collect()
+}
+
+/// The number of decimal digits in `n`.
+fn digits(n: usize) -> usize {
+    n.checked_ilog10().map_or(1, |d| d as usize + 1)
 }
 
 /// The interface font of `app`.

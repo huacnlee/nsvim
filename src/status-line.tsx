@@ -39,28 +39,23 @@ function Tail(props: {
   );
 }
 
-/** The cursor's position, in the mode's colour in vim. */
+/**
+ * The scroll and the cursor's position, in the same quiet text as the other parts. Rust pads the
+ * position to a steady width (`position_of`), and tabular figures make each digit and each pad
+ * equally wide. So the parts to its left stay still when the cursor goes from column 9 to 10.
+ */
 function Position(props: { font: () => FontState; status: StatusState }) {
   const position = signal<PositionState>({ scroll: "", pos: "" });
   Status.onPosition((p) => position.set(p));
   return (
     <>
-      <Tail font={props.font} text={props.status.lang === "" ? "" : position().scroll} color="text-muted-foreground" id="scroll" />
-      <If when={position().pos !== ""}>
-        <View
-          class={`justify-center self-stretch px-3 ${props.status.vim ? FILL[props.status.modeColor] : "bg-surface-raised"}`}
-          testID="position-fill"
-        >
-          <Line
-            font={props.font}
-            delta={DELTA}
-            class={props.status.vim ? "font-bold text-primary-foreground" : "text-foreground"}
-            testID="position"
-          >
-            {position().pos}
-          </Line>
-        </View>
-      </If>
+      <Tail
+        font={props.font}
+        text={props.status.lang === "" ? "" : position().scroll}
+        color="text-muted-foreground tabular-nums"
+        id="scroll"
+      />
+      <Tail font={props.font} text={position().pos} color="text-muted-foreground tabular-nums" id="position" />
     </>
   );
 }

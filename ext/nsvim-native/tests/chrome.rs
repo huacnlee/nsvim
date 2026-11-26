@@ -352,8 +352,32 @@ fn the_status_line_counts_errors_and_warnings_and_shows_the_scroll() {
     assert_eq!((st.badge.as_deref(), st.mode_color), (Some("NORMAL"), ModeColor::Primary));
     app.ed.doc_mut().view.cursor.line = 49;
     assert_eq!(position_of(&app).scroll, "50%");
+    app.ed.doc_mut().view.cursor.line = 5;
+    assert_eq!(position_of(&app).scroll, "\u{2007}6%", "a figure space keeps the percent three wide");
     app.ed.doc_mut().view.cursor.line = 100;
     assert_eq!(position_of(&app).scroll, "Bot");
+}
+
+/// Figure spaces pad the position to the longest line number of the file and three digits of
+/// column, so it keeps its width while the cursor moves.
+#[test]
+fn the_position_keeps_one_width_as_the_cursor_moves() {
+    let dir = scratch();
+    let mut app = app_with_file(dir.path(), &"x\n".repeat(120));
+    let fs = '\u{2007}';
+    let at = |app: &mut App, line: usize, col: usize| {
+        app.ed.doc_mut().view.cursor.line = line;
+        app.ed.doc_mut().view.cursor.col = col;
+        position_of(app).pos
+    };
+    // 121 lines: three digits of line, three of column, and the colon.
+    assert_eq!(at(&mut app, 0, 0), format!("{fs}{fs}{fs}{fs}1:1"));
+    assert_eq!(at(&mut app, 0, 9), format!("{fs}{fs}{fs}1:10"));
+    assert_eq!(at(&mut app, 99, 99), "100:100");
+    for (line, col) in [(0, 0), (8, 8), (9, 9), (50, 120), (120, 998)] {
+        assert_eq!(at(&mut app, line, col).chars().count(), 7, "at {line}:{col}");
+    }
+    assert_eq!(at(&mut app, 0, 999), format!("{fs}{fs}1:1000"), "past column 999 it grows");
 }
 
 #[test]
