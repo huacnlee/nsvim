@@ -42,36 +42,78 @@ fn names(v: &[&str]) -> Vec<String> {
 #[test]
 fn close_others_keeps_only_the_tab_and_shows_it() {
     let mut a = app(&["a", "b", "c", "d"], 0, &[]);
-    a.close_tabs(2, CloseTabs::Others);
+    a.close_tabs(2, CloseTabs::Others, &mut Tx::new());
     assert_eq!(tabs(&a), (names(&["c"]), "c".into()));
 }
 
 #[test]
 fn close_left_and_close_right_keep_the_tab_that_shows() {
     let mut a = app(&["a", "b", "c", "d", "e"], 3, &[]);
-    a.close_tabs(2, CloseTabs::Left);
+    a.close_tabs(2, CloseTabs::Left, &mut Tx::new());
     assert_eq!(tabs(&a), (names(&["c", "d", "e"]), "d".into()), "the tab that showed still shows");
-    a.close_tabs(0, CloseTabs::Right);
+    a.close_tabs(0, CloseTabs::Right, &mut Tx::new());
     assert_eq!(tabs(&a), (names(&["c"]), "c".into()), "the tab that showed closed: the clicked tab shows");
 }
 
 #[test]
 fn close_clean_and_close_all_keep_the_tabs_with_unsaved_changes() {
     let mut a = app(&["a", "b", "c", "d"], 0, &[1, 3]);
-    a.close_tabs(0, CloseTabs::Clean);
+    a.close_tabs(0, CloseTabs::Clean, &mut Tx::new());
     assert_eq!(tabs(&a).0, names(&["b", "d"]));
     assert!(a.ed.msg.is_none(), "close clean does not aim at the modified tabs");
     let mut a = app(&["a", "b", "c", "d"], 2, &[1, 3]);
-    a.close_tabs(2, CloseTabs::All);
-    assert_eq!(tabs(&a).0, names(&["b", "d"]));
-    let msg = a.ed.msg.clone().expect("the editor tells why");
-    assert!(msg.text.contains("E37") && msg.text.contains("\"b\" and 1 more"), "{}", msg.text);
+    let mut tx = Tx::new();
+    a.close_tabs(2, CloseTabs::All, &mut tx);
+    assert_eq!(tabs(&a).0, names(&["b", "d"]), "the clean tabs close at once");
+    let (dialog, then) = take_confirm(&mut tx);
+    assert_eq!(dialog.title, "Save changes to 2 files?");
+    assert!(dialog.description.contains("\"b\" and \"d\" have unsaved changes"), "{}", dialog.description);
+    then(&mut a, Ok(Some(super::unsaved::DISCARD.into())), &mut Tx::new());
+    assert!(a.ed.docs.is_empty(), "don't save closes them without a write");
+}
+
+/// The confirm dialog the app asked for, and what runs with its answer.
+fn take_confirm(tx: &mut Tx) -> (super::fx::Confirm, super::fx::Then<Result<Option<String>, String>>) {
+    let i = tx.effects.iter().position(|e| matches!(e, Effect::Confirm(..))).expect("a dialog");
+    match tx.effects.remove(i) {
+        Effect::Confirm(d, then) => (d, then),
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn the_close_button_on_a_dirty_tab_asks_and_cancel_keeps_it() {
+    let mut a = app(&["a", "b"], 0, &[1]);
+    let mut tx = Tx::new();
+    a.close_tab(1, &mut tx);
+    assert_eq!(tabs(&a), (names(&["a", "b"]), "b".into()), "the dirty tab shows while the dialog asks");
+    let (dialog, then) = take_confirm(&mut tx);
+    assert_eq!(dialog.title, "Save changes to \"b\"?");
+    let ids: Vec<&str> = dialog.buttons.iter().map(|b| b.0.as_str()).collect();
+    assert_eq!(ids, ["save", "discard", "cancel"]);
+    then(&mut a, Ok(None), &mut Tx::new());
+    assert_eq!(tabs(&a).0, names(&["a", "b"]), "escape keeps the tab");
+    a.close_tab(1, &mut tx);
+    let (_, then) = take_confirm(&mut tx);
+    then(&mut a, Ok(Some(super::unsaved::DISCARD.into())), &mut Tx::new());
+    assert_eq!(tabs(&a), (names(&["a"]), "a".into()));
+}
+
+#[test]
+fn the_dialog_finds_its_tab_after_the_tabs_move() {
+    let mut a = app(&["a", "b", "c"], 0, &[2]);
+    let mut tx = Tx::new();
+    a.close_tab(2, &mut tx);
+    let (_, then) = take_confirm(&mut tx);
+    a.close_tab(0, &mut Tx::new());
+    then(&mut a, Ok(Some(super::unsaved::DISCARD.into())), &mut Tx::new());
+    assert_eq!(tabs(&a).0, names(&["b"]), "\"c\" closes, wherever it is now");
 }
 
 #[test]
 fn close_others_on_a_dirty_tab_closes_only_the_clean_ones() {
     let mut a = app(&["a", "b", "c"], 0, &[0]);
-    a.close_tabs(0, CloseTabs::Others);
+    a.close_tabs(0, CloseTabs::Others, &mut Tx::new());
     assert_eq!(tabs(&a), (names(&["a"]), "a".into()));
     assert!(a.ed.msg.is_none(), "every tab it closes was clean");
 }

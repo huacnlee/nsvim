@@ -26,6 +26,10 @@ impl App {
                 Action::Quit { .. } if close_after_save => {}
                 Action::SaveAll if quit_after_all => self.save_all_and_quit(tx),
                 Action::QuitAll { force: false } if quit_after_all => {}
+                // The classic keymap is for users who do not know Vim: ask in a dialog, not
+                // with E37 and `!`.
+                Action::QuitAll { force: false } if self.ed.keymap == Keymap::Classic => self.close_requested(tx),
+                Action::CloseBuffer if self.ed.keymap == Keymap::Classic => self.close_tab(self.ed.active, tx),
                 Action::SaveAll => {
                     self.save_all(false);
                 }
@@ -96,7 +100,7 @@ impl App {
         self.save_doc(self.ed.active, then);
     }
 
-    fn save_doc(&mut self, i: usize, then: AfterSave) -> bool {
+    pub(crate) fn save_doc(&mut self, i: usize, then: AfterSave) -> bool {
         let opts = self.ed.opts.save;
         let crlf_new = self.cfg.format.line_endings == "crlf";
         let doc = &mut self.ed.docs[i];
@@ -136,7 +140,7 @@ impl App {
 
     /// `:wqa`: writes every modified buffer, then quits once the writes are
     /// done.
-    fn save_all_and_quit(&mut self, tx: &mut Tx) {
+    pub(crate) fn save_all_and_quit(&mut self, tx: &mut Tx) {
         if let Some(i) = self.ed.docs.iter().position(|d| d.buf.is_dirty() && d.buf.path.is_none()) {
             self.ed.error(format!("E141: No file name for buffer {}", i + 1));
             return;
@@ -387,12 +391,16 @@ impl App {
         self.apply_doc_opts();
     }
 
-    /// Closes tab `i` from the mouse: the close button or a middle-click. A tab with unsaved
-    /// changes stays open and shows why.
-    pub fn close_tab(&mut self, i: usize) {
+    /// Closes tab `i` from the mouse, a menu or the classic keymap. A tab with unsaved
+    /// changes shows, and a dialog asks to save them, drop them or keep the tab.
+    pub fn close_tab(&mut self, i: usize, tx: &mut Tx) {
         if self.ed.docs.get(i).is_some_and(|d| d.buf.is_dirty()) {
             self.ed.active = i;
-            self.ed.error("E37: No write since last change (save first, or :q! to drop it)");
+            self.apply_doc_opts();
+            self.close_dirty(&[i], tx);
+            return;
+        }
+        if i >= self.ed.docs.len() {
             return;
         }
         self.drop_doc(i);

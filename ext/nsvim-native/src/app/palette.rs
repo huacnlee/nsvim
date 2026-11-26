@@ -163,7 +163,7 @@ impl App {
         }
         if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
             if self.ed.has_doc() && !self.on_settings {
-                self.close_tabs(self.ed.active, which);
+                self.close_tabs(self.ed.active, which, tx);
             }
             return;
         }
@@ -183,7 +183,7 @@ impl App {
             "hover" => Action::Hover,
             "settings" => Action::Settings,
             "setup" => Action::Setup,
-            "close" => Action::CloseBuffer,
+            "close" => return self.close_tab(self.ed.active, tx),
             "next" => Action::NextBuffer,
             "prev" => Action::PrevBuffer,
             "undo" | "redo" => return self.undo_redo(id == "undo"),
@@ -210,7 +210,7 @@ impl App {
                 self.note = None;
                 return;
             }
-            "quit" => Action::QuitAll { force: false },
+            "quit" => return self.close_requested(tx),
             other => match other.split_once('=') {
                 Some((k, v)) => Action::SetOption(k.into(), v.into()),
                 None => return,

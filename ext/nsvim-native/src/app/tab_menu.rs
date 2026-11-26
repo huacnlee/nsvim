@@ -115,17 +115,17 @@ impl App {
             return;
         }
         if let Some(which) = CloseTabs::from_id(id) {
-            self.close_tabs(i, which);
+            self.close_tabs(i, which, tx);
             return;
         }
         let Some(path) = self.ed.docs.get(i).and_then(|d| d.buf.path.clone()) else {
             if id == "close" {
-                self.close_tab(i);
+                self.close_tab(i, tx);
             }
             return;
         };
         match id {
-            "close" => self.close_tab(i),
+            "close" => self.close_tab(i, tx),
             "copy-path" => self.copy_tab_path(path.display().to_string(), tx),
             "copy-relative-path" => {
                 let rel = path.strip_prefix(&self.ed.root).unwrap_or(&path).to_string_lossy().replace('\\', "/");
@@ -145,21 +145,18 @@ impl App {
         tx.copy(text);
     }
 
-    /// Closes the tabs that `which` takes from tab `i`. A tab with unsaved changes stays open,
-    /// and the editor tells which. The tab that showed still shows when it stays open, else tab
-    /// `i`, else the tab before it.
-    pub fn close_tabs(&mut self, i: usize, which: CloseTabs) {
+    /// Closes the tabs that `which` takes from tab `i`. The clean ones close at once. For the
+    /// ones with unsaved changes, a dialog asks to save them, drop them or keep them open. The
+    /// tab that showed still shows when it stays open, else tab `i`, else the tab before it.
+    pub fn close_tabs(&mut self, i: usize, which: CloseTabs, tx: &mut Tx) {
         let n = self.ed.docs.len();
         if i >= n {
             return;
         }
         let take: Vec<bool> = (0..n).map(|j| which.takes(i, j) && !self.ed.docs[j].buf.is_dirty()).collect();
         // Close clean does not aim at the modified tabs, so it does not name them.
-        let kept: Vec<String> = if which == CloseTabs::Clean {
-            Vec::new()
-        } else {
-            (0..n).filter(|&j| which.takes(i, j) && !take[j]).map(|j| self.ed.docs[j].buf.name()).collect()
-        };
+        let kept: Vec<usize> =
+            if which == CloseTabs::Clean { Vec::new() } else { (0..n).filter(|&j| which.takes(i, j) && !take[j]).collect() };
         let want = [self.ed.active, i].into_iter().find(|&j| j < n && !take[j]);
         for j in (0..n).rev().filter(|&j| take[j]) {
             self.drop_doc(j);
@@ -168,11 +165,10 @@ impl App {
             self.ed.active = (0..w).filter(|&j| !take[j]).count();
         }
         self.ed.mode = self.ed.rest_mode();
-        if let Some(first) = kept.first() {
-            let more = if kept.len() > 1 { format!(" and {} more", kept.len() - 1) } else { String::new() };
-            self.ed.error(format!("E37: No write since last change for \"{first}\"{more}"));
-        }
         self.apply_doc_opts();
+        // The kept tabs moved left by the closed tabs before them.
+        let kept: Vec<usize> = kept.iter().map(|&j| (0..j).filter(|&k| !take[k]).count()).collect();
+        self.close_dirty(&kept, tx);
     }
 
     /// Removes document `j`: the language server and the swap file let it go first.

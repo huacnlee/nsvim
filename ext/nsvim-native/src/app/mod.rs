@@ -29,6 +29,7 @@ pub mod tab_menu;
 #[cfg(test)]
 mod tab_menu_tests;
 pub mod tree;
+pub mod unsaved;
 pub mod update;
 #[cfg(test)]
 mod update_tests;
@@ -192,8 +193,8 @@ pub struct App {
     pub raise: Option<Option<String>>,
     /// The config file the watcher reads again when it changes. None: no reload.
     pub config_file: Option<PathBuf>,
-    /// When the user last asked to close the window over unsaved edits (`close_requested`).
-    pub close_asked: Option<f64>,
+    /// The dialog about unsaved changes before a quit shows (`close_requested`).
+    pub asking_quit: bool,
     /// `exit` ran: the session is written.
     pub exited: bool,
     /// The view that takes every key has the keyboard focus.
@@ -303,7 +304,7 @@ impl App {
             proposals: Vec::new(),
             raise: None,
             config_file: None,
-            close_asked: None,
+            asking_quit: false,
             exited: false,
             key_focus: false,
             migration: Default::default(),
@@ -567,7 +568,11 @@ impl App {
                             svc.keep_history(path.clone(), self.ed.docs[i].buf.history());
                         }
                     }
-                    if then == AfterSave::Close {
+                    if then == AfterSave::CloseTab {
+                        self.drop_doc(i);
+                        self.ed.mode = self.ed.rest_mode();
+                        self.apply_doc_opts();
+                    } else if then == AfterSave::Close {
                         self.ed.close(i);
                         if self.ed.docs.is_empty() {
                             self.quit(tx);

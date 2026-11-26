@@ -61,7 +61,7 @@ fn a_new_omarchy_theme_recolours_the_editor() {
 }
 
 #[test]
-fn closing_over_unsaved_edits_asks_once_then_quits() {
+fn closing_over_unsaved_edits_asks_in_a_dialog() {
     let mut a = app();
     let mut doc = Doc::new(Buffer::from_str("x\n"));
     doc.buf.begin(Default::default());
@@ -72,16 +72,24 @@ fn closing_over_unsaved_edits_asks_once_then_quits() {
     // A unit test writes no session file into the user's state folder.
     a.exited = true;
     let mut tx = Tx::new();
-    a.clock = 10.0;
     a.close_requested(&mut tx);
     assert!(!quits(&tx));
-    assert!(message(&a).starts_with("E37"), "{}", message(&a));
-    a.clock = 10.0 + super::lifecycle::CLOSE_AGAIN_SECS + 1.0;
+    let dialogs = |tx: &Tx| tx.effects.iter().filter(|e| matches!(e, Effect::Confirm(..))).count();
+    assert_eq!(dialogs(&tx), 1);
     a.close_requested(&mut tx);
-    assert!(!quits(&tx), "a close long after the warning warns again");
-    a.clock += 1.0;
+    assert_eq!(dialogs(&tx), 1, "a second close while the dialog shows asks no second time");
+    let i = tx.effects.iter().position(|e| matches!(e, Effect::Confirm(..))).unwrap();
+    let Effect::Confirm(dialog, then) = tx.effects.remove(i) else { unreachable!() };
+    assert!(dialog.title.starts_with("Save changes to"), "{}", dialog.title);
+    let mut tx = Tx::new();
+    then(&mut a, Ok(Some(super::unsaved::CANCEL.into())), &mut tx);
+    assert!(!quits(&tx), "cancel keeps the window");
+    let mut tx = Tx::new();
     a.close_requested(&mut tx);
-    assert!(quits(&tx));
+    let i = tx.effects.iter().position(|e| matches!(e, Effect::Confirm(..))).expect("it asks again after a cancel");
+    let Effect::Confirm(_, then) = tx.effects.remove(i) else { unreachable!() };
+    then(&mut a, Ok(Some(super::unsaved::DISCARD.into())), &mut tx);
+    assert!(quits(&tx), "don't save quits");
 }
 
 #[test]

@@ -38,6 +38,8 @@ pub enum AfterSave {
     Nothing,
     /// `:wq` and `ZZ`: close the buffer.
     Close,
+    /// The unsaved changes dialog: close the tab, and never quit.
+    CloseTab,
 }
 
 /// A file the app writes that isn't a buffer.
