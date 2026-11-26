@@ -39,7 +39,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [-g]
 | `nvim --new` | Opens a new window, also when NsVim runs for the project already. |
 | `nvim -g src/main.rs` | Opens a window from a terminal. See [The terminal editor](#the-terminal-editor). |
 | `nvim --help`, `nvim -h` | Prints the usage. |
-| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.1.1`. |
+| `nvim --version`, `nvim -V` | Prints the version: `nsvim 0.2.0`. |
 
 A file that does not exist opens as a new, empty buffer. `:w` creates it.
 
