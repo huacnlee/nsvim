@@ -276,38 +276,77 @@ fn the_close_button_quits_a_clean_editor() -> Result<(), String> {
     wait_quit(&mut app)
 }
 
+/// The editor with `a.txt` open and edited, which answers its dialogs only when the test says.
+fn edited(dir: &Path) -> (PathBuf, Headless) {
+    let file = write(dir, "a.txt", "alpha\n");
+    let mut app = start(&file);
+    app.answer_dialogs_myself();
+    app.wait_for("text:/alpha/").unwrap();
+    typ(&mut app, &["x"]);
+    app.wait_for("text:/^lpha/").unwrap();
+    (file, app)
+}
+
+fn press(app: &mut Headless, button: &str) -> Result<(), String> {
+    app.answer_dialog(nsh_testing::DialogAnswer::Press(button.into()))
+}
+
 #[test]
-fn the_close_button_asks_once_over_unsaved_edits_then_keeps_them_for_recovery() -> Result<(), String> {
+fn the_close_button_asks_in_a_dialog_over_unsaved_edits() -> Result<(), String> {
     isolate();
     let dir = scratch();
-    let file = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start(&file);
-    app.wait_for("text:/alpha/")?;
-    typ(&mut app, &["x"]);
-    app.wait_for("text:/^lpha/")?;
+    let (file, mut app) = edited(dir.path());
     app.press_window_close("main")?;
-    app.wait_for("text:/E37: \"a.txt\" has unsaved changes/")?;
-    assert!(!app.quit(), "the first close keeps the window");
+    let d = app.pending_dialog().ok_or("the close button shows a dialog")?;
+    assert_eq!(d.title.as_deref(), Some("Save changes to \"a.txt\"?"));
+    let buttons: Vec<&str> = d.buttons.iter().map(|b| b.text.as_str()).collect();
+    assert_eq!(buttons, ["Save", "Don't save", "Cancel"]);
+    press(&mut app, "Cancel")?;
+    assert!(!app.quit(), "cancel keeps the window");
     app.press_window_close("main")?;
+    press(&mut app, "Don't save")?;
     wait_quit(&mut app)?;
-    let swap = nsvim_native::services::io::swap_file(&file);
-    let kept = std::fs::read_to_string(&swap).map_err(|e| format!("{}: {e}", swap.display()))?;
-    assert!(kept.contains("lpha"), "the swap file holds the edit: {kept}");
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "alpha\n", "the file is not written");
+    assert!(!nsvim_native::services::io::swap_file(&file).exists(), "no swap file asks to recover the dropped edit");
     Ok(())
+}
+
+/// After the close dialog, the keyboard is the editor's again: `:` opens the command line, and
+/// `:w` writes the file, with no click on the text first.
+#[test]
+fn the_command_line_opens_after_the_close_dialog() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let (file, mut app) = edited(dir.path());
+    app.press_window_close("main")?;
+    press(&mut app, "Cancel")?;
+    assert!(!app.quit(), "cancel keeps the window");
+    ex(&mut app, "w");
+    let f = file.clone();
+    app.wait_until("the file written", Duration::from_secs(5), move |_| std::fs::read_to_string(&f).unwrap() == "lpha\n")?;
+    Ok(())
+}
+
+#[test]
+fn save_in_the_close_dialog_writes_the_file_then_quits() -> Result<(), String> {
+    isolate();
+    let dir = scratch();
+    let (file, mut app) = edited(dir.path());
+    app.press_window_close("main")?;
+    press(&mut app, "Save")?;
+    let f = file.clone();
+    app.wait_until("the file written", Duration::from_secs(5), move |_| std::fs::read_to_string(&f).unwrap() == "lpha\n")?;
+    wait_quit(&mut app)
 }
 
 #[test]
 fn the_quit_key_asks_as_the_close_button_does() -> Result<(), String> {
     isolate();
     let dir = scratch();
-    let file = write(dir.path(), "a.txt", "alpha\n");
-    let mut app = start(&file);
-    app.wait_for("text:/alpha/")?;
-    typ(&mut app, &["x"]);
-    app.wait_for("text:/^lpha/")?;
+    let (_file, mut app) = edited(dir.path());
     app.quit_request()?;
-    app.wait_for("text:/E37/")?;
+    assert!(app.pending_dialog().is_some_and(|d| d.title.as_deref() == Some("Save changes to \"a.txt\"?")));
+    press(&mut app, "Cancel")?;
     assert!(!app.quit());
     Ok(())
 }

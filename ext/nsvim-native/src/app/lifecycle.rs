@@ -7,9 +7,6 @@ use super::fx::Tx;
 use super::{App, Screen, session};
 use crate::config::Config;
 
-/// A second close within this many seconds closes the window over unsaved edits.
-pub const CLOSE_AGAIN_SECS: f64 = 5.0;
-
 impl App {
     /// Opens the files of the last session in this project, when no other file is to open.
     /// Reads a small file: call it at startup only.
@@ -29,31 +26,12 @@ impl App {
     }
 
     /// The user asked to close the window or to quit the app. With no unsaved edits, the
-    /// editor quits. With unsaved edits, the first ask shows a warning and keeps the window.
-    /// A second ask within `CLOSE_AGAIN_SECS` quits. The edits then stay in swap files, and
-    /// the next launch recovers them.
+    /// editor quits. With unsaved edits, a dialog asks to save them, drop them or cancel.
     pub fn close_requested(&mut self, tx: &mut Tx) {
-        let dirty = self.dirty_names();
-        if dirty.is_empty() {
+        if self.dirty_names().is_empty() {
             return self.quit(tx);
         }
-        let again = self.close_asked.is_some_and(|t| self.clock - t <= CLOSE_AGAIN_SECS);
-        if !again {
-            self.close_asked = Some(self.clock);
-            // `dirty` is not empty here.
-            let what = match dirty.len() {
-                1 => format!("\"{}\" has", dirty[0]),
-                n => format!("\"{}\" and {} more have", dirty[0], n - 1),
-            };
-            self.ed.error(format!("E37: {what} unsaved changes. Close again to quit and keep them for recovery, :wqa writes them"));
-            return;
-        }
-        for d in self.ed.docs.iter().filter(|d| d.buf.is_dirty()) {
-            if let Some(p) = &d.buf.path {
-                crate::services::io::write_swap(p.clone(), d.buf.text());
-            }
-        }
-        self.quit(tx);
+        self.ask_before_quit(tx);
     }
 
     /// Writes the session, answers the `open --wait` requests and removes the control

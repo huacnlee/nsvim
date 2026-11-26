@@ -292,16 +292,30 @@ fn every_palette_command_does_what_it_says() {
         f.update(|a, _| a.ed.msg = None);
         run_check(&mut f, t, id, id, |a| said(a, "no language server"));
     }
-    run_check(&mut f, t, "rename", "rename opens :Rename", |a| a.ed.cmd.as_ref().is_some_and(|c| c.text.starts_with("Rename ")));
+    // The palette and the menus ask for the new name in a dialog, not on the command line. The
+    // next step answers it as the test's handler does: Cancel.
+    f.update(|a, t| a.run_command("rename", t));
+    t.push("rename");
+    f.keys("\x1b");
+    f.ui.wait_until("the rename dialog", Duration::from_secs(5), |s| {
+        s.dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Rename")))
+    })
+    .unwrap();
+    f.settle("rename leaves the command line closed", |a| a.ed.cmd.is_none());
     // A test cannot pick a folder in the system's dialog. `palette_tests` checks that it asks.
     t.push("folder");
     f.update(|a, t| a.run_command("save", t));
     f.settle("the edits are saved", |a| !a.ed.buf().is_dirty());
     f.keys("x");
-    run_check(&mut f, t, "quit", "quit refuses to drop unsaved edits", |a| {
-        a.ed.msg.as_ref().is_some_and(|m| m.error && m.text.contains("E37"))
-    });
+    run_check(&mut f, t, "quit", "quit asks before it drops unsaved edits", |a| a.ed.buf().is_dirty() && a.asking_quit);
+    // The next step answers the dialog as the test's handler does: Cancel. The edits and the
+    // window stay.
     f.keys("u");
+    f.ui.wait_until("the unsaved changes dialog", Duration::from_secs(5), |s| {
+        s.dialogs().iter().any(|d| d.title.as_deref().is_some_and(|t| t.starts_with("Save changes to")))
+    })
+    .unwrap();
+    f.settle("cancel keeps the window", |a| !a.asking_quit && a.ed.has_doc());
     run_check(&mut f, t, "close", "close closes the buffer", |a| a.ed.docs.len() == 1);
 
     // `:set theme=` takes a theme id too.

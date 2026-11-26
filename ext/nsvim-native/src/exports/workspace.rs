@@ -53,12 +53,17 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     // The editor quits when its window closes, on macOS too.
     set_quit_mode(QuitMode::LastWindowClosed);
     // The platform's quit key and Quit item ask first, as the close button does.
-    on_quit_request(move || s.close_requested());
+    on_quit_request(move || {
+        s.close_requested();
+        super::refocus_keys();
+    });
     // However the app ends (the system logs out), the session is written once.
     on_app_quit(move || {
         s.update(|a, _| a.exit());
         async {}
     });
+    #[cfg(not(target_arch = "wasm32"))]
+    let focus_win = win.clone();
     s.attach(win);
     s.start();
     if !crate::terminal() {
@@ -84,6 +89,23 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
                 keys.focus();
                 timer(std::time::Duration::from_millis(100)).await;
             }
+        });
+    }
+
+    // Every key goes to this view or to the hidden input below, and no other view takes the
+    // keyboard. When the window becomes the key window again with neither focused (a close
+    // press or a native dialog can leave it so), the keys come back here: else `:` and every
+    // other key do nothing until the user clicks the text.
+    #[cfg(not(target_arch = "wasm32"))]
+    if !crate::terminal() {
+        let win = focus_win;
+        let was = signal(true);
+        effect(move || {
+            let focused = win.state().is_some_and(|w| w.focused);
+            if focused && !was.get_untracked() && !s.read(|a| a.key_focus) {
+                keys.focus();
+            }
+            was.set(focused);
         });
     }
 
