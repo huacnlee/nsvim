@@ -34,7 +34,7 @@ function Query(props: { head: PickHead }) {
         <View class="flex-row flex-1 px-[8px] items-center" testID="picker-input">
           {/* A fixed column: a text's trailing space takes no width, so the caret touched the
               chevron. The rows below put their chevron in the same column. */}
-          <View class="w-[16.5px] shrink-0">
+          <View class="w-[16.5px] shrink-0" testID="picker-chevron">
             <Text class="text-primary">{"›"}</Text>
           </View>
           <Text testID="picker-query">{props.head.query}</Text>
