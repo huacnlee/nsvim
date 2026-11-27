@@ -134,6 +134,9 @@ pub enum Action {
     Rename(String),
     /// List the language server's code actions at the cursor (`:CodeAction`).
     CodeActions,
+    /// Format the file with the language server (`:Format`), or lines `first..=last` of a
+    /// range (`:'<,'>Format`). Zero-based, inclusive.
+    Format(Option<(usize, usize)>),
     /// Replace lines `first..=last` with the output of a shell command run on them
     /// (`:'<,'>!sort`). Zero-based, inclusive.
     Filter {

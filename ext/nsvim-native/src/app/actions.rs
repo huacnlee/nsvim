@@ -43,6 +43,7 @@ impl App {
                 Action::OpenAt(path, pos) => self.open_path(path, Some(pos)),
                 Action::Rename(name) => self.rename(name),
                 Action::CodeActions => self.code_actions(),
+                Action::Format(lines) => self.format_lines(lines),
                 Action::Filter { first, last, cmd } => self.filter(first, last, cmd),
                 Action::Shell(cmd) => {
                     self.ed.message(format!(":!{cmd}  running"));
@@ -103,6 +104,11 @@ impl App {
     }
 
     pub(crate) fn save_doc(&mut self, i: usize, then: AfterSave) -> bool {
+        self.format_before_save(i, then) || self.write_doc(i, then)
+    }
+
+    /// Writes document `i` as it is, with no format on save.
+    pub(crate) fn write_doc(&mut self, i: usize, then: AfterSave) -> bool {
         let opts = self.ed.opts.save;
         let crlf_new = self.cfg.format.line_endings == "crlf";
         let doc = &mut self.ed.docs[i];

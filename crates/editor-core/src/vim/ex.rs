@@ -157,6 +157,7 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
             out.push(Action::Rename(name.to_string()));
         }
         "CodeAction" | "codeaction" | "ca" => out.push(Action::CodeActions),
+        "Format" | "format" => out.push(Action::Format(range.map(|(a, b)| (a.min(b), a.max(b))))),
         "marks" => {
             need_doc(ed)?;
             ed.message(list_marks(ed));

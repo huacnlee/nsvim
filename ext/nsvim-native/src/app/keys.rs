@@ -115,6 +115,11 @@ impl App {
             self.run_actions(vec![Action::CodeActions], tx);
             return;
         }
+        // Shift+Alt+F formats, as in VS Code. With a selection, it formats the selection.
+        if k.alt && k.shift && !k.cmd && matches!(k.code, KeyCode::Char('F' | 'f' | 'Ï')) && self.ed.keymap == Keymap::Classic {
+            let sel = self.selection_chars().is_some();
+            return self.format_doc(sel);
+        }
         let before = self.ed.buf().version();
         let actions = match self.ed.keymap {
             Keymap::Vim => editor::vim::handle_key(&mut self.ed, k),

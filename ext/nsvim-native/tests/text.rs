@@ -304,3 +304,29 @@ fn a_mouse_drag_shows_the_selection_before_the_release() -> Result<(), String> {
     app.drop_held()?;
     Ok(())
 }
+
+#[test]
+fn a_format_reply_is_one_undo_step_and_keeps_the_cursor_line() -> Result<(), String> {
+    let dir = scratch();
+    let file = write(dir.path(), "a.txt", "fn  a(){\n\n\nlet x=1;\n}\n");
+    let mut app = start(&file);
+    app.wait_for("text:/let x=1;/")?;
+    typ(&mut app, &["j", "j", "j"]);
+    app.wait_for("4:1")?;
+    // The server removes the two empty lines above the cursor and fixes the spaces.
+    let edits = json!([
+        { "start": { "line": 3, "col": 0 }, "end": { "line": 3, "col": 0 }, "text": "    " },
+        { "start": { "line": 0, "col": 2 }, "end": { "line": 0, "col": 4 }, "text": " " },
+        { "start": { "line": 0, "col": 8 }, "end": { "line": 2, "col": 0 }, "text": "" },
+        { "start": { "line": 0, "col": 7 }, "end": { "line": 0, "col": 7 }, "text": " " },
+        { "start": { "line": 3, "col": 5 }, "end": { "line": 3, "col": 6 }, "text": " = " },
+    ]);
+    app.send_host_event("editor.lsp", json!({ "kind": "format", "edits": edits }))?;
+    app.wait_for("text:/    let x = 1;/")?;
+    app.wait_for("text:/formatted: 5 changes/")?;
+    assert!(app.shows("2:1"), "the cursor stays on its line, now line 2: {}", texts(&app));
+    typ(&mut app, &["u"]);
+    app.wait_for("text:/let x=1;/")?;
+    assert!(!app.shows("    let x = 1;"), "one undo takes back every change");
+    Ok(())
+}

@@ -302,10 +302,12 @@ fn every_palette_command_does_what_it_says() {
     f.press("enter");
     f.settle("paste puts it back", move |a| text(a).len() >= full.len());
     t.push("paste");
-    for id in ["definition", "references", "actions"] {
+    for id in ["definition", "references", "actions", "format"] {
         f.update(|a, _| a.ed.msg = None);
         run_check(&mut f, t, id, id, |a| said(a, "no language server"));
     }
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "format-selection", "format selection asks for a selection", |a| said(a, "select the text"));
     // The palette and the menus ask for the new name in a dialog, not on the command line. The
     // next step answers it as the test's handler does: Cancel.
     f.update(|a, t| a.run_command("rename", t));

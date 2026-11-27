@@ -4,6 +4,8 @@
 
 mod edits;
 #[cfg(not(target_arch = "wasm32"))]
+mod format;
+#[cfg(not(target_arch = "wasm32"))]
 mod server;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -76,6 +78,20 @@ pub enum Job {
     RunAction {
         index: usize,
     },
+    Format(FormatJob),
+}
+
+/// A request to format a file, or the lines of a selection.
+pub struct FormatJob {
+    pub path: PathBuf,
+    /// The buffer's version the request formats. The reply carries it back.
+    pub version: u64,
+    /// The selection, `None` for the whole file.
+    pub range: Option<(Pos, Pos)>,
+    pub tab_size: usize,
+    pub spaces: bool,
+    /// Format on save: the app writes the file when the reply comes.
+    pub save: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -174,6 +190,7 @@ enum Pending {
     Rename(String),
     CodeActions,
     Resolve,
+    Format(format::FormatWait),
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -331,6 +348,7 @@ impl Manager {
             }
             Job::CodeActions { path, start, end } => self.code_actions(path, start, end),
             Job::RunAction { index } => self.run_action(index),
+            Job::Format(j) => self.format(j),
         }
     }
 
@@ -517,6 +535,7 @@ impl Manager {
                 let r = result.clone();
                 self.finish_action(si, &r);
             }
+            Pending::Format(w) => self.formatted(si, path, w, &v),
         }
     }
 

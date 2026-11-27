@@ -7,6 +7,9 @@ pub mod app_menu;
 mod app_menu_tests;
 pub mod disk_dialogs;
 pub mod files;
+pub mod format;
+#[cfg(test)]
+mod format_tests;
 pub mod fx;
 pub mod ipc;
 pub mod key_list;
@@ -167,6 +170,8 @@ pub struct App {
     pub restore_active: Option<PathBuf>,
     /// Saves still on their way to disk before `:wqa` can quit.
     pub quit_after_saves: Option<usize>,
+    /// Saves that wait for the language server to format the file first.
+    pub format_saves: Vec<format::FormatSave>,
     /// The mouse's drag over the text.
     pub drag: mouse::TextDrag,
     /// When the last edit happened, for diffing against git after a pause.
@@ -304,6 +309,7 @@ impl App {
             to_open: Vec::new(),
             restore_active: None,
             quit_after_saves: None,
+            format_saves: Vec::new(),
             drag: mouse::TextDrag::default(),
             last_edit: 0.0,
             clock: 0.0,
@@ -483,6 +489,7 @@ impl App {
             | Event::LspInfo(_)
             | Event::ApplyEdit { .. }
             | Event::CodeActions { .. }) => self.lsp_event(e),
+            Event::Formatted { path, version, edits, save, error } => self.formatted(path, version, edits, save, error),
             Event::Preview { path, text } => {
                 let want = self.picked().map(|(p, _)| p);
                 if let Overlay::Pick(p) = &mut self.overlay
