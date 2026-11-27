@@ -104,21 +104,29 @@ download the Windows ZIP from the release page and extract it.
 
 ## Updates
 
-NsVim looks for a new release on GitHub once a day. When there is one, it says so on the command
-line. Run `:Update` to install it: NsVim closes, the installer runs into the same folder, and
-NsVim starts again. Save your files first; `:Update` will not close unsaved buffers. With no
-release found yet, `:Update` checks first.
+The NsVim window checks for a new release each time it starts. When there is one, a window
+shows the new version: Install Update, Skip This Version or Remind Me Later. Install Update
+downloads the release, then Install and Relaunch replaces NsVim and starts it again, and Install
+on Quit replaces it when you quit. Select "Automatically download and install updates in the
+future" to get later releases without the question: NsVim downloads them and installs them when
+you quit. To check now, choose "Check for updates…" in the command palette, NsVim ›
+Check for Updates… in the menu, or run `:Update`.
 
 This works for copies the installers put in place. A build from source or a copy from mise is
-left alone and updates the way it was installed. To turn off the daily check, set
+left alone and updates the way it was installed. In the terminal editor, NsVim looks for a new
+release on GitHub once a day and says so on the command line. Run `:Update` there to install
+it: NsVim closes, the installer runs into the same folder, and NsVim starts again. Save your
+files first; `:Update` will not close unsaved buffers.
+
+To turn off the check at startup, set
 
 ```toml
 [update]
 check = false
 ```
 
-in `config.toml`. Close any other NsVim windows before `:Update` on Windows, which cannot replace
-a program that is running.
+in `config.toml`. Close any other NsVim windows before you update on Windows, which cannot
+replace a program that is running.
 
 ## mise
 

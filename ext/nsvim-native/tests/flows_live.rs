@@ -252,6 +252,16 @@ fn every_palette_command_does_what_it_says() {
     let wrap = f.read(|a| a.cfg.editor.wrap);
     run_check(&mut f, t, "wrap", "wrap toggles soft wrap", move |a| a.cfg.editor.wrap != wrap);
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
+    // A test build is no installed copy, so NSH's updater does not take it. With a release
+    // found, the command tries to install it and says why it cannot: no network in the test.
+    f.update(|a, _| {
+        a.ed.msg = None;
+        a.update = Some(nsvim_native::services::update::Release { version: "9.0.0".into(), url: "https://example.com".into() });
+    });
+    run_check(&mut f, t, "update", "update says why this copy does not install", |a| {
+        a.ed.msg.as_ref().is_some_and(|m| m.error && (m.text.contains("9.0.0") || m.text.contains("Save your changes")))
+    });
+    f.update(|a, _| a.update = None);
     run_check(&mut f, t, "outside", "outside says when there is nothing", |a| said(a, "no changes from outside"));
     run_check(&mut f, t, "clear-outside", "clear-outside confirms", |a| said(a, "cleared"));
     run_check(&mut f, t, "proposal", "proposal says when there is none", |a| said(a, "no proposals"));

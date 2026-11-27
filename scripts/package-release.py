@@ -5,6 +5,12 @@ The program reads its interface (App.tsx, compiled by `nsh build`) from `nsh/bun
 On Linux and Windows, `nsh/` is next to the executable. On macOS, it is in the app bundle's
 `Contents/Resources/nsh`. Each archive also gets a `.sha256` file. The release workflow joins
 them into one `SHA256SUMS`.
+
+The window updates itself with NSH's updater (`nsh.json` `"updater"`). It reads
+`nsh/assets/nsh-updater.json`, which `nsh package` writes and this script writes the same way.
+NSH's updater takes an archive that holds one folder, the app, named
+`NsVim-<version>-<os>-<arch>`. So each platform also gets that archive, which
+`nsh update-manifest` lists in `latest.json`. The installers keep reading the first archive.
 """
 import argparse
 import hashlib
@@ -31,9 +37,31 @@ TARGETS = {
 APP_ID = "dev.nsvim.app"
 # NSH 0.7 needs macOS 14 (`nsh package` writes the same minimum).
 MACOS_MINIMUM = "14.0"
+# NSH's names of the platforms (`nsh_updater::platform()`), for the updater's archives.
+UPDATER_PLATFORMS = {
+    "aarch64-apple-darwin": "macos-aarch64",
+    "x86_64-apple-darwin": "macos-x86_64",
+    "x86_64-unknown-linux-gnu": "linux-x86_64",
+    "aarch64-unknown-linux-gnu": "linux-aarch64",
+    "x86_64-pc-windows-msvc": "windows-x86_64",
+}
 
 
-def interface(nsh_dir, stage):
+def updater_config(version):
+    """What `nsh package` writes as `nsh-updater.json` (`nsh_updater::Config`), from nsh.json."""
+    app = json.loads((ROOT / "nsh.json").read_text())
+    updater = app.get("updater")
+    if not updater:
+        return None
+    config = {"id": app.get("id", APP_ID), "version": version, "name": app.get("name", "NsVim")}
+    for key in ("github", "url", "channels", "publicKey"):
+        if key in updater:
+            config[key] = updater[key]
+    config["build"] = app.get("build", 1)
+    return json.dumps(config, separators=(",", ":"))
+
+
+def interface(nsh_dir, stage, version):
     """Copy the output of `nsh build` to `stage`, without the source maps. The window reads
     `bundle.nshc`. The terminal editor (`nsvim` in a terminal) reads `bundle.js`."""
     if not (nsh_dir / "bundle.nshc").is_file():
@@ -46,6 +74,10 @@ def interface(nsh_dir, stage):
     app.setdefault("id", APP_ID)
     app.setdefault("name", "NsVim")
     (stage / "app.json").write_text(json.dumps(app, separators=(",", ":")))
+    config = updater_config(version)
+    if config:
+        (stage / "assets").mkdir(exist_ok=True)
+        (stage / "assets/nsh-updater.json").write_bytes(config.encode())
 
 
 def desktop_entry():
@@ -119,7 +151,7 @@ def macos_app(stage, binary, nsh_dir, version):
     (contents / "Resources").mkdir()
     shutil.copy2(binary, contents / "MacOS/nsvim")
     (contents / "MacOS/nsvim").chmod(0o755)
-    interface(nsh_dir, contents / "Resources/nsh")
+    interface(nsh_dir, contents / "Resources/nsh", version)
     icns(contents / "Resources/nsvim.icns")
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(
@@ -153,6 +185,34 @@ def owner(info):
     return info
 
 
+def updater_layout(platform):
+    """The one folder of the updater's archive, and the entries of the stage it takes. macOS: the
+    app bundle. Linux: `nsvim/`, as the install script installs `share/nsvim`, without
+    `packaging/`. Windows: `nsvim/`, the folder the install script installs."""
+    if platform == "macos":
+        return "", lambda name: name.endswith(".app")
+    if platform == "linux":
+        return "nsvim", lambda name: name != "packaging"
+    return "nsvim", lambda name: True
+
+
+def write(archive, stage, root="", keep=lambda name: True):
+    """Pack the entries of `stage` that `keep` takes into `archive`, under the folder `root`
+    ("": at the top of the archive)."""
+    entries = [path for path in sorted(stage.iterdir()) if keep(path.name)]
+    under = lambda name: f"{root}/{name}" if root else name
+    if archive.suffix == ".zip":
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+            for entry in entries:
+                for path in [entry] if entry.is_file() else sorted(entry.rglob("*")):
+                    if path.is_file():
+                        bundle.write(path, under(path.relative_to(stage).as_posix()))
+        return
+    with tarfile.open(archive, "w:gz", format=tarfile.PAX_FORMAT) as bundle:
+        for path in entries:
+            bundle.add(path, arcname=under(path.name), filter=owner)
+
+
 def package(binary, tui_binary, nsh_dir, output, version, target):
     platform = TARGETS[target]
     output.mkdir(parents=True, exist_ok=True)
@@ -165,7 +225,7 @@ def package(binary, tui_binary, nsh_dir, output, version, target):
         elif platform == "linux":
             shutil.copy2(binary, stage / "nsvim")
             (stage / "nsvim").chmod(0o755)
-            interface(nsh_dir, stage / "nsh")
+            interface(nsh_dir, stage / "nsh", version)
             (stage / "packaging").mkdir()
             (stage / "packaging/nsvim.desktop").write_text(desktop_entry())
             shutil.copy2(ROOT / "assets/editor.svg", stage / "packaging/nsvim.svg")
@@ -175,7 +235,7 @@ def package(binary, tui_binary, nsh_dir, output, version, target):
             if tui_binary is None:
                 raise SystemExit("Windows needs --tui-binary, the release build of nsvim-tui.exe")
             shutil.copy2(tui_binary, stage / "nsvim-tui.exe")
-            interface(nsh_dir, stage / "nsh")
+            interface(nsh_dir, stage / "nsh", version)
             # The window, taskbar and Alt+Tab icon: the runner reads nsh\icon.ico.
             shutil.copy2(ROOT / "assets/nsvim.ico", stage / "nsh/icon.ico")
             # The executable's own icon, which Explorer and the Start menu shortcut show.
@@ -184,15 +244,12 @@ def package(binary, tui_binary, nsh_dir, output, version, target):
                 windows_icon(stage / "nsvim-tui.exe", ROOT / "assets/nsvim.ico")
         for name in ("LICENSE", "README.md"):
             shutil.copy2(ROOT / name, stage / name)
-        if platform == "windows":
-            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
-                for path in sorted(stage.rglob("*")):
-                    if path.is_file():
-                        bundle.write(path, path.relative_to(stage).as_posix())
-        else:
-            with tarfile.open(archive, "w:gz", format=tarfile.PAX_FORMAT) as bundle:
-                for path in sorted(stage.iterdir()):
-                    bundle.add(path, arcname=path.name, filter=owner)
+        write(archive, stage)
+        if updater_config(version):
+            root, keep = updater_layout(platform)
+            update = output / f"NsVim-{version}-{UPDATER_PLATFORMS[target]}.{extension}"
+            write(update, stage, root, keep)
+            print(update)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     # The Unix installers read SHA256SUMS. Keep LF line ends, also from the Windows job.
     archive.with_name(archive.name + ".sha256").write_text(f"{digest}  {archive.name}\n", encoding="ascii", newline="\n")

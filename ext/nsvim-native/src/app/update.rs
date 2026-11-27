@@ -1,10 +1,39 @@
-//! `:Update` and the message an update check leaves (`services::update`).
+//! Updates. The window of a copy the installers put in place uses NSH's updater
+//! (`nsh.json` `"updater"`): at startup it checks quietly, and NSH's update window asks the
+//! user, downloads the release, replaces the app and restarts it, or installs it on quit once
+//! the user chose automatic updates. `:Update` and the palette's "Check for updates…" open
+//! that window. The terminal editor, and copies that NSH cannot replace, keep the daily check
+//! of `services::update`, its message, and `:Update` with the install script.
 
 use super::App;
-use super::fx::Tx;
+use super::fx::{Effect, Tx};
 use crate::services::update::{self, Checked};
 
+/// Whether the program at `exe` updates with NSH's updater: a window (not the terminal
+/// editor) of a copy that the installers put in place. NSH replaces that folder or app as a
+/// whole, as the installers do. Other copies (a build, mise's) update the way they came.
+pub(crate) fn native_updates(exe: Option<&std::path::Path>, terminal: bool, os: &str) -> bool {
+    !terminal && !cfg!(target_arch = "wasm32") && exe.is_some_and(|e| update::installed(e, os).is_some())
+}
+
+fn running_exe() -> Option<std::path::PathBuf> {
+    std::env::current_exe().ok().and_then(|e| e.canonicalize().ok())
+}
+
 impl App {
+    /// The check at startup, when `[update] check` is on and this is not a development build.
+    pub(crate) fn check_update_at_start(&mut self, tx: &mut Tx) {
+        let exe = running_exe();
+        if !self.cfg.update.check || crate::app::setup::dev_build(exe.as_deref()) {
+            return;
+        }
+        if native_updates(exe.as_deref(), crate::terminal(), std::env::consts::OS) {
+            tx.effects.push(Effect::PromptUpdate { quiet: true });
+        } else if let Some(svc) = &self.svc {
+            svc.check_update(false);
+        }
+    }
+
     pub(crate) fn update_checked(&mut self, checked: Checked) {
         match checked.result {
             Ok(Some(release)) => {
@@ -20,8 +49,13 @@ impl App {
         }
     }
 
-    /// `:Update`: installs the release a check found, or checks first.
+    /// `:Update` and "Check for updates…": NSH's update window, or else installs the release a
+    /// check found, or checks first.
     pub(crate) fn run_update(&mut self, tx: &mut Tx) {
+        if native_updates(running_exe().as_deref(), crate::terminal(), std::env::consts::OS) {
+            tx.effects.push(Effect::PromptUpdate { quiet: false });
+            return;
+        }
         let Some(release) = self.update.clone() else {
             self.ed.message("Checking for updates…");
             if let Some(svc) = &self.svc {

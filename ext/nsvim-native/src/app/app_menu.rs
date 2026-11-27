@@ -96,6 +96,7 @@ impl App {
         ];
         let help = vec![item("cmd:keys", "Keyboard Shortcuts…")];
         let mut app = vec![item("cmd:settings", "Settings…"), item("cmd:setup", "App Setup…"), Entry::Separator];
+        app.insert(0, item("cmd:update", "Check for Updates…"));
         if mac {
             app.extend([Entry::Hide("Hide NsVim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
         }

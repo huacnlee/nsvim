@@ -335,9 +335,6 @@ impl App {
         if matches!(self.screen, Screen::Setup(_)) {
             svc.probe_setup();
         }
-        if self.cfg.update.check && !crate::app::setup::dev_build(std::env::current_exe().ok().as_deref()) {
-            svc.check_update(false);
-        }
         self.svc = Some(svc);
     }
 

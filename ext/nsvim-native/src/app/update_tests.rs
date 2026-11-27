@@ -56,3 +56,29 @@ fn a_test_build_is_not_replaced() {
     assert!(message(&a).contains("not installed by the install script"), "{}", message(&a));
     assert!(tx.effects.is_empty());
 }
+
+#[test]
+fn only_the_window_of_an_installed_copy_uses_the_nsh_updater() {
+    use crate::app::update::native_updates;
+    use std::path::Path;
+    let mac = Path::new("/Users/me/Applications/NsVim.app/Contents/MacOS/nsvim");
+    assert!(native_updates(Some(mac), false, "macos"));
+    // The terminal editor keeps `:Update` with the install script.
+    assert!(!native_updates(Some(mac), true, "macos"));
+    let linux = Path::new("/home/me/.local/share/nsvim/nsvim");
+    assert!(native_updates(Some(linux), false, "linux"));
+    // A build, or mise's copy, updates the way it came.
+    assert!(!native_updates(Some(Path::new("/work/nsvim/target/release/nsvim")), false, "linux"));
+    assert!(!native_updates(Some(Path::new("/home/me/.local/share/mise/installs/nsvim/0.2.1/nsvim")), false, "linux"));
+    assert!(!native_updates(None, false, "linux"));
+}
+
+#[test]
+fn the_palette_checks_for_updates() {
+    // The test binary is not an installed copy, so the command takes the `:Update` path.
+    let mut a = app();
+    let mut tx = Tx::new();
+    a.run_command("update", &mut tx);
+    assert!(message(&a).contains("Checking for updates"), "{}", message(&a));
+    assert!(crate::app::palette::COMMANDS.iter().any(|c| c.id == "update" && c.label == "Check for updates…"));
+}

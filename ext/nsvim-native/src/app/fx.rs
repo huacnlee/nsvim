@@ -138,6 +138,13 @@ pub enum Effect {
     /// the text when the user pressed the default button, None when cancelled, or why it
     /// could not show.
     Prompt(Confirm, String, Then<Result<Option<String>, String>>),
+    /// Check for a newer release and ask in NSH's update window, which downloads it, installs
+    /// it and restarts NsVim. `quiet`: a check at startup, which shows nothing when NsVim is
+    /// up to date or the check fails, and installs on quit once the user chose automatic
+    /// updates.
+    PromptUpdate {
+        quiet: bool,
+    },
 }
 
 /// The effects of one update, and the state of the input event that caused it.

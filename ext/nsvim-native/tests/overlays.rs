@@ -183,6 +183,21 @@ fn the_palette_filters_commands_and_runs_the_pick() -> Result<(), String> {
 }
 
 #[test]
+fn the_query_caret_stands_clear_of_the_chevron() -> Result<(), String> {
+    let dir = scratch();
+    let main = write(dir.path(), "main.rs", "fn main() {}\n");
+    let mut app = start_files(&[&main], Some(CLASSIC));
+    app.wait_for("text:/fn main/")?;
+    typ(&mut app, &["ctrl+shift+p"]);
+    app.wait_for("id:picker-caret")?;
+    let x = |sel: &str| app.screen().layout(sel).unwrap().unwrap().bounds.origin.x.0;
+    let (chevron, caret) = (x("id:picker-chevron"), x("id:picker-caret"));
+    // The chevron's column is 16.5 points: the caret starts after it, with a space between.
+    assert!(caret - chevron >= 16.0, "chevron at {chevron}, caret at {caret}");
+    Ok(())
+}
+
+#[test]
 fn the_key_list_searches_by_words_and_f1_closes_it() -> Result<(), String> {
     let dir = scratch();
     let main = write(dir.path(), "main.rs", "fn main() {}\n");

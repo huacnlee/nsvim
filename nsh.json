@@ -5,6 +5,7 @@
   "build": 1,
   "nsh": ">=0.7",
   "theme": "theme.json",
+  "updater": { "github": "huacnlee/nsvim" },
   "dependencies": {
     "nsvim-native": { "path": "ext/nsvim-native" }
   }
