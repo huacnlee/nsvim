@@ -1,5 +1,6 @@
-// The buffer line: the project folder over the tree, then the tabs that Rust lists. It is the
-// window's title bar (`./title-bar.tsx`): a press on it outside a tab drags the window. A click on
+// The buffer line: the menu button and the project folder over the tree, then the tabs that
+// Rust lists. It is the window's title bar (`./title-bar.tsx`): a press on it outside a tab drags
+// the window. The menu button (`./main-menu.tsx`) shows only on Windows and Linux. A click on
 // a tab shows it. A click on its close button or a middle click closes it. A right-click opens
 // the tab's menu (close the others, the tabs to its left or right, the clean tabs, all of them,
 // copy its path). A tab with unsaved changes shows a small square in place of the close mark. A
@@ -8,7 +9,8 @@
 // `ext/nsvim-native/src/exports/buffer_line.rs`).
 
 import { effect, platform, Scroll, signal, Text, View, type ContextMenuEvent, type MouseEvent, type ViewRef } from "nsh";
-import { Icon, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
+import { Icon, MainMenu, Shell, Tabs, type BufferLineState, type TabState } from "nsvim-native";
+import { MainMenuButton } from "./main-menu";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
@@ -212,16 +214,25 @@ export function BufferLine() {
   };
   return (
     <View class="flex-row items-center h-9 shrink-0 overflow-hidden bg-muted" role="tablist" testID="buffer-line" desktop={DRAG}>
-      <If when={project()} else={<Controls side="left" />}>
+      <If
+        when={project()}
+        else={
+          <>
+            <Controls side="left" />
+            <MainMenuButton size={() => font().size} />
+          </>
+        }
+      >
         {(p) => (
-          // As wide as the tree, with the window controls at its start. The path keeps its end,
-          // which tells folders apart.
+          // As wide as the tree, with the window controls or the menu button at its start. The
+          // path keeps its end, which tells folders apart.
           <View
             class="flex-row shrink-0 self-stretch items-center pr-3 overflow-hidden border-r border-border"
-            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : 12 }}
+            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
             accessibilityLabel={p().path}
             testID="project"
           >
+            <MainMenuButton size={() => font().size} />
             <Label font={font} text={p().path} class="flex-1 min-w-0" cutStart />
           </View>
         )}

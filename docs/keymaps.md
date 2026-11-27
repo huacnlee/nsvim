@@ -685,8 +685,7 @@ too. The picker `Ctrl` keys use `Ctrl` on macOS too.
 ### Command palette
 
 The command palette runs any command by name. It holds every item of the application menu,
-so it is the menu on Linux and Windows, where NsVim's title bar hides the menu bar, and in
-the terminal editor. It holds the same commands as the [leader menu](#leader-menu). Each row
+so it is the menu in the terminal editor. It holds the same commands as the [leader menu](#leader-menu). Each row
 shows its keys in the keymap you use: in the Neovim keymap, its own keys first, then the
 leader keys. Type to filter.
 
@@ -899,8 +898,9 @@ Recent, with the recent projects as they were when the window opened.
 
 ## Application menu
 
-A window has an application menu: the menu bar on macOS. On Windows and Linux NsVim draws its
-own title bar, which hides the window's menu bar. The terminal editor has none. The
+A window has an application menu. On macOS it is the menu bar. On Windows and Linux NsVim draws
+its own title bar, and the system then shows no menu bar. There the menu button at the left end
+of the title bar opens the same menus, one submenu each. The terminal editor has no menu. The
 [command palette](#command-palette) holds every item of the menu, so use it there.
 
 On macOS, Close Window hides NsVim as `⌘ H` does, and does not quit it: your files, tabs
@@ -911,8 +911,9 @@ closes Settings. To quit, use `⌘ Q`, `:qa` or the close button. `⌘ Q` works 
 and on every screen. Over unsaved edits it asks first, as the close button does: press it
 again to quit and keep the edits for recovery.
 
-- **NsVim**: Settings…, Quit. On macOS also Hide NsVim (`⌘ H`), Hide Others and Show All.
-- **File**: Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
+- **NsVim**: Check for Updates…, Settings…, App Setup…, Quit. On macOS also Hide NsVim (`⌘ H`),
+  Hide Others and Show All.
+- **File**: New File, Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
   On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….
 - **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
