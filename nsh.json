@@ -1,7 +1,7 @@
 {
   "name": "NsVim",
   "id": "dev.nsvim.app",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "build": 1,
   "nsh": ">=0.7",
   "theme": "theme.json",
