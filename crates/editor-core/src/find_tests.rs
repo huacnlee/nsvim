@@ -7,7 +7,7 @@ const PLAIN: FindOpts = FindOpts { case: false, word: false, regex: false };
 fn plain_text_matches_literally_and_ignores_case() {
     let e = ed("a.b axb A.B\n");
     let p = pattern("a.b", PLAIN);
-    assert_eq!(count(&e, &p), (None, 2));
+    assert_eq!(count(&e, &p), (Some(1), 2), "the cursor is on the first match");
     let p = pattern("a.b", FindOpts { case: true, ..PLAIN });
     assert_eq!(count(&e, &p).1, 1);
     // Chars the pattern syntax reads stay plain.
