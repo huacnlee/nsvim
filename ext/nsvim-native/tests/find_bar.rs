@@ -3,7 +3,7 @@
 
 mod common;
 
-use common::rust_flow;
+use common::{Flow, rust_flow};
 use editor::buffer::Pos;
 use nsvim_native::app::App;
 use nsvim_native::exports::find_of;
@@ -12,6 +12,11 @@ const SRC: &str = "let total = 1;\nlet count = total + 2;\nprint(total, count);\
 
 fn count(a: &App) -> String {
     find_of(a).count
+}
+
+/// Waits until the bar's count is `want`: the keys before it reach the app first.
+fn wait_count(f: &mut Flow, want: &'static str) {
+    f.settle(want, move |a| count(a) == want);
 }
 
 #[test]
@@ -24,22 +29,22 @@ fn ctrl_f_finds_counts_and_steps_both_ways() {
     assert_eq!(f.read(|a| a.find.as_ref().unwrap().query.clone()), "let");
     f.press("ctrl+u");
     f.keys("total");
-    assert_eq!(f.read(count), "1 of 3", "the first match from the cursor is the current one");
+    wait_count(&mut f, "1 of 3");
     assert!(f.read(|a| a.ed.vim.hlsearch && !a.ed.search.pattern.is_empty()), "the matches are highlighted");
     // The classic keymap selects the match.
     assert_eq!(f.read(|a| (a.ed.doc().view.anchor, a.ed.cursor())), (Some(Pos::new(0, 4)), Pos::new(0, 9)));
     assert!(f.ui.screen().matches("text:1 of 3").unwrap(), "{:?}", f.ui.screen().texts());
     f.press("enter");
-    assert_eq!(f.read(count), "2 of 3", "Enter goes to the next match");
+    wait_count(&mut f, "2 of 3");
     f.press("enter");
     f.press("enter");
-    assert_eq!(f.read(count), "1 of 3", "Enter wraps to the top");
+    wait_count(&mut f, "1 of 3");
     f.press("shift+enter");
-    assert_eq!(f.read(count), "3 of 3", "Shift Enter goes back and wraps");
+    wait_count(&mut f, "3 of 3");
     // The typed keys went to the bar, not to the text.
     assert_eq!(f.text(), SRC);
     f.keys("zz");
-    assert_eq!(f.read(count), "No results");
+    wait_count(&mut f, "No results");
     assert!(f.read(|a| find_of(a).none));
     f.press("escape");
     assert!(f.check(|a| a.find.is_none() && !a.ed.vim.hlsearch), "Esc closes the bar and its highlight");
@@ -54,7 +59,7 @@ fn match_case_and_whole_word_toggle_from_the_bar() {
     f.press("ctrl+f");
     f.press("ctrl+u");
     f.keys("cat");
-    assert_eq!(f.read(count), "1 of 3");
+    wait_count(&mut f, "1 of 3");
     f.ui.press("label:Match case").unwrap();
     f.settle("match case counts two", |a| find_of(a).count.ends_with("of 2") || find_of(a).count == "2 results");
     f.ui.press("label:Whole word").unwrap();
@@ -78,7 +83,7 @@ fn replace_one_then_all_and_undo_all_in_one_step() {
     assert_eq!(f.read(|a| a.find.as_ref().unwrap().with.clone()), "sum");
     f.press("enter");
     assert_eq!(f.text(), SRC.replacen("total", "sum", 1), "Enter in the replace field replaces one");
-    assert_eq!(f.read(count), "1 of 2", "and goes to the next match");
+    wait_count(&mut f, "1 of 2");
     f.ui.press("label:Replace all").unwrap();
     f.settle("replace all replaces the rest", |a| a.ed.buf().text() == SRC.replace("total", "sum"));
     assert!(f.read(|a| a.ed.buf().is_dirty()));
@@ -97,12 +102,12 @@ fn a_regex_with_groups_replaces_each_match() {
     f.press("ctrl+u");
     f.press("alt+r");
     f.keys("(\\w)=(\\d+)");
-    assert_eq!(f.read(count), "1 of 2");
+    wait_count(&mut f, "1 of 2");
     f.press("tab");
     f.keys("$2:$1");
     f.press("ctrl+enter");
     f.settle("Ctrl Enter replaces all", |a| a.ed.buf().text() == "1:a\n22:b\n");
-    assert_eq!(f.read(count), "No results");
+    wait_count(&mut f, "No results");
 }
 
 #[test]
