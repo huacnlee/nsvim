@@ -169,7 +169,7 @@ pub struct App {
     pub on_settings: bool,
     pub files: Vec<String>,
     pub git: GitInfo,
-    /// Each line shows who last changed it (`Git: toggle line blame`).
+    /// The cursor's line shows who last changed it (`Git: toggle line blame`). On by default.
     pub blame: bool,
     pub omarchy: Option<Omarchy>,
     pub svc: Option<Services>,
@@ -317,7 +317,7 @@ impl App {
             on_settings: false,
             files: Vec::new(),
             git: GitInfo::default(),
-            blame: false,
+            blame: true,
             omarchy,
             svc: None,
             m: Metrics { cw: 7.8, row_h: 22.0, text: [0.0, 0.0, 800.0, 600.0], gutter: 60.0 },

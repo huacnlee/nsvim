@@ -568,10 +568,10 @@ pub fn frame_of(ed: &Editor, look: &Look, rows: usize, ix: usize, cols: usize, l
                 (_, Some(d)) if last_piece && d.severity <= 2 => {
                     Some(After::Diag(Level::of(d.severity), d.message.lines().next().unwrap_or("").chars().take(MESSAGE_CHARS).collect()))
                 }
-                // The cursor's line also shows the commit's summary.
-                _ if last_piece => look.blame.get(line).filter(|b| !b.who.is_empty()).map(|b| match current && !b.summary.is_empty() {
-                    true => After::Blame(format!("{} · {}", b.who, b.summary).chars().take(MESSAGE_CHARS).collect()),
-                    false => After::Blame(b.who.clone()),
+                // Only the cursor's line shows who changed it, with the commit's summary.
+                _ if last_piece && current => look.blame.get(line).filter(|b| !b.who.is_empty()).map(|b| match b.summary.is_empty() {
+                    true => After::Blame(b.who.clone()),
+                    false => After::Blame(format!("{} · {}", b.who, b.summary).chars().take(MESSAGE_CHARS).collect()),
                 }),
                 _ => None,
             };
