@@ -9,7 +9,7 @@ use editor::syntax::highlight::Kind;
 use nsh_core::prelude::*;
 
 use crate::app::fx::{Mods, Phase, PointerEvent};
-use crate::model::{After, Caret, Level, Row, Seg, Shape, Sign};
+use crate::model::{After, Caret, Frame, Level, Row, Seg, Shape, Sign};
 use crate::store::{Grid, Session};
 use crate::ui::style::{CodeFont, code_token, color};
 use crate::ui::{popups, review_view};
@@ -27,53 +27,108 @@ fn mods(m: nsh_core::keymap::Modifiers) -> Mods {
 }
 
 /// `keys` is the view that takes the keys. A click gives it the focus back.
-pub fn text_area(s: Session, keys: ElementRef) -> impl IntoElement {
-    let slots = computed(move || (0..s.frame.with(|f| f.rows.len())).collect::<Vec<usize>>());
-    let gutter = computed(move || s.frame.with(|f| f.gutter));
+///
+/// With `doc`, the area is a pane that shows that document (a tab group's panel in the
+/// workspace's dock). It is live while its document is the active one: only then does it take the
+/// mouse, draw the cursor and fit the editor's grid. A pane that is not live draws its document
+/// at its own size, and a press on it makes its document the active one.
+pub fn text_area(s: Session, keys: ElementRef, doc: Option<u64>, shown: Memo<bool>) -> impl IntoElement {
+    let live = s.view(move |a| doc.is_none_or(|id| a.ed.has_doc() && a.ed.doc().id == id));
     let cell_w = computed(move || s.font.with(cell_width));
-    let reviewing = s.view(|a| a.proposal_here().is_some());
-    let size = stored((0.0_f32, 0.0_f32));
+    let reviewing = s.view(move |a| a.proposal_here().is_some());
+    let size = signal((0.0_f32, 0.0_f32));
+    // The grid and the frame of a pane that is not live: its own size, its own document.
+    let numbers_off = s.view(|a| a.cfg.editor.numbers == "off");
+    let lines = s.view(move |a| doc.and_then(|id| a.ed.docs.iter().find(|d| d.id == id)).map_or(1, |d| d.buf.line_count()));
+    let own_grid = computed(move || {
+        let (width, height) = size.get();
+        let cw = cell_w.get();
+        let cell_h = s.font.with(|f| f.row_h);
+        let gutter = if numbers_off.get() { 2 } else { 2 + lines.get().to_string().len().max(3) + 3 };
+        let rows = ((height / cell_h).floor() as usize).max(1);
+        let cols = ((width / cw).floor() as usize).saturating_sub(gutter).max(10);
+        Grid { cell_w: cw, cell_h, rows, cols }
+    });
+    // The live area reads the session's frame. Only a pane that shows and is not live makes its
+    // own. A hidden tab of a group draws nothing, so a key does not redraw every open file. The
+    // memos are read before the app, which a read holds.
+    let own_frame = computed(move || {
+        if live.get() || !shown.get() {
+            return None;
+        }
+        let g = own_grid.get();
+        let id = doc?;
+        Some(s.tracked(|a| crate::model::pane_frame(a, id, g.rows, g.cols)))
+    });
+    let frame = computed(move || if live.get() { s.frame.get() } else { own_frame.get().unwrap_or_else(|| s.frame.get()) });
+    let grid = computed(move || if live.get() { s.grid() } else { own_grid.get() });
+    let slots = computed(move || (0..frame.with(|f| f.rows.len())).collect::<Vec<usize>>());
+    let gutter = computed(move || frame.with(|f| f.gutter));
     // Where the area's top left is in the window, from the press that starts a drag. A drag
     // reports the pointer in the window.
     let origin = stored((0.0_f32, 0.0_f32));
     let dragging = stored(false);
     let area = element_ref();
-    // A new font changes the cells: fit the grid again.
+    let measure = move || {
+        spawn(async move {
+            if let Some(m) = area.measure().await {
+                s.area_at.set(Some((m.page.x.0, m.page.y.0)));
+            }
+        });
+    };
+    // A new font changes the cells, and a pane that becomes live fits the editor to its size.
     effect(move || {
         let w = cell_w.get();
-        let (width, height) = size.with(|s| *s);
-        if width > 0.0 {
-            untracked(|| s.resize(width, height, w));
+        let (width, height) = size.get();
+        if width > 0.0 && live.get() {
+            untracked(|| {
+                s.resize(width, height, w);
+                measure();
+            });
         }
     });
-    popups::host_events(s);
     let release = move |e: &ResponderEvent| {
         if dragging.with(|d| std::mem::replace(d, false)) {
             let (ox, oy) = origin.with(|o| *o);
             s.drag(e.page.x.0 - ox, e.page.y.0 - oy, Phase::Up, 1, mods(e.modifiers));
         }
     };
+    // A pane that is not live: its document becomes the active one.
+    let activate = move || {
+        if let Some(id) = doc {
+            s.update(move |a, _| {
+                if let Some(i) = a.ed.docs.iter().position(|d| d.id == id) {
+                    a.show_tab(i);
+                }
+            });
+        }
+    };
+    let test_id = match doc {
+        Some(id) => format!("pane-{id}"),
+        None => "pane".to_string(),
+    };
     view()
         .flex_1()
         .min_h(px(0.0))
         .overflow_hidden()
         .bg(move || color("background"))
-        .test_id("text-area")
+        .test_id(&test_id)
         .element_ref(&area)
         .on_layout(move |b: &Bounds<Points>| {
-            size.with(|s| *s = (b.size.width.0, b.size.height.0));
-            s.resize(b.size.width.0, b.size.height.0, cell_w.get_untracked());
-            spawn(async move {
-                if let Some(m) = area.measure().await {
-                    s.area_at.set(Some((m.page.x.0, m.page.y.0)));
-                }
-            });
+            size.set((b.size.width.0, b.size.height.0));
+            if live.get_untracked() {
+                measure();
+            }
         })
         // The area takes presses, but it is no Tab stop: the keys go to `keys`.
         .focusable(false)
         .on_press(|| {})
         .on_press_down(move |e: &PressEvent| {
             keys.focus();
+            if !live.get_untracked() {
+                activate();
+                return;
+            }
             if reviewing.get_untracked() {
                 return;
             }
@@ -94,6 +149,9 @@ pub fn text_area(s: Session, keys: ElementRef) -> impl IntoElement {
         .on_responder_release(release)
         .on_responder_terminate(release)
         .on_wheel(move |e: &WheelEvent| {
+            if !live.get_untracked() {
+                activate();
+            }
             let g = s.grid();
             let (dx, dy) = match e.delta {
                 WheelDelta::Lines(d) => (d.x * WHEEL_LINES * g.cell_w, d.y * WHEEL_LINES * g.cell_h),
@@ -103,33 +161,53 @@ pub fn text_area(s: Session, keys: ElementRef) -> impl IntoElement {
         })
         .on_context_menu(move |e: &ContextMenuEvent| {
             keys.focus();
+            if !live.get_untracked() {
+                activate();
+            }
             if reviewing.get_untracked() {
                 return;
             }
             let p = PointerEvent { x: e.position.x.0, y: e.position.y.0, window_x: e.page_position.x.0, window_y: e.page_position.y.0 };
             s.update(|a, tx| a.context_menu(p, tx));
         })
-        .child(when(reviewing, move || review_view::diff_view(s)).otherwise(move || rows(s, slots, gutter)))
-        .child(when(move || s.frame.with(|f| f.empty), move || empty_state(s)))
+        // The live area's content is `text-area`, wherever it shows.
+        .child(
+            when(live, move || {
+                view()
+                    .flex_1()
+                    .test_id("text-area")
+                    .child(when(reviewing, move || review_view::diff_view(s)).otherwise(move || rows(s, slots, gutter, frame, grid, live)))
+            })
+            .otherwise(move || view().flex_1().child(when(shown, move || rows(s, slots, gutter, frame, grid, live)))),
+        )
+        .child(when(move || frame.with(|f| f.empty), move || empty_state(s)))
 }
 
-/// The rows, the ruler, the cursor and the popups by it.
-fn rows(s: Session, slots: Memo<Vec<usize>>, gutter: Memo<usize>) -> impl IntoElement {
-    let ruler = computed(move || s.frame.with(|f| f.ruler));
+/// The rows, the ruler, the cursor and the popups by it. The cursor and the popups show only in
+/// the live area.
+fn rows(
+    s: Session,
+    slots: Memo<Vec<usize>>,
+    gutter: Memo<usize>,
+    frame: Memo<Frame>,
+    grid: Memo<Grid>,
+    live: Memo<bool>,
+) -> impl IntoElement {
+    let ruler = computed(move || frame.with(|f| f.ruler));
     view()
         .flex_1()
-        .child(each(slots, |i: &usize| *i, move |i, _| slot(s, i.get_untracked(), gutter)))
-        .child(when(move || ruler.get().is_some(), move || ruler_line(s, ruler, gutter)))
-        .child(when(move || s.frame.with(|f| f.caret.is_some()), move || caret(s, gutter)))
-        .child(popups::popups(s, gutter))
+        .child(each(slots, |i: &usize| *i, move |i, _| slot(s, i.get_untracked(), gutter, frame, grid)))
+        .child(when(move || ruler.get().is_some(), move || ruler_line(ruler, gutter, grid)))
+        .child(when(move || frame.with(|f| f.caret.is_some()), move || caret(s, gutter)))
+        .child(when(move || live.get(), move || popups::popups(s, gutter)))
 }
 
 /// Row slot `i`: rebuilt only when row `i` of the frame changes.
-fn slot(s: Session, i: usize, gutter: Memo<usize>) -> impl IntoElement {
-    let row = computed(move || s.frame.with(|f| f.rows.get(i).cloned()));
+fn slot(s: Session, i: usize, gutter: Memo<usize>, frame: Memo<Frame>, grid: Memo<Grid>) -> impl IntoElement {
+    let row = computed(move || frame.with(|f| f.rows.get(i).cloned()));
     let id = format!("row-{i}");
     dynamic(move || {
-        let g = s.grid();
+        let g = grid.get();
         let font = s.font.get();
         let el = match row.get() {
             Some(r @ Row::Line { .. }) => line(g, &font, gutter.get(), r),
@@ -267,12 +345,12 @@ pub fn code_text(font: &CodeFont, content: impl IntoReactive<SharedString>) -> T
     text(content).font_family(font.family).text_size(px(font.size)).number_of_lines(1).allow_font_scaling(false)
 }
 
-fn ruler_line(s: Session, ruler: Memo<Option<usize>>, gutter: Memo<usize>) -> impl IntoElement {
+fn ruler_line(ruler: Memo<Option<usize>>, gutter: Memo<usize>, grid: Memo<Grid>) -> impl IntoElement {
     view()
         .absolute()
         .top(px(0.0))
         .bottom(px(0.0))
-        .left(move || px((gutter.get() + ruler.get().unwrap_or(0)) as f32 * s.grid().cell_w))
+        .left(move || px((gutter.get() + ruler.get().unwrap_or(0)) as f32 * grid.get().cell_w))
         .w(px(1.0))
         .pointer_events(PointerEvents::None)
         .bg(move || color("border").opacity(0.7))

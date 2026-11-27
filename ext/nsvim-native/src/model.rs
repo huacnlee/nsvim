@@ -233,8 +233,13 @@ impl Default for Look<'_> {
 impl<'a> Look<'a> {
     /// The look of the app's active file.
     pub fn of(app: &'a App) -> Look<'a> {
+        Look::of_doc(app, app.ed.active)
+    }
+
+    /// The look of document `ix`.
+    pub fn of_doc(app: &'a App, ix: usize) -> Look<'a> {
         let e = &app.cfg.editor;
-        let path = if app.ed.has_doc() { app.ed.buf().path.as_deref() } else { None };
+        let path = app.ed.docs.get(ix).and_then(|d| d.buf.path.as_deref());
         let meta = path.and_then(|p| app.meta.get(p));
         let note = app.note.as_ref().filter(|n| Some(n.path.as_path()) == path).map(|n| NoteMark {
             first: n.first,
@@ -261,13 +266,23 @@ pub fn app_frame(app: &App, rows: usize) -> Frame {
     frame_with(&app.ed, &Look::of(app), rows)
 }
 
+/// The frame of a pane that shows document `id` without the keys, `rows` by `cols`.
+pub fn pane_frame(app: &App, id: u64, rows: usize, cols: usize) -> Frame {
+    let ix = app.ed.docs.iter().position(|d| d.id == id).unwrap_or(usize::MAX);
+    frame_of(&app.ed, &Look::of_doc(app, ix), rows, ix, cols, false)
+}
+
 /// Gutter width in columns: a sign, the numbers right-aligned, then 3 columns of space. Only
 /// the sign with numbers off.
 pub fn gutter_cols(ed: &Editor, numbers: &str) -> usize {
+    gutter_width(if ed.has_doc() { ed.buf().line_count() } else { 1 }, numbers)
+}
+
+/// `gutter_cols` for a document of `lines` lines.
+pub fn gutter_width(lines: usize, numbers: &str) -> usize {
     if numbers == "off" {
         return SIGN_COLS;
     }
-    let lines = if ed.has_doc() { ed.buf().line_count() } else { 1 };
     SIGN_COLS + lines.to_string().len().max(3) + 3
 }
 
@@ -372,19 +387,25 @@ struct Ink {
 
 /// The frame for `rows` rows of text with look `look`.
 pub fn frame_with(ed: &Editor, look: &Look, rows: usize) -> Frame {
+    frame_of(ed, look, rows, ed.active, ed.cols, true)
+}
+
+/// The frame of document `ix` in a pane of `rows` rows and `cols` columns. Only the `live` pane,
+/// the one that has the keys, draws the cursor and the selection.
+pub fn frame_of(ed: &Editor, look: &Look, rows: usize, ix: usize, cols: usize, live: bool) -> Frame {
     let status = status(ed);
     let bottom = bottom(ed);
-    let gutter = gutter_cols(ed, look.numbers);
-    if !ed.has_doc() {
+    let Some(doc) = ed.docs.get(ix) else {
+        let gutter = gutter_cols(ed, look.numbers);
         return Frame { rows: Vec::new(), caret: None, gutter, ruler: None, status, bottom, empty: true };
-    }
-    let doc = ed.doc();
+    };
     let buf = &doc.buf;
+    let gutter = gutter_width(buf.line_count(), look.numbers);
     let path = buf.path.as_deref();
     let top = doc.view.top.min(buf.last_line());
     let wrap = ed.opts.wrap;
     let left = if wrap { 0 } else { doc.view.left };
-    let width = ed.cols.max(4);
+    let width = cols.max(4);
     let cur = doc.view.cursor;
     let count = rows.min(buf.line_count().saturating_sub(top));
     let runs = highlight::runs(buf, path, top, count);
@@ -400,7 +421,7 @@ pub fn frame_with(ed: &Editor, look: &Look, rows: usize) -> Frame {
     } else {
         editor::vim::search_matches(buf, &ed.search.pattern, ed.case(), top, top + count)
     };
-    let show_caret = ed.mode != Mode::Command && !look.hide_caret;
+    let show_caret = live && ed.mode != Mode::Command && !look.hide_caret;
     let shape = shape(ed, look.cursor);
     let mut out = Vec::with_capacity(rows);
     let mut caret = None;
@@ -419,12 +440,12 @@ pub fn frame_with(ed: &Editor, look: &Look, rows: usize) -> Frame {
                 slot.kind = Some(*k);
             }
         }
-        let sel = selected(ed, line, len);
+        let sel = if live { selected(ed, line, len) } else { None };
         let mut paint = |a: usize, b: usize, f: &dyn Fn(&mut Ink)| ink.iter_mut().take(b.min(len)).skip(a).for_each(f);
         if let Some((a, b, _)) = sel {
             paint(a, b, &|i| i.selected = true);
         }
-        for c in &doc.extra {
+        for c in doc.extra.iter().filter(|_| live) {
             if let Some((a, b)) = extra_range(c, line, len) {
                 paint(a, b, &|i| i.selected = true);
             }

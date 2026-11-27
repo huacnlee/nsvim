@@ -438,17 +438,16 @@ fn page_bounds(app: &Headless, id: &str) -> Option<nsh_engine::Bounds<Points>> {
     app.screen().layout_nodes().into_iter().find(|n| n.test_id.as_deref() == Some(id)).map(|n| n.bounds)
 }
 
-/// Whether the view `id` lies inside the tabs' scroll view, which stops before the window
-/// controls.
+/// Whether the view `id` lies across the pane, whose tab bar scrolls its tabs.
 fn tab_in_sight(app: &Headless, id: &str) -> bool {
-    let (Some(line), Some(tab)) = (page_bounds(app, "tabs"), page_bounds(app, id)) else { return false };
+    let (Some(line), Some(tab)) = (page_bounds(app, "text-area"), page_bounds(app, id)) else { return false };
     let (l0, l1) = (line.origin.x.0, line.origin.x.0 + line.size.width.0);
     let (t0, t1) = (tab.origin.x.0, tab.origin.x.0 + tab.size.width.0);
     t0 >= l0 - 0.5 && t1 <= l1 + 0.5
 }
 
-/// With more tabs than fit, the line scrolls sideways and keeps the tab that shows in sight,
-/// and the tabs never run under the window controls at its end.
+/// With more tabs than fit, the pane's tab bar scrolls sideways and keeps the tab that shows in
+/// sight, and the tabs stay inside the window.
 #[test]
 fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String> {
     let dir = scratch();
@@ -458,7 +457,7 @@ fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String>
     let mut app = start_files(&refs, None);
     app.wait_for("text:/text a_long_file_name_29/")?;
     let line = page_bounds(&app, "buffer-line").ok_or("no buffer line")?;
-    let tabs = page_bounds(&app, "tabs").ok_or("no tabs")?;
+    let tabs = page_bounds(&app, "text-area").ok_or("no pane")?;
     assert!(tabs.origin.x.0 + tabs.size.width.0 <= line.origin.x.0 + line.size.width.0 + 0.5, "tabs {tabs:?} in {line:?}");
     let _ = app.wait_until("the last tab is in sight", WAIT, |_| false);
     assert!(tab_in_sight(&app, "tab-29"), "tab {:?} in {tabs:?}", page_bounds(&app, "tab-29"));
@@ -471,8 +470,8 @@ fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String>
     Ok(())
 }
 
-/// A tab dragged along the line moves to where it drops, as a tab of NSH's `DockArea` does. The
-/// tab that shows stays the one that shows. A short drag that does not pass the middle of the
+/// A tab dragged along the tab bar moves to where it drops, and it shows: the panes are NSH's
+/// `DockArea`. A short drag that does not pass the middle of the
 /// next tab leaves the order as it was.
 #[test]
 fn a_dragged_tab_moves_to_where_it_drops() -> Result<(), String> {
@@ -489,8 +488,9 @@ fn a_dragged_tab_moves_to_where_it_drops() -> Result<(), String> {
     app.drag("id:tab-0", Point::new(Points(by as f32), Points(0.0)), DragOptions::default())?;
     app.wait_until("a.txt at the end", WAIT, |s| name(s, "id:tab-2").as_deref() == Some("a.txt"))?;
     assert_eq!(names(&app), ["b.txt", "c.txt", "a.txt"]);
-    assert!(app.screen().selected("role:tab[c.txt]")?, "the tab that showed still shows");
-    wait_text(&mut app, "id:file", "c.txt")?;
+    // As in NSH's `DockArea`, the dropped tab shows, and its file has the keys.
+    app.wait_until("a.txt shows", WAIT, |s| s.selected("role:tab[a.txt]").unwrap_or(false))?;
+    wait_text(&mut app, "id:file", "a.txt")?;
     assert!(!has(&app, "id:tab-drop"), "the drop indicator goes with the drop");
     // Back to the start.
     let by = width(&app, "id:tab-2") / 2.0 + width(&app, "id:tab-1") + width(&app, "id:tab-0") * 0.75;

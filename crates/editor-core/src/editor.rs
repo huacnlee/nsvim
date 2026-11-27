@@ -224,6 +224,9 @@ pub struct Cursor {
 }
 
 pub struct Doc {
+    /// The document's own number, which stays the same while it is open. No two documents
+    /// of the process share one. The app keys a tab with it.
+    pub id: u64,
     pub buf: Buffer,
     pub view: View,
     /// Extra cursors, in no order. The main cursor is `view.cursor` with `view.anchor`.
@@ -232,7 +235,9 @@ pub struct Doc {
 
 impl Doc {
     pub fn new(buf: Buffer) -> Doc {
-        Doc { buf, view: View::default(), extra: Vec::new() }
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Doc { id, buf, view: View::default(), extra: Vec::new() }
     }
 }
 
@@ -478,6 +483,18 @@ impl Editor {
         } else {
             active
         };
+    }
+
+    /// Puts the documents in the order of `ids`, their [`Doc::id`]s: the order of the tabs
+    /// across the panes. A document `ids` leaves out keeps its place after the others. The
+    /// active document stays active.
+    pub fn order_docs(&mut self, ids: &[u64]) {
+        let active = self.docs.get(self.active).map(|d| d.id);
+        let rank = |d: &Doc| ids.iter().position(|&id| id == d.id).unwrap_or(usize::MAX);
+        self.docs.sort_by_key(rank);
+        if let Some(id) = active {
+            self.active = self.docs.iter().position(|d| d.id == id).unwrap_or(self.active);
+        }
     }
 
     /// Moves the cursor to `p`, clamped for the mode, and forgets the wanted column.

@@ -104,6 +104,13 @@ impl Session {
         })
     }
 
+    /// Reads the app and subscribes to its changes, inside a memo that reads other memos
+    /// first: `view` takes no memo of its own inside the read.
+    pub fn tracked<R>(&self, f: impl FnOnce(&App) -> R) -> R {
+        self.rev.get();
+        self.app.with(|a| f(a))
+    }
+
     pub fn grid(&self) -> Grid {
         self.grid.get()
     }

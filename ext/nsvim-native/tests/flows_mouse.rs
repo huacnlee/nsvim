@@ -68,7 +68,8 @@ fn a_middle_click_closes_a_clean_tab() {
     f.settle("both files open", |a| a.ed.docs.len() == 2);
     f.ui.wait_for("role:tab >> nth=1").unwrap();
     assert_eq!(f.ui.screen().count("role:tab").unwrap(), 2);
-    f.middle_click("role:tab >> nth=1", point(20.0, 10.0));
+    // The tab's content takes the middle click: the area's tab around it takes the press.
+    f.middle_click("id:tab-1", point(20.0, 10.0));
     f.settle("the tab closes", |a| a.ed.docs.len() == 1);
 }
 
@@ -110,7 +111,8 @@ fn a_right_click_on_a_tab_opens_its_menu_and_close_others_keeps_it() {
     let mut f = common::flow_files(&[&one, &two, &main], None);
     f.settle("three files open", |a| a.ed.docs.len() == 3);
     f.ui.wait_for("role:tab[two.rs]").unwrap();
-    f.ui.right_click("role:tab[two.rs]").unwrap();
+    // The tab's content (`tab-1`) opens the menu: the area's tab around it takes the press.
+    f.ui.right_click("id:tab-1").unwrap();
     let menu = f.ui.menu().expect("the tab's menu shows");
     assert!(format!("{menu:?}").contains("Close right"), "{menu:?}");
     let title = f.read(|a| if a.is_vim() { "Close others    SPC t o" } else { "Close others" });

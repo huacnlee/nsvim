@@ -4,7 +4,7 @@
 
 import { mount, signal, View } from "nsh";
 import { currentWindow, isAvailable as hasWindows } from "nsh/desktop";
-import { Shell, TextArea, Welcome, Workspace, type ScreenState, type WelcomeState } from "nsvim-native";
+import { Shell, Tabs, Welcome, Workspace, type ScreenState, type WelcomeState } from "nsvim-native";
 import { Tree } from "./src/tree";
 import { BufferLine } from "./src/buffer-line";
 import { CommandLine } from "./src/command-line";
@@ -13,24 +13,28 @@ import { Settings } from "./src/settings/Settings";
 import { Setup } from "./src/setup/Setup";
 import { Overlays } from "./src/overlays/Overlays";
 import { WelcomePage } from "./src/welcome";
+import { Panes, type Font } from "./src/panes";
 
-/** The editor: the buffer line, the tree beside the text, the status line and the command
- * line, with the overlays over them. Settings covers all of it, the overlays too. A window
- * with no project and no file open shows the welcome page in place of the text. */
+/** The editor: the title bar, the tree beside the panes of the open files, the status line and
+ * the command line, with the overlays over them. Settings covers all of it, the overlays too. A
+ * window with no project and no file open shows the welcome page in place of the panes. */
 function Editor(props: { screen: () => ScreenState }) {
   const welcome = signal<WelcomeState>({ show: false, version: "", actions: [], recent: [] });
   Welcome.onChange((w) => welcome.set(w));
+  const font = signal<Font>({ family: "system-ui", size: 13 });
+  Tabs.onChange((s) => {
+    if (font().family !== s.fontFamily || font().size !== s.fontSize) font.set({ family: s.fontFamily, size: s.fontSize });
+  });
   return (
     <View class="flex-1 bg-background">
-      <BufferLine />
+      <BufferLine font={font} />
       <View class="flex-row flex-1 min-h-0">
         <If when={props.screen().tree}>
           <Tree />
         </If>
-        {/* The welcome page covers the text area and keeps it in place, so the Rust view stays
-            mounted for the first file. */}
+        {/* The welcome page covers the panes. */}
         <View class="flex-1 min-w-0">
-          <TextArea />
+          <Panes font={font} />
           <If when={welcome().show}>
             <WelcomePage state={welcome} />
           </If>

@@ -53,3 +53,17 @@ fn a_move_to_the_same_place_or_past_the_end_does_nothing() {
         assert_eq!(order(&e), (strs(&["a", "b", "c", "d"]), "c".into()), "{from} to {to}");
     }
 }
+
+#[test]
+fn order_docs_follows_the_ids_and_keeps_the_active_document() {
+    let mut e = Editor::new(std::path::PathBuf::from("."));
+    for name in ["a", "b", "c"] {
+        e.docs.push(Doc::new(Buffer::from_str(name)));
+    }
+    let ids: Vec<u64> = e.docs.iter().map(|d| d.id).collect();
+    e.active = 1;
+    e.order_docs(&[ids[2], ids[0]]);
+    let now: Vec<u64> = e.docs.iter().map(|d| d.id).collect();
+    assert_eq!(now, vec![ids[2], ids[0], ids[1]]);
+    assert_eq!(e.docs[e.active].id, ids[1]);
+}
