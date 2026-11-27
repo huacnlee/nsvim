@@ -1,10 +1,9 @@
 // The title bar of the editor has no row of its own: the tabs of the open files are the top of
 // the window. Over the tree, the top shows the menu button and the project folder. With no
 // tree, the window controls and the menu button sit at the start of the tab bar (`Corner`). The
-// empty end of the top tab bar drags the window and keeps the controls at the right clear
-// (`BarEnd`). The menu button (`./main-menu.tsx`) shows only on Windows and Linux. The tabs are
-// in the panes (`./panes.tsx`). Rust owns the state (`Tabs` in
-// `ext/nsvim-native/src/exports/buffer_line.rs`).
+// tab bar at the top right keeps the controls at the right clear (`BarEnd`). The empty part of
+// the tab bars drags the window (`./panes.tsx`). The menu button (`./main-menu.tsx`) shows only
+// on Windows and Linux. Rust owns the state (`Tabs` in `ext/nsvim-native/src/exports/buffer_line.rs`).
 
 import { signal, View } from "nsh";
 import { MainMenu, Tabs, type BufferLineState } from "nsvim-native";
@@ -56,24 +55,17 @@ export function Corner(props: { font: () => Font; onWidth: (width: number) => vo
   );
 }
 
-/** The empty end of a tab bar. It drags the window. The bar at the top right also keeps the
- * window controls at the right clear (`controls`). */
-export function BarEnd(props: { controls: boolean }) {
-  return (
-    <View class="flex-1 self-stretch flex-row" desktop={DRAG} testID="bar-end">
-      <View class="flex-1" />
-      <If when={props.controls}>
-        <Controls side="right" />
-      </If>
-    </View>
-  );
+/** The end of the tab bar at the top right: the space of the window controls at the right. */
+export function BarEnd() {
+  return <Controls side="right" />;
 }
 
 /** The top bar while no file is open: there are no tabs. */
 export function EmptyBar(props: { lead: number }) {
   return (
     <View class="flex-row shrink-0 h-9 bg-muted border-b border-border" style={{ paddingLeft: props.lead }} testID="empty-bar">
-      <BarEnd controls />
+      <View class="flex-1" />
+      <BarEnd />
     </View>
   );
 }

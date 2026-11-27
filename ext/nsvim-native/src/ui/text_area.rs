@@ -111,6 +111,8 @@ pub fn text_area(s: Session, keys: ElementRef, doc: Option<u64>, shown: Memo<boo
         .flex_1()
         .min_h(px(0.0))
         .overflow_hidden()
+        // The panes' tab bars drag the window (`src/panes.tsx`). The text under them does not.
+        .window_drag(false)
         .bg(move || color("background"))
         .test_id(&test_id)
         .element_ref(&area)

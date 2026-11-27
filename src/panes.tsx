@@ -18,6 +18,7 @@ import { effect, platform, signal, Text, View, type ContextMenuEvent, type Mouse
 import { DockArea, type DockAreaLayout, type DockTab } from "nsh/base";
 import { Icon, Shell, Tabs, TextArea, type TabState } from "nsvim-native";
 import { BarEnd, EmptyBar } from "./buffer-line";
+import { DRAG } from "./title-bar";
 import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync, topRight } from "./dock-layout";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
@@ -181,8 +182,10 @@ export function Panes(props: { font: () => Font; lead: () => number }) {
     }
   });
 
+  // The empty part of each tab bar drags the window, as a title bar does: the tabs and the
+  // handles take their own presses, and the text area turns the drag off for itself.
   return (
-    <View class="flex-1 min-w-0 min-h-0">
+    <View class="flex-1 min-w-0 min-h-0" desktop={DRAG}>
       <If
         when={tabs().length > 0}
         else={
@@ -212,7 +215,11 @@ export function Panes(props: { font: () => Font; lead: () => number }) {
           renderTab={(t: DockTab) => (
             <Tab tab={() => tabs()[indexOf(t.panel)]} index={() => indexOf(t.panel)} font={props.font} />
           )}
-          renderToolbar={(t: DockTab) => <BarEnd controls={topRight(layout().center)?.panels.includes(t.panel) ?? false} />}
+          renderToolbar={(t: DockTab) => (
+            <If when={topRight(layout().center)?.panels.includes(t.panel)}>
+              <BarEnd />
+            </If>
+          )}
           renderDragPreview={(t: DockTab) => (
             <View class="flex-row items-center h-9 px-3 bg-surface-raised border border-border opacity-90">
               <Label font={props.font} on text={tabs()[indexOf(t.panel)]?.name ?? ""} />
