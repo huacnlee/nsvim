@@ -1033,8 +1033,9 @@ again to quit and keep the edits for recovery.
   On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Toggle Comment, Move Line Up, Move Line Down,
   Delete Line, Indent, Outdent, Find…, Replace…, Find in Project….
-- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Zoom In, Zoom Out, Reset Zoom,
+- **View**: Command Palette…, File Tree, Soft Wrap, Line Blame, Zoom In, Zoom Out, Reset Zoom,
   Next Tab, Previous Tab, Split Right, Split Down, Focus Next Pane, Focus Previous Pane, Close Pane.
+  File Tree, Soft Wrap and Line Blame show a check mark while they are on.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
 - **Help**: Keyboard Shortcuts….
 
