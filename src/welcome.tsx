@@ -49,7 +49,7 @@ function Section(props: { font: () => FontState; title: string; rows: WelcomeRow
 export function WelcomePage(props: { state: () => WelcomeState }) {
   const font = useFont();
   return (
-    <View testID="welcome" class="absolute inset-0 items-center justify-center bg-background">
+    <View testID="welcome" class="absolute left-0 right-0 top-9 bottom-0 items-center justify-center bg-background">
       <View class="w-100 max-w-full gap-6 px-4">
         <View class="gap-1 px-2">
           <Text class="text-2xl font-bold text-foreground">NsVim</Text>

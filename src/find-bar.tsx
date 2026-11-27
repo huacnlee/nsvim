@@ -1,4 +1,4 @@
-// The find bar over the panes: find and replace in the active file, with no Vim syntax. Rust
+// The find bar under the panes: find and replace in the active file, with no Vim syntax. Rust
 // gives what it shows (`Find` in nsvim-native) and takes its keys (`App::find_key`). A press
 // asks Rust for a change and gives the keys back to the editor's key view.
 
@@ -55,7 +55,7 @@ export function FindBar() {
 function Bar(props: { find: () => FindState }) {
   const f = props.find;
   return (
-    <View class="shrink-0 gap-1.5 px-2 py-1.5 bg-muted border-b border-border" role="search" testID="find-bar">
+    <View class="shrink-0 gap-1.5 px-2 py-1.5 bg-muted border-t border-border" role="search" testID="find-bar">
       <View class="flex-row items-center gap-1.5">
         <Tool
           label={f().replace ? "Hide replace" : "Show replace"}

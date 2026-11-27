@@ -1015,7 +1015,7 @@ Recent, with the recent projects as they were when the window opened.
 
 A window has an application menu. On macOS it is the menu bar. On Windows and Linux NsVim draws
 its own title bar, and the system then shows no menu bar. There the menu button at the left end
-of the title bar opens the same menus, one submenu each. The terminal editor has no menu. The
+of the top bar opens the same menus, one submenu each. The terminal editor has no menu. The
 [command palette](#command-palette) holds every item of the menu, so use it there.
 
 On macOS, Close Window hides NsVim as `⌘ H` does, and does not quit it: your files, tabs
