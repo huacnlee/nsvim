@@ -41,18 +41,19 @@ notify = "8"
 nsh-tui-host = "0.7.0"
 nsh-platform-tui = { version = "0.7.0", default-features = false, features = ["js", "run-app", "svg"] }
 
-# The program's runner: it runs App.tsx's bundle with the app's Rust components.
+# The program's runner: it runs App.tsx's bundle with the app's Rust components. `updater`:
+# the window updates itself from GitHub Releases (`nsh.json` `"updater"`, `app::update`).
 [target.'cfg(target_os = "linux")'.dependencies]
-nsh-platform-linux = { version = "0.7.0", default-features = false, features = ["svg"] }
-nsh-linux-app = { version = "0.7.0", default-features = false, features = ["js", "svg"] }
+nsh-platform-linux = { version = "0.7.0", default-features = false, features = ["svg", "updater"] }
+nsh-linux-app = { version = "0.7.0", default-features = false, features = ["js", "svg", "updater"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-nsh-platform-macos = { version = "0.7.0", default-features = false, features = ["svg"] }
-nsh-macos-app = { version = "0.7.0", default-features = false, features = ["js", "svg"] }
+nsh-platform-macos = { version = "0.7.0", default-features = false, features = ["svg", "updater"] }
+nsh-macos-app = { version = "0.7.0", default-features = false, features = ["js", "svg", "updater"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-nsh-platform-windows = { version = "0.7.0", default-features = false, features = ["svg"] }
-nsh-windows-app = { version = "0.7.0", default-features = false, features = ["js", "svg"] }
+nsh-platform-windows = { version = "0.7.0", default-features = false, features = ["svg", "updater"] }
+nsh-windows-app = { version = "0.7.0", default-features = false, features = ["js", "svg", "updater"] }
 
 [dev-dependencies]
 nsh-engine = { version = "0.7.0", default-features = false }

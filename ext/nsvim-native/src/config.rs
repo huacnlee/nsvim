@@ -218,7 +218,8 @@ pub struct IpcCfg {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UpdateCfg {
-    /// Look for a new release on GitHub once a day. `:Update` checks and installs either way.
+    /// Look for a new release at startup (the window) or once a day (the terminal editor).
+    /// `:Update` checks and installs either way.
     pub check: bool,
 }
 

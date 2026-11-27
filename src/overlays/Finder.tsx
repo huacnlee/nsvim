@@ -32,7 +32,11 @@ function Query(props: { head: PickHead }) {
   return (
       <Titled title={props.head.title} class="h-[64px] w-full">
         <View class="flex-row flex-1 px-[8px] items-center" testID="picker-input">
-          <Text class="text-primary">{"› "}</Text>
+          {/* A fixed column: a text's trailing space takes no width, so the caret touched the
+              chevron. The rows below put their chevron in the same column. */}
+          <View class="w-[16.5px] shrink-0">
+            <Text class="text-primary">{"›"}</Text>
+          </View>
           <Text testID="picker-query">{props.head.query}</Text>
           <View class="w-[8px] h-[16px] bg-primary" testID="picker-caret" />
           <If when={!props.head.query}>

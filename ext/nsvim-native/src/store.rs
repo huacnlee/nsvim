@@ -270,6 +270,13 @@ impl Session {
                     crate::exports::refocus_keys();
                 });
             }
+            Effect::PromptUpdate { quiet } => {
+                let options = nsh_core::runtime::UpdatePromptOptions::default().quiet(quiet);
+                spawn(async move {
+                    nsh_core::runtime::prompt_for_update(options).await;
+                    crate::exports::refocus_keys();
+                });
+            }
             Effect::ChooseSavePath(start, then) => {
                 let dialog = nsh_core::file_dialog::SaveDialog::new().directory(start);
                 let answer = nsh_core::element::pick_save_path(dialog);
@@ -319,7 +326,10 @@ impl Session {
         let waker: crate::services::Waker = std::sync::Arc::new(move || {
             let _ = wake_tx.send(());
         });
-        self.update(|a, _| a.setup(waker));
+        self.update(|a, tx| {
+            a.setup(waker);
+            a.check_update_at_start(tx);
+        });
         let me = *self;
         spawn(async move {
             while wake_rx.recv().await.is_some() {

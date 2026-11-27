@@ -176,6 +176,34 @@ jobs:
             fi
           done
 
+      # NSH's updater takes an archive that holds one folder, the app, with its update
+      # configuration (`nsh/assets/nsh-updater.json`).
+      - name: Check the update archives
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os, tarfile, zipfile
+          from pathlib import Path
+          version = os.environ['RELEASE_VERSION']
+          archives = sorted(Path('dist').glob(f'NsVim-{version}-*'))
+          if not archives:
+              raise SystemExit('dist has no update archive')
+          for archive in archives:
+              if archive.suffix == '.zip':
+                  names = zipfile.ZipFile(archive).namelist()
+              else:
+                  names = tarfile.open(archive).getnames()
+              roots = {name.split('/')[0] for name in names}
+              if len(roots) != 1:
+                  raise SystemExit(f'{archive} must hold one folder, not {sorted(roots)}')
+              root = roots.pop()
+              config = f'{root}/Contents/Resources/nsh/assets/nsh-updater.json' if root.endswith('.app') else f'{root}/nsh/assets/nsh-updater.json'
+              if config not in names:
+                  raise SystemExit(f'{archive} is missing {config}')
+              print(archive, root)
+          PY
+
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.name }}
@@ -191,6 +219,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -204,6 +236,19 @@ jobs:
           test "$(wc -l < SHA256SUMS)" -eq 5
           sha256sum --check SHA256SUMS
           rm -- *.sha256
+
+      # The update manifest that NSH's updater reads from releases/latest/download/latest.json
+      # (`nsh.json` `"updater"`). It lists the update archives by platform, with their SHA-256.
+      - name: Write the update manifest
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          curl -fsSL https://nsh.dev/install.sh | NSH_VERSION=v0.7.0 sh
+          export PATH="$HOME/.local/bin:$PATH"
+          version="${RELEASE_TAG#v}"
+          test "$(ls dist/NsVim-"$version"-*.* | wc -l)" -eq 5
+          nsh update-manifest dist/NsVim-"$version"-*.* --out dist
+          cat dist/latest.json
 
       - name: Publish the GitHub release
         env:
