@@ -131,6 +131,14 @@ impl App {
             self.run_actions(vec![Action::CodeActions], tx);
             return;
         }
+        // The Go menu: Back and Forward in every keymap, Go to Line and Go to Symbol in File in
+        // the classic one. The Neovim keymap has `:N`, `Ctrl-o` and `SPC l s`.
+        let go = super::goto::jump_key(&k)
+            .or_else(|| super::goto::classic_go_key(&k, cfg!(target_os = "macos")).filter(|_| self.ed.keymap == Keymap::Classic));
+        if let Some(id) = go {
+            self.run_command(id, tx);
+            return;
+        }
         let before = self.ed.buf().version();
         let actions = match self.ed.keymap {
             Keymap::Vim => editor::vim::handle_key(&mut self.ed, k),

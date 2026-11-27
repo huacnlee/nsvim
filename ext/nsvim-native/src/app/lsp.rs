@@ -68,6 +68,7 @@ impl App {
                 if locs.is_empty() {
                     self.ed.message(format!("no {kind} found"));
                 } else if locs.len() == 1 && kind == "definition" {
+                    editor::vim::remember_jump(&mut self.ed);
                     let l = &locs[0];
                     self.open_path(l.path.clone(), Some(l.pos));
                 } else {

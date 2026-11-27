@@ -93,6 +93,10 @@ pub struct PickHead {
     pub wide: bool,
     /// What the list shows when it has no rows.
     pub empty: String,
+    /// The panel is the query line alone: Go to Line, which previews in the editor.
+    pub compact: bool,
+    /// What the empty query line says: `Type to filter`.
+    pub hint: String,
 }
 
 /// A run of a row's name: matched chars, or chars between them.
@@ -208,7 +212,7 @@ pub(super) fn menu(a: &App) -> MenuState {
 }
 
 fn wide(kind: PickKind) -> bool {
-    matches!(kind, PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects)
+    matches!(kind, PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects | PickKind::Line)
 }
 
 pub(super) fn pick(a: &App) -> Option<&Picker> {
@@ -220,11 +224,22 @@ pub(super) fn pick(a: &App) -> Option<&Picker> {
 
 pub(super) fn head(a: &App) -> PickHead {
     let Some(pk) = pick(a) else {
-        return PickHead { title: String::new(), query: String::new(), count: String::new(), wide: true, empty: String::new() };
+        return PickHead {
+            title: String::new(),
+            query: String::new(),
+            count: String::new(),
+            wide: true,
+            empty: String::new(),
+            compact: false,
+            hint: String::new(),
+        };
     };
     let grep = pk.kind == PickKind::Grep;
     let locs = pk.kind == PickKind::Locations;
-    let count = if locs {
+    let line = pk.kind == PickKind::Line;
+    let count = if line {
+        crate::app::goto::line_hint(&pk.query, a.ed.buf().line_count())
+    } else if locs {
         a.locations.len().to_string()
     } else if grep {
         a.grep.hits.len().to_string()
@@ -237,11 +252,14 @@ pub(super) fn head(a: &App) -> PickHead {
         e.clone()
     } else if grep && pk.query.is_empty() {
         "Type to search the project".into()
+    } else if pk.kind == PickKind::Symbols && pk.items.is_empty() {
+        "No symbols in this file".into()
     } else {
         "No matches".into()
     };
     let title = if locs { a.locations_title } else { pk.kind.title() };
-    PickHead { title: title.into(), query: pk.query.clone(), count, wide: wide(pk.kind), empty }
+    let hint = if line { "Line number, or line:column" } else { "Type to filter" };
+    PickHead { title: title.into(), query: pk.query.clone(), count, wide: wide(pk.kind), empty, compact: line, hint: hint.into() }
 }
 
 /// The rows on screen: from the scroll position, as many as fit and one more.
@@ -269,6 +287,14 @@ fn row(a: &App, pk: &Picker, i: usize) -> PickRow {
         PickKind::Locations => {
             let l = &a.locations[i];
             (String::new(), format!("{}:{}", a.rel(&l.path), l.pos.line + 1), Vec::new(), l.text.trim().chars().take(160).collect())
+        }
+        // A symbol row is the name, set in by its depth while the list keeps the file's order,
+        // then its kind and line, drawn dim.
+        PickKind::Symbols => {
+            let m = &pk.matches[i];
+            let s = &pk.symbols[m.index];
+            let indent = if pk.query.is_empty() { "  ".repeat(s.depth.min(6)) } else { String::new() };
+            (indent, s.name.clone(), m.hits.clone(), format!("{}  line {}", s.kind, s.pos.line + 1))
         }
         // A key row is the keys and what they do, then a tab and the section, drawn dim.
         PickKind::Keys => {

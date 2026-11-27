@@ -9,6 +9,7 @@ pub mod disk_dialogs;
 pub mod files;
 pub mod find;
 pub mod fx;
+pub mod goto;
 pub mod ipc;
 pub mod key_list;
 pub mod keys;

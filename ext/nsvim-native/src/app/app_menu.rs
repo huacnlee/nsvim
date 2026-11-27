@@ -91,6 +91,12 @@ impl App {
             item("cmd:prev", "Previous Tab"),
         ];
         let go = vec![
+            item("cmd:back", "Back"),
+            item("cmd:forward", "Forward"),
+            Entry::Separator,
+            item("cmd:line", "Go to Line…"),
+            item("cmd:symbols", "Go to Symbol in File…"),
+            Entry::Separator,
             item("edit:definition", "Go to Definition"),
             item("edit:references", "Find References…"),
             item("edit:rename", "Rename Symbol…"),

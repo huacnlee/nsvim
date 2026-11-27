@@ -39,6 +39,8 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC q` | Close the buffer. A modified buffer stays open |
 | `SPC Q` | Quit. A modified buffer stops it |
 | `SPC d` | List the diagnostics of this file |
+| `SPC j` | Go to a line. See [Go to line and symbols](#go-to-line-and-symbols) |
+| `SPC [`, `SPC ]` | Back, forward in the jump list |
 | `SPC ,` | Open Settings |
 | `SPC ?` | Show every key, with search. See [Key list](#key-list) |
 | `SPC p` | Open the command palette. See [Command palette](#command-palette) |
@@ -49,6 +51,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC l h` | Show hover information |
 | `SPC l n` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `SPC l a` | List the code actions |
+| `SPC l s` | Go to a symbol in this file. See [Go to line and symbols](#go-to-line-and-symbols) |
 | `SPC a l` | List the changes made on disk from outside the editor |
 | `SPC a c` | Clear the outside-change marks |
 | `SPC a p` | Show the next agent proposal |
@@ -67,7 +70,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
 | `SPC u S` | Open App Setup to change keymap, theme and other picks. See [Setup](#setup) |
 
-The `SPC l` keys need a language server. See `docs/lsp.md`.
+The `SPC l` keys need a language server, except `SPC l s`. See `docs/lsp.md`.
 
 ### Motions
 
@@ -126,13 +129,14 @@ Bash has no parameters.
 | `zt` `z Enter` | Put the cursor's line at the top |
 | `zb` `z-` | Put the cursor's line at the bottom |
 | `{N}zz` `{N}zt` `{N}zb` | Go to line `N`, then put it in the middle, at the top, at the bottom |
-| `Ctrl o` | Go back in the jump list, across files |
-| `Ctrl i` `Tab` | Go forward in the jump list |
+| `Ctrl o`, `Ctrl Alt -` (`⌃ -` on macOS) | Go back in the jump list, across files |
+| `Ctrl i` `Tab`, `Ctrl ⇧ -` | Go forward in the jump list |
 | `''` ``` `` ``` | Go to the place before the last jump |
 
 The jump list keeps the place before each jump, up to 100 places. `G`, `gg`, `%`, `{`, `}`,
 `(`, `)`, `H`, `M` and `L` are jumps. So are `n`, `N`, `*`, `#`, `g*`, `g#` and the `]` and `[`
-motions. A search, a mark and `:{N}` are jumps too.
+motions. A search, a mark and `:{N}` are jumps too. So are Go to Line, a symbol, a definition,
+and a search hit or a location picked in a picker.
 
 ### Operators and text objects
 
@@ -568,6 +572,9 @@ classic keymap.
 | `Tab` | Indent a selection of several lines. Else type one indent level |
 | `⇧ Tab` | Outdent the line, or every line of the selection |
 | `F12` | Go to the definition |
+| `Ctrl G` | Go to a line, or `line:column`. `⌘ L` on macOS |
+| `Ctrl ⇧ O` | Go to a symbol in this file |
+| `Ctrl Alt -`, `Ctrl ⇧ -` | Back, forward in the jump list. `⌃ -` and `⌃ ⇧ -` on macOS |
 | `F2` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `Ctrl .` | List the code actions |
 | `Ctrl B` | Show or hide the file tree |
@@ -647,6 +654,23 @@ puts one line at each. Cursors that meet become one. `Ctrl D`, `Ctrl S`, `Ctrl P
 ## Everywhere
 
 These keys work in both keymaps, unless a row says otherwise.
+
+### Go to line and symbols
+
+The Go menu, the command palette and these keys move far in the file. The place before each
+move goes on the jump list, so Back comes back to it.
+
+| Keys | Does |
+| --- | --- |
+| `Ctrl G` in the classic keymap, `⌘ L` on macOS, `SPC j` | Go to Line. Type a line number, or `line:column`. The cursor moves as you type. `Enter` stays there, `Esc` goes back |
+| `Ctrl ⇧ O` in the classic keymap, `⇧ ⌘ O` on macOS, `SPC l s` | Go to Symbol in File. Type to filter. Each row shows the kind and the line |
+| `Ctrl Alt -`, `Ctrl ⇧ -`, `SPC [`, `SPC ]` | Back, Forward in the jump list. On macOS `⌃ -` and `⌃ ⇧ -`, with Control, not ⌘ |
+| The mouse's back and forward buttons | Back, Forward, over the text |
+
+The symbols come from the file's tree-sitter tree, with no language server: functions,
+methods, classes, structs, enums, traits and interfaces. With an
+empty query, the list keeps the file's order and sets nested symbols in. In the Neovim keymap,
+`:N` and `NG` also go to line `N`.
 
 ### File tree
 
@@ -737,6 +761,8 @@ It has these commands:
 | `Show every key…` | Show every key, with search |
 | `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
 | `Git: status in the tree` | Show and focus the file tree, with its git status letters |
+| `Go to line…`, `Go to symbol in file…` | Go to a line, a symbol of this file. See [Go to line and symbols](#go-to-line-and-symbols) |
+| `Back`, `Forward` | Go back, forward in the jump list |
 | `Go to definition`, `Find references…`, `Hover`, `Rename symbol…`, `Code actions…` | Ask the language server |
 | `Agent: list outside changes…` | List the changes made on disk from outside the editor |
 | `Agent: clear change marks` | Clear the outside-change marks |
@@ -879,6 +905,7 @@ Turn the mouse on or off in setup, in Settings or with `:set mouse`. When it is 
 - In Settings, a click picks a section, changes an option or writes `config.toml` with the
   `:w` button on the status line.
 - In the classic keymap, `Alt`-click adds a cursor.
+- The back and forward buttons of a mouse go back and forward in the jump list.
 
 `mouse.click`, `mouse.drag` and `mouse.double_click` in `config.toml` turn each of these off
 on its own.

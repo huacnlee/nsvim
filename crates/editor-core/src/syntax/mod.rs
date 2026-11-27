@@ -8,6 +8,7 @@
 pub mod highlight;
 mod langs;
 mod objects;
+mod symbols;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -17,6 +18,7 @@ use tree_sitter::{Parser, Tree};
 
 use crate::buffer::{Buffer, Pos};
 use langs::{Lang, lang_for};
+pub use symbols::Symbol;
 
 /// A kind of code structure.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -52,6 +54,12 @@ pub fn object(buf: &Buffer, path: Option<&Path>, pos: Pos, obj: Obj, inner: bool
 /// fewer than `count` remain, the farthest one.
 pub fn jump(buf: &Buffer, path: Option<&Path>, pos: Pos, obj: Obj, forward: bool, end: bool, count: usize) -> Option<Pos> {
     with_tree(buf, path, |doc| objects::jump(doc, pos, obj, forward, end, count.max(1)))?
+}
+
+/// The functions, methods and classes of a file, in document order, for Go to Symbol in File
+/// when no language server answers. Empty when the language has no grammar.
+pub fn symbols(buf: &Buffer, path: Option<&Path>) -> Vec<Symbol> {
+    with_tree(buf, path, symbols::list).unwrap_or_default()
 }
 
 /// The language name of a file for the status line, or `text` when no grammar covers it.

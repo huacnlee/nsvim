@@ -371,3 +371,32 @@ fn an_edit_reparses_and_the_cache_follows_the_version() {
     let r = object(&b, Some(path), Pos::new(3, 4), Obj::Function, false, 1).map(|r| show(&b, r));
     assert_eq!(r.as_deref(), Some("L2-4"));
 }
+
+fn syms(src: &str, file: &str) -> Vec<(String, &'static str, usize, usize)> {
+    let b = Buffer::from_str(src);
+    symbols(&b, Some(Path::new(file))).into_iter().map(|s| (s.name, s.kind, s.pos.line, s.depth)).collect()
+}
+
+#[test]
+fn symbols_list_functions_classes_and_methods_in_order() {
+    let rust = "struct Pt { x: i32 }\nimpl Pt {\n    fn len(&self) -> i32 { let f = |a: i32| a; f(self.x) }\n}\nfn main() {}\n";
+    assert_eq!(
+        syms(rust, "a.rs"),
+        vec![
+            ("Pt".into(), "Struct", 0, 0),
+            ("impl Pt".into(), "Impl", 1, 0),
+            ("len".into(), "Method", 2, 1),
+            ("f".into(), "Function", 2, 2),
+            ("main".into(), "Function", 4, 0),
+        ]
+    );
+    let py = "class Café:\n    def größe(self):\n        pass\n\ndef top():\n    pass\n";
+    assert_eq!(syms(py, "a.py"), vec![("Café".into(), "Class", 0, 0), ("größe".into(), "Method", 1, 1), ("top".into(), "Function", 4, 0)]);
+    let ts = "export const add = (a: number) => a + 1;\ninterface Shape { area(): number }\n";
+    assert_eq!(
+        syms(ts, "a.ts"),
+        vec![("add".into(), "Function", 0, 0), ("Shape".into(), "Interface", 1, 0), ("area".into(), "Method", 1, 1)]
+    );
+    assert_eq!(syms("int helper(void) { return 1; }\n", "a.c"), vec![("helper".into(), "Function", 0, 0)]);
+    assert!(syms("plain words\n", "a.txt").is_empty());
+}

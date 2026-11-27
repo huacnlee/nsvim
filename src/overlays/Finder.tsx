@@ -1,6 +1,7 @@
 // The finder panel, near the top of the window: the query line, the rows, and a preview of
-// the picked file. Files, project search, buffers, commands, locations, code actions and the
-// key list all share it. Its keys stay in Rust (`App::key`).
+// the picked file. Files, project search, buffers, commands, locations, code actions, symbols
+// and the key list all share it. Go to Line shows the query line alone, because the editor
+// under it shows the line. Its keys stay in Rust (`App::key`).
 
 import { signal, Text, View, windowSize } from "nsh";
 import { Icon, Overlays, Shell, type PickHead } from "nsvim-native";
@@ -21,7 +22,7 @@ function Query(props: { head: PickHead }) {
         <Text testID="picker-query">{props.head.query}</Text>
         <View class="w-[8px] h-[16px] bg-primary" testID="picker-caret" />
         <If when={!props.head.query}>
-          <Text class="text-text-faint">{" Type to filter"}</Text>
+          <Text class="text-text-faint">{` ${props.head.hint}`}</Text>
         </If>
         <View class="flex-1" />
         <Text class="text-muted-foreground" testID="picker-count">
@@ -40,7 +41,7 @@ function Query(props: { head: PickHead }) {
           <Text testID="picker-query">{props.head.query}</Text>
           <View class="w-[8px] h-[16px] bg-primary" testID="picker-caret" />
           <If when={!props.head.query}>
-            <Text class="text-text-faint">{" Type to filter"}</Text>
+            <Text class="text-text-faint">{` ${props.head.hint}`}</Text>
           </If>
           <View class="flex-1" />
           <Text class="text-muted-foreground" testID="picker-count">
@@ -60,7 +61,7 @@ function Query(props: { head: PickHead }) {
         </Text>
         <View class="w-[1.5px] h-[16px] bg-primary" testID="picker-caret" />
         <If when={!props.head.query}>
-          <Text class="text-[13px] text-text-faint">{"  Type to filter"}</Text>
+          <Text class="text-[13px] text-text-faint">{`  ${props.head.hint}`}</Text>
         </If>
         <View class="flex-1" />
         <Text class="text-muted-foreground" style={{ fontSize: SIZE }} testID="picker-count">
@@ -81,7 +82,7 @@ export function Finder() {
 function Panel(props: { head: () => PickHead }) {
   const head = props.head;
   const width = () => Math.min(Math.max(windowSize().width - 32, 320), 1040);
-  const height = () => Math.max(Math.min(560, windowSize().height - 100), 200);
+  const height = () => (head().compact ? 84 : Math.max(Math.min(560, windowSize().height - 100), 200));
   const left = () => Math.max((windowSize().width - width()) / 2, 16);
   const top = () => Math.min(80, windowSize().height * 0.1 + 20);
   const listWidth = () => (head().wide ? width() - 20 : Math.max(width() * 0.42, 300));
@@ -97,9 +98,11 @@ function Panel(props: { head: () => PickHead }) {
       >
         <View class="h-full" style={{ width: head().wide ? "100%" : Math.floor((windowSize().width * 0.42) / 8) * 8 }}>
           <Query head={head()} />
-          <Titled title="Results" class="w-full flex-1 min-h-0">
-            <PickList empty={head().empty} />
-          </Titled>
+          <If when={!head().compact}>
+            <Titled title="Results" class="w-full flex-1 min-h-0">
+              <PickList empty={head().empty} />
+            </Titled>
+          </If>
         </View>
         <If when={!head().wide}>
           <Preview />
@@ -117,9 +120,11 @@ function Panel(props: { head: () => PickHead }) {
       >
         <View class="h-full gap-[14px]" style={{ width: listWidth() }}>
           <Query head={head()} />
-          <Titled title="Results" class="w-full flex-1 min-h-0">
-            <PickList empty={head().empty} />
-          </Titled>
+          <If when={!head().compact}>
+            <Titled title="Results" class="w-full flex-1 min-h-0">
+              <PickList empty={head().empty} />
+            </Titled>
+          </If>
         </View>
         <If when={!head().wide}>
           <Preview />
