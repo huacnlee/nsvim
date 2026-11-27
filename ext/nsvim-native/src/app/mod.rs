@@ -21,6 +21,7 @@ pub mod mouse;
 pub mod palette;
 #[cfg(test)]
 mod palette_tests;
+pub mod panes;
 pub mod picker;
 pub mod project;
 pub mod review;
@@ -195,6 +196,8 @@ pub struct App {
     pub polls: u32,
     /// Lines an agent pointed at, with its note.
     pub note: Option<ipc::Note>,
+    /// The last pane command and its number, for the panes' screen to carry out (`panes.rs`).
+    pub pane_ask: Option<(u64, editor::editor::PaneCmd)>,
     /// Changed blocks of files that changed on disk, newest first.
     pub outside: Vec<review::Hunk>,
     /// Changes agents proposed, waiting for y or n.
@@ -322,6 +325,7 @@ impl App {
             polls: 0,
             scripted: Vec::new(),
             note: None,
+            pane_ask: None,
             outside: Vec::new(),
             proposals: Vec::new(),
             raise: None,

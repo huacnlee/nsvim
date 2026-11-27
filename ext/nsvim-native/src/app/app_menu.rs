@@ -89,6 +89,12 @@ impl App {
             Entry::Separator,
             item("cmd:next", "Next Tab"),
             item("cmd:prev", "Previous Tab"),
+            Entry::Separator,
+            item("cmd:split-right", "Split Right"),
+            item("cmd:split-down", "Split Down"),
+            item("cmd:pane-next", "Focus Next Pane"),
+            item("cmd:pane-prev", "Focus Previous Pane"),
+            item("cmd:pane-close", "Close Pane"),
         ];
         let go = vec![
             item("edit:definition", "Go to Definition"),

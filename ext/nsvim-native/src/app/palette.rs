@@ -32,7 +32,7 @@ const fn cmd(label: &'static str, id: &'static str, leader: &'static str, vim: &
 
 /// The leader menu's groups: the key that opens one, and its name. A command whose label
 /// starts with the name and `: ` shows without that part in the group.
-pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('y', "Edit"), ('u', "UI")];
+pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('s', "Pane"), ('y', "Edit"), ('u', "UI")];
 
 /// `SPC p`: the leader menu's key for the palette itself, which the palette does not list.
 pub const PALETTE_KEY: char = 'p';
@@ -76,6 +76,11 @@ pub const COMMANDS: &[Command] = &[
     cmd("Close tabs to the right", "close-right", "t r", "", ""),
     cmd("Close clean tabs", "close-clean", "t c", "", ""),
     cmd("Close all tabs", "close-all", "t a", "", ""),
+    cmd("Pane: split right", "split-right", "s v", "Ctrl w v", "Mod \\"),
+    cmd("Pane: split down", "split-down", "s s", "Ctrl w s", ""),
+    cmd("Pane: focus next", "pane-next", "s n", "Ctrl w l", ""),
+    cmd("Pane: focus previous", "pane-prev", "s p", "Ctrl w k", ""),
+    cmd("Pane: close", "pane-close", "s c", "Ctrl w c", ""),
     cmd("Undo", "undo", "y u", "u", "Mod Z"),
     cmd("Redo", "redo", "y r", "Ctrl r", "Mod ⇧ Z"),
     cmd("Cut", "cut", "y x", "d", "Mod X"),
@@ -178,6 +183,9 @@ impl App {
                 self.ed.message("no file is open");
             }
             return;
+        }
+        if let Some(pane) = editor::editor::PaneCmd::from_id(id) {
+            return self.ask_pane(pane);
         }
         if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
             if self.ed.has_doc() && !self.on_settings {

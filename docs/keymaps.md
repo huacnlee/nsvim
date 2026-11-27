@@ -58,6 +58,9 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC t l`, `SPC t r` | Close the tabs to the left, to the right of this tab |
 | `SPC t c` | Close the tabs with no unsaved changes |
 | `SPC t a` | Close all tabs |
+| `SPC s v`, `SPC s s` | Split the pane: move this tab to a new pane on the right, below. See [Panes](#panes) |
+| `SPC s n`, `SPC s p` | Give the keys to the next, the previous pane |
+| `SPC s c` | Close the pane. Its tabs join the pane next to it |
 | `SPC y u`, `SPC y r` | Undo, redo one change |
 | `SPC y x`, `SPC y y`, `SPC y p` | Cut, copy, paste, on the Visual selection |
 | `SPC y a` | Select every line |
@@ -205,6 +208,10 @@ status line says why.
 | `gf` | Open the file whose name is under the cursor. It looks beside this file, then at the project root |
 | `gt` `gT` | Next, previous tab |
 | `Ctrl w h`, `Ctrl w w`, `Ctrl w Ctrl w` | Show the file tree and give it the focus. `Ctrl w p` does the same |
+| `Ctrl w v`, `Ctrl w s` | Split the pane: move this tab to a new pane on the right, below. See [Panes](#panes) |
+| `Ctrl w l`, `Ctrl w j` | Give the keys to the next pane. With one pane, nothing changes |
+| `Ctrl w k` | Give the keys to the previous pane |
+| `Ctrl w c` | Close the pane. Its tabs join the pane next to it |
 | `ZZ` | Write the buffer if it changed, then close it. After the last buffer, quit |
 | `ZQ` | Close the buffer. Do not write it |
 | `Esc` `Ctrl c` `Ctrl [` | Cancel a command you started to type |
@@ -415,6 +422,8 @@ A command takes a range when the table shows one. The next section explains rang
 | `:enew`, `:ene` | Open a new empty buffer with no name. `:w path` names and writes it; `:w` alone says E32. Save in the menu or the palette asks where to save it |
 | `:e` | Read the buffer again from disk. With unsaved changes, it stops with `E37` |
 | `:e!` | Read the buffer again from disk and drop its changes |
+| `:vs`, `:vsp`, `:vsplit` | Move this tab to a new pane on the right. `:vsplit path` opens the file first |
+| `:sp`, `:split` | Move this tab to a new pane below. `:split path` opens the file first |
 | `:bn`, `:bnext` | Next tab |
 | `:bp`, `:bprev`, `:bprevious`, `:bN`, `:bNext` | Previous tab |
 | `:bd`, `:bdelete`, `:bw`, `:bwipeout` | Close the buffer. A modified buffer stays open |
@@ -571,6 +580,7 @@ classic keymap.
 | `F2` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `Ctrl .` | List the code actions |
 | `Ctrl B` | Show or hide the file tree |
+| `Ctrl \` | Move this tab to a new pane on the right. `⌘ \` on macOS. See [Panes](#panes) |
 | `Ctrl ⇧ E` | Show the file tree and give it the focus. From the tree, give the focus back to the text |
 | `Ctrl Tab` `Ctrl ⇧ Tab` | Next, previous tab |
 | `Ctrl Q` | Quit. A modified buffer stops it |
@@ -683,6 +693,29 @@ Other keys do nothing while the tree has the focus, so a key meant for the tree 
 the file. A letter after a file name is its git status. A dot after a folder name shows that a file in
 it changed.
 
+### Panes
+
+The open files show in panes, each with its own tabs. A tab dragged to an edge of a pane
+splits it. These commands do the same from the keys, the menus and the palette:
+
+| Command | Neovim keymap | Classic keymap | Does |
+| --- | --- | --- | --- |
+| Split right | `Ctrl w v`, `:vsplit`, `SPC s v` | `Ctrl \` (`⌘ \`) | Move this tab to a new pane on the right |
+| Split down | `Ctrl w s`, `:split`, `SPC s s` | | Move this tab to a new pane below |
+| Focus next pane | `Ctrl w l`, `Ctrl w j`, `SPC s n` | | Give the keys to the next pane |
+| Focus previous pane | `Ctrl w k`, `SPC s p` | | Give the keys to the previous pane |
+| Close pane | `Ctrl w c`, `SPC s c` | | Remove the pane. Its tabs join the pane before it, or after it for the first pane. No file closes |
+
+The pane of the file that has the keys is the active pane. A file shows in one pane only, so
+a split moves the tab. A pane with one tab has nothing to split: the command line says so.
+The next pane is the next one from left to right, then from top to bottom. After the last
+pane comes the first.
+
+`Ctrl w h`, `Ctrl w w`, `Ctrl w Ctrl w` and `Ctrl w p` still go to the file tree, so they do not
+move between panes. In Vim, `:close` closes the window. In NsVim it closes the tab, as before.
+
+The View menu and the tab menu (a right-click on a tab) have the same commands.
+
 ### Pickers
 
 The file finder, project search, the buffer list, the command palette, the key list,
@@ -746,6 +779,9 @@ It has these commands:
 | `Close other tabs` | Close every tab but this one |
 | `Close tabs to the left`, `Close tabs to the right` | Close the tabs before, after this one |
 | `Close clean tabs`, `Close all tabs` | Close the tabs with no unsaved changes, every tab |
+| `Pane: split right`, `Pane: split down` | Move this tab to a new pane on the right, below |
+| `Pane: focus next`, `Pane: focus previous` | Give the keys to the next, the previous pane |
+| `Pane: close` | Close the pane. Its tabs join the pane next to it |
 | `Undo`, `Redo` | Undo or redo one change |
 | `Cut`, `Copy`, `Paste`, `Select all` | The clipboard, on the selection or the Visual selection |
 | `Toggle soft wrap` | Turn soft wrap on or off |
@@ -895,6 +931,7 @@ need `mouse.right_click`.
 | `Close left`, `Close right` | Close the tabs before, after this one |
 | `Close clean` | Close every tab with no unsaved changes |
 | `Close all` | Close every tab |
+| `Split right`, `Split down` | Move this tab to a new pane on the right, below |
 | `Copy path`, `Copy relative path` | Copy the file's path, or its path in the project |
 | `Reveal in file tree` | Show the file in the file tree |
 
@@ -938,7 +975,8 @@ again to quit and keep the edits for recovery.
 - **File**: New File, Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
   On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find…, Replace…, Find in Project….
-- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
+- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab, Split Right,
+  Split Down, Focus Next Pane, Focus Previous Pane, Close Pane.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
 - **Help**: Keyboard Shortcuts….
 
