@@ -51,7 +51,18 @@ fn the_menu_shows_every_item_with_its_tree_key_and_takes_the_row() {
         .expect("a right-click on a row opens the system's menu");
     assert_eq!(menu.items.len(), TREE_ITEMS.len());
     let titles: Vec<String> = menu.items.iter().flatten().map(|i| i.title.clone()).collect();
-    assert_eq!(titles, ["New file…    a", "New folder…    A", "Rename…    r", "Delete…    d", "Copy path", "Copy relative path"]);
+    assert_eq!(
+        titles,
+        [
+            "New file…    a",
+            "New folder…    A",
+            "Rename…    r",
+            "Delete…    d",
+            "Copy path",
+            "Copy relative path",
+            crate::services::reveal::TITLE
+        ]
+    );
     assert!(menu.items.iter().flatten().all(|i| i.enabled));
     assert_eq!(a.tree.sel.as_deref(), Some("src/lib.rs"), "the row the menu works on shows");
     assert!(a.tree.focus, "the tree keys work on the row next");
@@ -151,4 +162,12 @@ fn copy_path_and_copy_relative_path_copy_the_row_path() {
     };
     assert_eq!(copied(&mut a, "copy-path").as_deref(), Some("/project/src/lib.rs"));
     assert_eq!(copied(&mut a, "copy-relative-path").as_deref(), Some("src/lib.rs"));
+}
+
+#[test]
+fn reveal_shows_the_row_in_the_file_manager() {
+    let mut a = app();
+    let mut tx = Tx::new();
+    a.tree_menu_pick("src/lib.rs", "reveal-in-file-manager", &mut tx);
+    assert!(matches!(tx.effects.as_slice(), [Effect::Reveal(p)] if p == &PathBuf::from("/project/src/lib.rs")));
 }

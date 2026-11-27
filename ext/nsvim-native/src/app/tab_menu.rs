@@ -62,6 +62,7 @@ pub const TAB_ITEMS: &[(&str, &str)] = &[
     ("copy-path", "Copy path"),
     ("copy-relative-path", "Copy relative path"),
     ("reveal", "Reveal in file tree"),
+    ("reveal-in-file-manager", crate::services::reveal::TITLE),
 ];
 
 impl App {
@@ -106,7 +107,7 @@ impl App {
             "close-left" => i > 0,
             "close-right" => i + 1 < n,
             "close-clean" => self.ed.docs.iter().any(|d| !d.buf.is_dirty()),
-            "copy-path" => path.is_some(),
+            "copy-path" | "reveal-in-file-manager" => path.is_some(),
             "copy-relative-path" | "reveal" => path.is_some_and(|p| p.starts_with(&self.ed.root)),
             _ => i < n,
         }
@@ -143,6 +144,7 @@ impl App {
                 self.tree.show = true;
                 self.reveal_in_tree(&path);
             }
+            "reveal-in-file-manager" => tx.reveal(path),
             _ => {}
         }
     }

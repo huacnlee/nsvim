@@ -167,9 +167,10 @@ fn the_menu_needs_a_selection_to_cut_and_copy() {
     assert_eq!(kind(&a), OverlayKind::Menu);
     let m = menu(&a);
     assert_eq!((m.x, m.y, m.sel), (10.0, 20.0, 2));
-    assert_eq!(m.items.iter().filter(|i| i.separator).count(), 2);
+    assert_eq!(m.items.iter().filter(|i| i.separator).count(), 3);
     let item = |id: &str| m.items.iter().find(|i| i.id == id).unwrap().clone();
     assert!(!item("cut").enabled && !item("copy").enabled);
     assert!(item("paste").enabled);
     assert_eq!(item("definition").hint, "gd", "the Neovim keymap's key");
+    assert!(!item("reveal-in-file-manager").enabled, "no file to reveal");
 }

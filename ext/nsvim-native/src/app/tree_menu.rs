@@ -1,5 +1,5 @@
 //! The context menu of a tree row (a right-click in the file tree): make a file or a folder,
-//! rename, delete, and copy the path. Names come from a native dialog with a text field, and
+//! rename, delete, copy the path, and reveal it in the file manager. Names come from a native dialog with a text field, and
 //! a delete asks in a native alert, so the mouse never lands on the command line. The tree's
 //! keys (`a`, `A`, `r`, `d`) keep the command line and the `y` answer.
 
@@ -18,6 +18,7 @@ pub const TREE_ITEMS: &[(&str, &str, &str)] = &[
     ("-", "", ""),
     ("copy-path", "Copy path", ""),
     ("copy-relative-path", "Copy relative path", ""),
+    ("reveal-in-file-manager", crate::services::reveal::TITLE, ""),
 ];
 
 /// The id of the dialogs' button that does the change.
@@ -64,6 +65,7 @@ impl App {
                 self.ed.message(format!("copied {path}"));
                 tx.copy(path.to_string());
             }
+            "reveal-in-file-manager" => tx.reveal(full),
             _ => {}
         }
     }
