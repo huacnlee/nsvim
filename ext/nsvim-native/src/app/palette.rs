@@ -32,7 +32,7 @@ const fn cmd(label: &'static str, id: &'static str, leader: &'static str, vim: &
 
 /// The leader menu's groups: the key that opens one, and its name. A command whose label
 /// starts with the name and `: ` shows without that part in the group.
-pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('y', "Edit"), ('u', "UI")];
+pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('s', "Pane"), ('y', "Edit"), ('u', "UI")];
 
 /// `SPC p`: the leader menu's key for the palette itself, which the palette does not list.
 pub const PALETTE_KEY: char = 'p';
@@ -61,11 +61,14 @@ pub const COMMANDS: &[Command] = &[
     cmd("Git: next change", "git-next", "g n", "", ""),
     cmd("Git: previous change", "git-prev", "g p", "", ""),
     cmd("Git: status in the tree", "git-status", "g s", "", "Mod ⇧ E"),
+    cmd("Git: toggle line blame", "git-blame", "g b", "", ""),
     cmd("Go to definition", "definition", "l d", "gd", "F12"),
     cmd("Find references…", "references", "l r", "", ""),
     cmd("Hover", "hover", "l h", "K", ""),
     cmd("Rename symbol…", "rename", "l n", "", "F2"),
     cmd("Code actions…", "actions", "l a", "", "Mod ."),
+    cmd("Format document", "format", "l f", ":Format", "⇧ Alt F"),
+    cmd("Format selection", "format-selection", "l F", "", ""),
     cmd("Agent: list outside changes…", "outside", "a l", "", ""),
     cmd("Agent: clear change marks", "clear-outside", "a c", "", ""),
     cmd("Agent: show the next proposal", "proposal", "a p", "", ""),
@@ -77,6 +80,11 @@ pub const COMMANDS: &[Command] = &[
     cmd("Close tabs to the right", "close-right", "t r", "", ""),
     cmd("Close clean tabs", "close-clean", "t c", "", ""),
     cmd("Close all tabs", "close-all", "t a", "", ""),
+    cmd("Pane: split right", "split-right", "s v", "Ctrl w v", "Mod \\"),
+    cmd("Pane: split down", "split-down", "s s", "Ctrl w s", ""),
+    cmd("Pane: focus next", "pane-next", "s n", "Ctrl w l", ""),
+    cmd("Pane: focus previous", "pane-prev", "s p", "Ctrl w k", ""),
+    cmd("Pane: close", "pane-close", "s c", "Ctrl w c", ""),
     cmd("Undo", "undo", "y u", "u", "Mod Z"),
     cmd("Redo", "redo", "y r", "Ctrl r", "Mod ⇧ Z"),
     cmd("Cut", "cut", "y x", "d", "Mod X"),
@@ -164,6 +172,8 @@ const ON_FILE: &[&str] = &[
     "hover",
     "rename",
     "actions",
+    "format",
+    "format-selection",
 ];
 
 impl Command {
@@ -176,10 +186,7 @@ impl Command {
                 let lead = if self.leader.is_empty() { String::new() } else { format!("{spc} {}", self.leader) };
                 [self.vim, lead.as_str()].iter().filter(|s| !s.is_empty()).copied().collect::<Vec<_>>().join(", ")
             }
-            Keymap::Classic => {
-                let keys = self.classic.replace("Mod", if mac { "⌘" } else { "Ctrl" });
-                if mac { keys.replace("Alt", "⌥") } else { keys }
-            }
+            Keymap::Classic => self.classic.replace("Mod", if mac { "⌘" } else { "Ctrl" }).replace("Alt", if mac { "⌥" } else { "Alt" }),
         }
     }
 }
@@ -204,6 +211,9 @@ impl App {
         if let Some(op) = super::view_cmds::line_edit_of(id) {
             return self.line_edit(op);
         }
+        if let Some(pane) = editor::editor::PaneCmd::from_id(id) {
+            return self.ask_pane(pane);
+        }
         if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
             if self.ed.has_doc() && !self.on_settings {
                 self.close_tabs(self.ed.active, which, tx);
@@ -225,7 +235,9 @@ impl App {
             "diagnostics" => Action::Diagnostics,
             "git-next" | "git-prev" => return self.jump_sign(id == "git-next"),
             "git-status" => Action::FocusTree,
+            "git-blame" => return self.toggle_blame(tx),
             "hover" => Action::Hover,
+            "format" | "format-selection" => return self.format_doc(id == "format-selection"),
             "settings" => Action::Settings,
             "setup" => Action::Setup,
             "update" => Action::Update,

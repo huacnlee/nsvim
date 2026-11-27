@@ -34,12 +34,24 @@ When a server starts or stops, the command line says so. A server that exits at 
 | Completion | while you type | while you type |
 | Rename | `SPC l n`, `:Rename name` | `F2` |
 | Code actions, in a picker | `SPC l a`, `:CodeAction` | `Ctrl .` |
+| Format the file | `SPC l f`, `:Format` | `⇧ Alt F` |
+| Format the selection | `SPC l F`, `:'<,'>Format` | `⇧ Alt F` with a selection |
 
 Completion opens at the second char of a word, and after `.` and `::`. It filters as you type.
 
 Rename opens the command line with `:Rename` and the word under the cursor. Edit the name and
 press `Enter`. Each open file changes as one undo step. Files that are not open load in the
 background with the changes made and stay unsaved: `:wa` writes them all.
+
+Format sends the file's indent to the server: the tab size and spaces or tabs, from
+`config.toml`, `:set` and `.editorconfig`. The changes are one undo step, and the cursor stays
+on its line. Format Selection needs a server that formats ranges. When there is no server, or
+the server does not format, the command line says so. The Edit menu and the command palette
+have both commands.
+
+Set `on_save = true` in `[format]`, or turn on Settings › Formatting › Format with the language
+server, to format each file before it is saved. A save waits up to 2 seconds for the server.
+Then it writes the file as it is, so a slow server never stops a save.
 
 ## How it runs
 

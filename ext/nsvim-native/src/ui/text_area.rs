@@ -272,11 +272,12 @@ fn line(g: Grid, font: &CodeFont, gutter: usize, row: Row) -> AnyElement {
         .bg(move || if full { color("selection") } else { color("selection").opacity(0.0) })
         .child(code);
     if let Some(a) = after {
-        let (glyph, token, msg) = match a {
-            After::Diag(l, m) => ("■", level_token(l), m),
-            After::Note(m) => ("◆", "mode-visual", m),
+        let (label, token) = match a {
+            After::Diag(l, m) => (format!("    ■ {m}"), level_token(l)),
+            After::Note(m) => (format!("    ◆ {m}"), "mode-visual"),
+            After::Blame(m) => (format!("    {m}"), "text-faint"),
         };
-        code_box = code_box.child(code_text(font, format!("    {glyph} {msg}")).flex_shrink(1.0).text_color(move || color(token)));
+        code_box = code_box.child(code_text(font, label).flex_shrink(1.0).text_color(move || color(token)));
     }
     for c in carets {
         code_box = code_box.child(

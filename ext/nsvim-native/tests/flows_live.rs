@@ -112,6 +112,16 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" gs");
     f.settle("SPC g s focuses the tree", |a| a.tree.focus);
     f.keys("\x1b");
+    f.keys(" gb");
+    f.settle("SPC g b shows who changed each line", |a| {
+        let m = a.meta.get(&a.ed.buf().path.clone().unwrap());
+        a.blame
+            && m.is_some_and(|m| {
+                m.blame.lines.get(3).is_some_and(|b| b.who == "Not committed yet") && m.blame.lines[0].who.starts_with("test, ")
+            })
+    });
+    f.keys(" gb");
+    f.settle("SPC g b hides it again", |a| !a.blame);
 
     // +lsp, on `twice` where main calls it.
     if lsp {
@@ -259,6 +269,8 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "zoom-out", "zoom-out makes the text smaller", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
     f.update(|a, t| a.run_command("zoom-in", t));
     run_check(&mut f, t, "zoom-reset", "zoom-reset gives the default sizes", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
+    run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| a.blame);
+    f.update(|a, t| a.toggle_blame(t));
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
     // A test build is no installed copy, so NSH's updater does not take it. With a release
     // found, the command tries to install it and says why it cannot: no network in the test.
@@ -328,10 +340,12 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "indent", "indent indents the line", |a| text(a).starts_with(char::is_whitespace));
     run_check(&mut f, t, "outdent", "outdent takes the indent away", |a| text(a) == "// one\ntwo\n");
     run_check(&mut f, t, "delete-line", "delete-line deletes the line", |a| text(a) == "two\n");
-    for id in ["definition", "references", "actions"] {
+    for id in ["definition", "references", "actions", "format"] {
         f.update(|a, _| a.ed.msg = None);
         run_check(&mut f, t, id, id, |a| said(a, "no language server"));
     }
+    f.update(|a, _| a.ed.msg = None);
+    run_check(&mut f, t, "format-selection", "format selection asks for a selection", |a| said(a, "select the text"));
     // The palette and the menus ask for the new name in a dialog, not on the command line. The
     // next step answers it as the test's handler does: Cancel.
     f.update(|a, t| a.run_command("rename", t));
@@ -377,6 +391,11 @@ fn every_palette_command_does_what_it_says() {
     f.settle(":set theme=flexoki-light", |a| a.cfg.theme.mode == "light" && a.cfg.theme.light == "flexoki-light");
     f.keys(":set theme=nope\n");
     f.settle(":set theme=nope is an error", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
+
+    // The pane commands ask the panes' screen, which `tests/panes.rs` runs.
+    for id in ["split-right", "split-down", "pane-next", "pane-prev", "pane-close"] {
+        run_check(&mut f, t, id, &format!("{id} asks the panes"), move |a| a.pane_ask.is_some_and(|(_, c)| c.id() == id));
+    }
 
     // The commands that close a group of tabs, from the tab that shows.
     let names = |a: &App| a.ed.docs.iter().map(|d| d.buf.name()).collect::<Vec<_>>().join(" ");

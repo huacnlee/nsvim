@@ -125,6 +125,8 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
             Some('f') if k.shift => Some(Action::GrepProject),
             Some('e') if k.shift => Some(Action::FocusTree),
             Some('b') => Some(Action::ToggleTree),
+            // As in VS Code and Zed: the active tab moves to a new pane on the right.
+            Some('\\') => Some(Action::Pane(crate::editor::PaneCmd::SplitRight)),
             Some('w') => Some(Action::CloseBuffer),
             Some(',') => Some(Action::Settings),
             Some('q') => Some(Action::QuitAll { force: false }),

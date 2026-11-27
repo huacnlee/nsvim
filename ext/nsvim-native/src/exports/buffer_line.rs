@@ -28,6 +28,16 @@ pub struct ProjectState {
     pub width: f32,
 }
 
+/// A pane command for the panes' screen to carry out once (`App::ask_pane`).
+#[derive(Debug, Clone, PartialEq, JsObject)]
+pub struct PaneAsk {
+    /// The ask's number: a new number is a new ask.
+    pub seq: f64,
+    /// What to do to the pane of the active file: `split-right`, `split-down`, `pane-next`,
+    /// `pane-prev` or `pane-close`.
+    pub cmd: String,
+}
+
 /// What the buffer line shows.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct BufferLineState {
@@ -35,6 +45,8 @@ pub struct BufferLineState {
     pub project: Option<ProjectState>,
     /// The tabs, in order: one for each open file.
     pub tabs: Vec<TabState>,
+    /// The last pane command.
+    pub pane: Option<PaneAsk>,
     /// The font family of the interface.
     pub font_family: String,
     /// The text size of the interface, in points.
@@ -52,6 +64,7 @@ pub fn state_of(a: &App) -> BufferLineState {
             .enumerate()
             .map(|(i, d)| TabState { id: d.id as f64, name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == a.ed.active })
             .collect(),
+        pane: a.pane_ask.map(|(n, c)| PaneAsk { seq: n as f64, cmd: c.id().into() }),
         font_family: if a.cfg.ui.font == "system" { "system-ui".into() } else { a.font_family.into() },
         font_size: a.cfg.ui.size,
     }
@@ -103,6 +116,11 @@ impl Tabs {
     /// dragged tab. The tab that shows stays the one that shows.
     pub fn move_tab(from: u32, to: u32) {
         crate::bridge::update(move |a, _| a.ed.move_doc(from as usize, to as usize));
+    }
+
+    /// Shows `text` on the command line: why a pane command did nothing.
+    pub fn say(text: String) {
+        crate::bridge::update(move |a, _| a.ed.message(text));
     }
 
     /// Puts the open files in the order of `ids` (`TabState.id`): the order of the tabs across

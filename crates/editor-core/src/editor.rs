@@ -111,6 +111,39 @@ impl KeyInput {
     }
 }
 
+/// A command on the panes of the open files. The app owns the panes: the core only asks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PaneCmd {
+    /// Move the active tab to a new pane on the right of its pane.
+    SplitRight,
+    /// Move the active tab to a new pane below its pane.
+    SplitDown,
+    /// Give the keys to the next pane: left to right, top to bottom.
+    Next,
+    /// Give the keys to the previous pane.
+    Prev,
+    /// Remove the active pane. Its tabs join the pane next to it. No file closes.
+    Close,
+}
+
+impl PaneCmd {
+    /// The command id of the palette and of the menus.
+    pub fn id(self) -> &'static str {
+        match self {
+            PaneCmd::SplitRight => "split-right",
+            PaneCmd::SplitDown => "split-down",
+            PaneCmd::Next => "pane-next",
+            PaneCmd::Prev => "pane-prev",
+            PaneCmd::Close => "pane-close",
+        }
+    }
+
+    /// The command with id `id`.
+    pub fn from_id(id: &str) -> Option<PaneCmd> {
+        [PaneCmd::SplitRight, PaneCmd::SplitDown, PaneCmd::Next, PaneCmd::Prev, PaneCmd::Close].into_iter().find(|c| c.id() == id)
+    }
+}
+
 /// What a keymap asks the app to do outside the text.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
@@ -134,6 +167,9 @@ pub enum Action {
     Rename(String),
     /// List the language server's code actions at the cursor (`:CodeAction`).
     CodeActions,
+    /// Format the file with the language server (`:Format`), or lines `first..=last` of a
+    /// range (`:'<,'>Format`). Zero-based, inclusive.
+    Format(Option<(usize, usize)>),
     /// Replace lines `first..=last` with the output of a shell command run on them
     /// (`:'<,'>!sort`). Zero-based, inclusive.
     Filter {
@@ -166,6 +202,8 @@ pub enum Action {
     },
     ToggleTree,
     FocusTree,
+    /// Split, focus or close a pane of the open files (`Ctrl w v`, `:vsplit`, `Mod \\`).
+    Pane(PaneCmd),
     GrepProject,
     PickBuffer,
     CloseBuffer,
