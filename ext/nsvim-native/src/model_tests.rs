@@ -212,6 +212,28 @@ fn git_signs_and_outside_changes_mark_the_gutter() {
 }
 
 #[test]
+fn line_blame_follows_each_line_and_a_diagnostic_wins() {
+    use crate::services::git::BlameLine;
+    let ed = editor_with("let x = 1;\nb\nc\n", "a.txt");
+    let who = |w: &str, s: &str| BlameLine { who: w.into(), summary: s.into() };
+    let blame = [who("Ada, 2 days ago", "Add x"), who("Ada, 2 days ago", "Add x"), who("Not committed yet", "")];
+    let diags = [Diag { line: 1, col: 0, end_line: 1, end_col: 1, severity: 1, message: "bad b".into() }];
+    let f = frame_with(&ed, &Look { blame: &blame, diags: &diags, ..Look::default() }, 3);
+    let afters: Vec<Option<After>> = f.rows.iter().map(|r| if let Row::Line { after, .. } = r { after.clone() } else { None }).collect();
+    assert_eq!(
+        afters,
+        [
+            // The cursor's line also shows the commit's summary.
+            Some(After::Blame("Ada, 2 days ago · Add x".into())),
+            Some(After::Diag(Level::Error, "bad b".into())),
+            Some(After::Blame("Not committed yet".into())),
+        ]
+    );
+    let f = frame_with(&ed, &Look::default(), 3);
+    assert!(f.rows.iter().all(|r| matches!(r, Row::Line { after: None, .. })));
+}
+
+#[test]
 fn numbers_follow_the_option_and_the_ruler_shows() {
     let mut ed = editor_with("a\nb\nc\n", "a.txt");
     press(&mut ed, "j");

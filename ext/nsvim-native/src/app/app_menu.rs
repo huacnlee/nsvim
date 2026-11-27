@@ -84,6 +84,7 @@ impl App {
             item("cmd:palette", "Command Palette…"),
             item("cmd:tree", "Toggle File Tree"),
             item("cmd:wrap", "Toggle Soft Wrap"),
+            item("cmd:git-blame", "Toggle Line Blame"),
             Entry::Separator,
             item("cmd:next", "Next Tab"),
             item("cmd:prev", "Previous Tab"),

@@ -1,12 +1,13 @@
-//! Git, read with the `git` command: the branch, each file's status for the tree, and the
-//! gutter signs of a buffer against `HEAD`. No full git UI: that is out of scope.
+//! Git, read with the `git` command: the branch, each file's status for the tree, the
+//! gutter signs of a buffer against `HEAD`, and who last changed each line (`git blame`). No
+//! full git UI: that is out of scope.
 
 use std::collections::{HashMap, HashSet};
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 use std::path::PathBuf;
 #[cfg(not(target_arch = "wasm32"))]
-use std::process::Command;
+use std::process::{Command, Stdio};
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::mpsc::{Sender, channel};
 
@@ -16,6 +17,16 @@ use super::{Event, Out};
 pub enum Job {
     Info,
     Signs { path: PathBuf, text: String, version: u64 },
+    Blame { path: PathBuf, text: String, version: u64 },
+}
+
+/// Who last changed one line, from `git blame`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct BlameLine {
+    /// The author and when, as the line shows it: `Ada Lovelace, 3 days ago`.
+    pub who: String,
+    /// The first line of the commit's message. Empty for a line that is not committed yet.
+    pub summary: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -60,11 +71,15 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
                 jobs.extend(rx.try_iter());
                 let mut info_asked = false;
                 let mut signs: HashMap<PathBuf, (String, u64)> = HashMap::new();
+                let mut blames: HashMap<PathBuf, (String, u64)> = HashMap::new();
                 for j in jobs {
                     match j {
                         Job::Info => info_asked = true,
                         Job::Signs { path, text, version } => {
                             signs.insert(path, (text, version));
+                        }
+                        Job::Blame { path, text, version } => {
+                            blames.insert(path, (text, version));
                         }
                     }
                 }
@@ -75,6 +90,10 @@ pub fn start(root: PathBuf, out: Out) -> Sender<Job> {
                     if let Some(signs) = signs_for(&root, &path, &text) {
                         out.send(Event::Signs { path, version, signs });
                     }
+                }
+                for (path, (text, version)) in blames {
+                    let lines = blame_for(&path, &text).unwrap_or_default();
+                    out.send(Event::Blame { path, version, lines });
                 }
             }
         })
@@ -163,6 +182,102 @@ pub fn signs_for(root: &Path, path: &Path, text: &str) -> Option<Vec<Sign>> {
     Some(diff_signs(&base, text))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+/// Who last changed each line of `text` (the buffer now, saved or not). `None` when git doesn't
+/// track the file.
+pub fn blame_for(path: &Path, text: &str) -> Option<Vec<BlameLine>> {
+    use std::io::Write;
+    let dir = path.parent()?;
+    let name = path.file_name()?;
+    let mut child = Command::new("git")
+        .arg("--no-optional-locks")
+        .arg("-C")
+        .arg(dir)
+        .args(["blame", "--porcelain", "--contents", "-", "--"])
+        .arg(name)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    // Write on another thread: git can fill its output pipe before it reads all of the input.
+    let mut stdin = child.stdin.take()?;
+    let input = text.as_bytes().to_vec();
+    let writer = std::thread::spawn(move || {
+        let _ = stdin.write_all(&input);
+    });
+    let out = child.wait_with_output().ok()?;
+    let _ = writer.join();
+    if !out.status.success() {
+        return None;
+    }
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs() as i64);
+    Some(parse_blame(&String::from_utf8_lossy(&out.stdout), now))
+}
+
+/// The lines of `git blame --porcelain` output, in order. `now` is the time in seconds since
+/// 1970, for the age of each change.
+pub fn parse_blame(raw: &str, now: i64) -> Vec<BlameLine> {
+    #[derive(Default)]
+    struct Commit {
+        author: String,
+        time: i64,
+        summary: String,
+    }
+    let mut commits: HashMap<String, Commit> = HashMap::new();
+    // The final line number (from 1) and the commit of each line.
+    let mut lines: Vec<(usize, String)> = Vec::new();
+    // The commit and line of the header that is open, until its tab line.
+    let mut open: Option<(String, usize)> = None;
+    for l in raw.lines() {
+        if l.starts_with('\t') {
+            lines.extend(open.take().map(|(sha, n)| (n, sha)));
+            continue;
+        }
+        if let Some((sha, _)) = &open {
+            let c = commits.entry(sha.clone()).or_default();
+            if let Some(v) = l.strip_prefix("author ") {
+                c.author = v.to_string();
+            } else if let Some(v) = l.strip_prefix("author-time ") {
+                c.time = v.trim().parse().unwrap_or(0);
+            } else if let Some(v) = l.strip_prefix("summary ") {
+                c.summary = v.to_string();
+            }
+            continue;
+        }
+        let mut parts = l.split(' ');
+        if let (Some(sha), Some(_), Some(n)) = (parts.next(), parts.next(), parts.next())
+            && sha.len() >= 40
+            && let Ok(n) = n.parse::<usize>()
+        {
+            commits.entry(sha.to_string()).or_default();
+            open = Some((sha.to_string(), n));
+        }
+    }
+    let mut out = vec![BlameLine::default(); lines.iter().map(|(n, _)| *n).max().unwrap_or(0)];
+    for (n, sha) in lines {
+        let Some(c) = commits.get(&sha) else { continue };
+        out[n - 1] = if sha.bytes().all(|b| b == b'0') {
+            BlameLine { who: "Not committed yet".into(), summary: String::new() }
+        } else {
+            BlameLine { who: format!("{}, {}", c.author, ago(now - c.time)), summary: c.summary.clone() }
+        };
+    }
+    out
+}
+
+/// How long ago, for `secs` seconds: `just now`, `5 minutes ago`, `1 year ago`.
+pub fn ago(secs: i64) -> String {
+    let units = [(365 * 86_400, "year"), (30 * 86_400, "month"), (86_400, "day"), (3_600, "hour"), (60, "minute")];
+    for (size, name) in units {
+        let n = secs / size;
+        if n >= 1 {
+            return format!("{n} {name}{} ago", if n == 1 { "" } else { "s" });
+        }
+    }
+    "just now".into()
+}
+
 pub fn diff_signs(base: &str, text: &str) -> Vec<Sign> {
     use similar::DiffOp;
     let diff = crate::app::review::configure(200).diff_lines(base, text);
@@ -204,5 +319,56 @@ mod tests {
         let signs = diff_signs(base, text);
         assert!(signs.contains(&Sign { line: 1, kind: SignKind::Modified }));
         assert!(signs.iter().any(|s| s.line == 3));
+    }
+
+    #[test]
+    fn blame_reads_the_author_age_and_summary_of_each_line() {
+        let sha = "1".repeat(40);
+        let zero = "0".repeat(40);
+        let raw = format!(
+            "{sha} 1 1 2\nauthor Ada Lovelace\nauthor-mail <ada@example.com>\nauthor-time 1000\nauthor-tz +0000\nsummary Add the notes\nfilename a.txt\n\tone\n\
+             {sha} 2 2\n\ttwo\n\
+             {zero} 3 3 1\nauthor Not Committed Yet\nauthor-time 4000\nsummary Version of a.txt from a.txt\nfilename a.txt\n\tthree\n"
+        );
+        let lines = parse_blame(&raw, 1000 + 3 * 86_400);
+        assert_eq!(lines.len(), 3);
+        assert_eq!(lines[0], BlameLine { who: "Ada Lovelace, 3 days ago".into(), summary: "Add the notes".into() });
+        assert_eq!(lines[1], lines[0]);
+        assert_eq!(lines[2], BlameLine { who: "Not committed yet".into(), summary: String::new() });
+    }
+
+    #[test]
+    fn ages_read_in_the_largest_whole_unit() {
+        assert_eq!(ago(5), "just now");
+        assert_eq!(ago(60), "1 minute ago");
+        assert_eq!(ago(2 * 3_600 + 10), "2 hours ago");
+        assert_eq!(ago(400 * 86_400), "1 year ago");
+    }
+
+    #[test]
+    fn blame_runs_git_on_the_text_of_the_buffer() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let run = |args: &[&str]| {
+            let ok = Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(["-c", "user.name=Ada Lovelace", "-c", "user.email=ada@example.com", "-c", "commit.gpgsign=false"])
+                .args(args)
+                .output()
+                .unwrap()
+                .status
+                .success();
+            assert!(ok, "git {args:?}");
+        };
+        run(&["init", "-q"]);
+        std::fs::write(root.join("a.txt"), "one\ntwo\n").unwrap();
+        run(&["add", "a.txt"]);
+        run(&["commit", "-q", "-m", "Add the notes"]);
+        let lines = blame_for(&root.join("a.txt"), "one\nTWO\n").expect("git tracks a.txt");
+        assert!(lines[0].who.starts_with("Ada Lovelace, "), "{:?}", lines[0]);
+        assert_eq!(lines[0].summary, "Add the notes");
+        assert_eq!(lines[1].who, "Not committed yet");
+        assert_eq!(blame_for(&root.join("new.txt"), "x\n"), None);
     }
 }
