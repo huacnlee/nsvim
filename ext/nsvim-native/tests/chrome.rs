@@ -73,6 +73,27 @@ fn the_buffer_line_shows_the_project_folder_over_the_tree() -> Result<(), String
     Ok(())
 }
 
+/// There is no title bar row: the tab bar is the top of the window, and the project folder over
+/// the tree is in line with it.
+#[test]
+fn the_tabs_are_the_top_of_the_window() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let mut app = start(&a);
+    app.wait_for("text:/alpha/")?;
+    app.wait_for("id:project")?;
+    let top = |app: &Headless, sel: &str| app.screen().layout(sel).unwrap().map(|l| l.bounds.origin.y.0);
+    assert_eq!(top(&app, "role:tablist"), Some(0.0), "the tab bar is at the top");
+    assert_eq!(top(&app, "id:project"), Some(0.0), "the project folder is at the top");
+    // The text starts right under the tab bar.
+    let text = app.screen().layout("id:text-area").unwrap().ok_or("no text area")?.bounds;
+    assert_eq!(text.origin.y.0, 36.0, "the text is under the tab bar");
+    type_text(&mut app, ":Tree\n");
+    app.wait_for_gone("id:project", WAIT)?;
+    assert_eq!(top(&app, "role:tablist"), Some(0.0), "the tab bar stays at the top without the tree");
+    Ok(())
+}
+
 /// The tab that shows has a raised background. The other tabs show the background of
 /// the line.
 #[test]
@@ -82,7 +103,7 @@ fn the_tab_that_shows_has_its_own_background() -> Result<(), String> {
     let b = write(dir.path(), "b.txt", "beta\n");
     let mut app = start_files(&[&a, &b], None);
     app.wait_for("text:/beta/")?;
-    let line = background(&app, "id:buffer-line");
+    let line = background(&app, "role:tablist");
     assert!(line.is_some(), "the line has a background");
     app.wait_until("the tab of b.txt has its own background", WAIT, |s| {
         let bg = |sel: &str| s.view_style(sel).unwrap().and_then(|st| st.background_color);
@@ -479,7 +500,7 @@ fn many_tabs_scroll_and_keep_the_one_that_shows_in_sight() -> Result<(), String>
     let refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
     let mut app = start_files(&refs, None);
     app.wait_for("text:/text a_long_file_name_29/")?;
-    let line = page_bounds(&app, "buffer-line").ok_or("no buffer line")?;
+    let line = app.screen().layout("role:tablist").unwrap().ok_or("no tab bar")?.bounds;
     let tabs = page_bounds(&app, "text-area").ok_or("no pane")?;
     assert!(tabs.origin.x.0 + tabs.size.width.0 <= line.origin.x.0 + line.size.width.0 + 0.5, "tabs {tabs:?} in {line:?}");
     let _ = app.wait_until("the last tab is in sight", WAIT, |_| false);

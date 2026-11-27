@@ -934,7 +934,8 @@ Any key closes it. `Esc` does nothing more. Other keys then do their usual work 
 ### Context menu
 
 When `mouse.right_click` is on, a right-click in the text opens a menu. It has cut, copy,
-paste and select all. It also has go to definition, find references, rename symbol, code
+paste and select all, and reveal the file in the system's file manager (see
+[Tab menu](#tab-menu)). It also has go to definition, find references, rename symbol, code
 actions and find in project. macOS and Windows show the system's menu. On Linux, these keys work in the menu:
 
 | Keys | Does |
@@ -990,6 +991,12 @@ need `mouse.right_click`.
 | `Split right`, `Split down` | Move this tab to a new pane on the right, below |
 | `Copy path`, `Copy relative path` | Copy the file's path, or its path in the project |
 | `Reveal in file tree` | Show the file in the file tree |
+| `Reveal in Finder` | Show the file, selected, in the system's file manager |
+
+The last item has the name of the system's file manager, as in Zed: `Reveal in Finder` on
+macOS, `Reveal in File Explorer` on Windows and `Reveal in file manager` on Linux. The text
+area's menu and the file tree's menu have it too. On Linux, a file manager that supports
+`org.freedesktop.FileManager1` selects the file. Others open its folder.
 
 A tab with unsaved changes stays open, and the status line names it. `Close clean` leaves
 those tabs alone and says nothing. The tab that showed
@@ -1015,7 +1022,7 @@ Recent, with the recent projects as they were when the window opened.
 
 A window has an application menu. On macOS it is the menu bar. On Windows and Linux NsVim draws
 its own title bar, and the system then shows no menu bar. There click the menu button at the left
-end of the title bar to show the same menus in a row: NsVim, File, Edit, View, Go and Help. Click a
+end of the top bar to show the same menus in a row: NsVim, File, Edit, View, Go and Help. Click a
 menu to open its items. When you pick an item, or click the menu button again, the row hides. The
 terminal editor has no menu. The
 [command palette](#command-palette) holds every item of the menu, so use it there.
@@ -1035,8 +1042,9 @@ again to quit and keep the edits for recovery.
   On macOS also Close Window.
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Toggle Comment, Move Line Up, Move Line Down,
   Delete Line, Indent, Outdent, Find…, Replace…, Find in Project….
-- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Zoom In, Zoom Out, Reset Zoom,
+- **View**: Command Palette…, File Tree, Soft Wrap, Line Blame, Zoom In, Zoom Out, Reset Zoom,
   Next Tab, Previous Tab, Split Right, Split Down, Focus Next Pane, Focus Previous Pane, Close Pane.
+  File Tree, Soft Wrap and Line Blame show a check mark while they are on.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
 - **Help**: Keyboard Shortcuts….
 

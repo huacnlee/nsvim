@@ -11,6 +11,7 @@ pub mod io;
 pub mod ipc;
 pub mod lsp;
 pub mod probe;
+pub mod reveal;
 pub mod update;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod watch;

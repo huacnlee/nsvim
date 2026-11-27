@@ -52,7 +52,7 @@ fn the_menu_button_shows_the_menus_in_a_row() {
         ("NsVim", vec!["Check for Updates…", "Settings…", "App Setup…", "Quit"], "New File"),
         ("File", vec!["New File", "Open Folder…", "Save"], "Undo"),
         ("Edit", vec!["Undo", "Find in Project…"], "Save"),
-        ("View", vec!["Command Palette…", "Toggle File Tree"], "Undo"),
+        ("View", vec!["Command Palette…", "File Tree"], "Undo"),
         ("Go", vec!["Go to Definition"], "Undo"),
         ("Help", vec!["Keyboard Shortcuts…"], "Undo"),
     ] {
@@ -74,9 +74,18 @@ fn the_menu_button_shows_the_menus_in_a_row() {
     // A picked item runs as the same item of the menu bar does, and the row hides.
     f.ui.press("id:menu-View").unwrap();
     menu_labels(&mut f);
-    f.ui.choose_menu_item("Toggle File Tree").unwrap();
+    let checked = |f: &common::Flow| f.ui.menu().unwrap().iter().find(|e| e.label == "File Tree").unwrap().checked;
+    assert_eq!(checked(&f), Some(false), "no check mark while the tree is closed");
+    f.ui.choose_menu_item("File Tree").unwrap();
     f.ui.wait_for("id:tree").unwrap();
     assert!(f.read(|a| a.tree.show));
+    f.ui.wait_for_gone("id:main-menu-bar", WAIT).unwrap();
+    f.ui.press("id:main-menu").unwrap();
+    f.ui.press("id:menu-View").unwrap();
+    menu_labels(&mut f);
+    assert_eq!(checked(&f), Some(true), "a check mark by the open tree");
+    f.ui.close_menu().unwrap();
+    f.ui.press("id:main-menu").unwrap();
     f.ui.wait_for_gone("id:main-menu-bar", WAIT).unwrap();
     // With the tree, the button sits in the folder over the tree, which stays as wide as the tree.
     f.ui.wait_for("id:project >> id:main-menu").unwrap();

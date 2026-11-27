@@ -12,7 +12,7 @@ fn ids(entries: &[Entry], out: &mut Vec<String>) {
     for e in entries {
         match e {
             Entry::Menu(_, items) => ids(items, out),
-            Entry::Item(id, _) => out.push(id.clone()),
+            Entry::Item(id, _) | Entry::Check(id, _, _) => out.push(id.clone()),
             Entry::Quit | Entry::Hide(..) | Entry::HideOthers | Entry::ShowAll | Entry::Separator => {}
         }
     }
@@ -84,4 +84,31 @@ fn close_window_leaves_cmd_w_to_the_classic_keymap_and_settings() {
     assert_eq!(app.close_window_key(), "mod+w");
     app.on_settings = true;
     assert_eq!(app.close_window_key(), "mod+shift+w", "⌘ W closes Settings");
+}
+
+/// The check marks of View follow the state, however it changed.
+#[test]
+fn view_checks_the_items_that_are_on() {
+    let mut app = app();
+    let checks = |app: &App| {
+        let menus = app.app_menu(&[], false);
+        let Some(Entry::Menu(_, view)) = menus.iter().find(|m| matches!(m, Entry::Menu(t, _) if t == "View")) else { panic!() };
+        view.iter()
+            .filter_map(|e| match e {
+                Entry::Check(_, label, on) => Some((label.clone(), *on)),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    app.tree.show = false;
+    app.cfg.editor.wrap = false;
+    app.blame = false;
+    assert_eq!(checks(&app), vec![("File Tree".into(), false), ("Soft Wrap".into(), false), ("Line Blame".into(), false)]);
+    let before = app.app_menu_state();
+    let mut tx = Tx::new();
+    app.app_menu_pick("cmd:tree", &mut tx);
+    app.run_command("wrap", &mut tx);
+    app.run_command("git-blame", &mut tx);
+    assert_eq!(checks(&app), vec![("File Tree".into(), true), ("Soft Wrap".into(), true), ("Line Blame".into(), true)]);
+    assert_ne!(app.app_menu_state(), before, "the menu bar is made again");
 }

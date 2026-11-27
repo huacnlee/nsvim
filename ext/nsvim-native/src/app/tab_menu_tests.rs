@@ -190,3 +190,25 @@ fn the_palette_closes_tabs_from_the_tab_that_shows() {
     a.run_command("close-others", &mut Tx::new());
     assert_eq!(tabs(&a), (names(&["c"]), "c".into()));
 }
+
+#[test]
+fn reveal_in_file_manager_reveals_the_tab_file_from_the_tab_and_the_text_menu() {
+    let revealed = |tx: Tx| {
+        tx.effects.into_iter().find_map(|e| match e {
+            Effect::Reveal(p) => Some(p),
+            _ => None,
+        })
+    };
+    let mut a = app(&["a.rs", "b.rs"], 0, &[]);
+    assert!(a.tab_item_enabled(1, "reveal-in-file-manager"));
+    let mut tx = Tx::new();
+    a.tab_menu_pick(1, "reveal-in-file-manager", &mut tx);
+    assert_eq!(revealed(tx), Some(PathBuf::from("/project/src/b.rs")));
+    // The text area's menu reveals the file that shows.
+    let mut tx = Tx::new();
+    a.menu_pick("reveal-in-file-manager", &mut tx);
+    assert_eq!(revealed(tx), Some(PathBuf::from("/project/src/a.rs")));
+    // A new file has no path to reveal.
+    a.ed.docs[1].buf.path = None;
+    assert!(!a.tab_item_enabled(1, "reveal-in-file-manager"));
+}

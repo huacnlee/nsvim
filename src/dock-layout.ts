@@ -156,3 +156,16 @@ function dropEmpty(node: DockNode): DockNode | undefined {
   if (kids.length === 1) return kids[0];
   return { ...node, children: kids, sizes: kids.length === node.children.length ? node.sizes : kids.map(() => null) };
 }
+
+/** The group at the top right of `node`: the last child of a split side by side, the first of
+ * a split one over another. Empty groups do not count. Its tab bar is at the window's top right
+ * corner. */
+export function topRight(node: DockNode): Tabs | undefined {
+  if (node.type === "tabs") return node.panels.length > 0 ? node : undefined;
+  const kids = node.axis === "horizontal" ? [...node.children].reverse() : node.children;
+  for (const c of kids) {
+    const g = topRight(c);
+    if (g) return g;
+  }
+  return undefined;
+}

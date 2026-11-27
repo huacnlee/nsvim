@@ -68,8 +68,9 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     s.start();
     crate::ui::popups::host_events(s);
     if !crate::terminal() {
-        // The menu follows the keymap and Settings: they decide the shortcut of Close Window.
-        let menu_keys = s.view(|a| a.close_window_key());
+        // The menu follows the keymap and Settings, which decide the shortcut of Close Window,
+        // and the state of View's check marks, however it changes: a key, the palette or the menu.
+        let menu_keys = s.view(|a| a.app_menu_state());
         effect(move || {
             menu_keys.get();
             untracked(|| set_app_menu(s));
@@ -272,8 +273,8 @@ fn make_app(p: Option<&crate::Pending>) -> app::App {
 }
 
 /// The application menu (`app::app_menu`), each item carried out on the session. The recent
-/// projects are read as the menu is made: as the window opens, and when the keymap or Settings
-/// change Close Window's shortcut.
+/// projects are read as the menu is made: as the window opens, and when Close Window's shortcut
+/// or a check mark of View changes.
 #[cfg(not(target_arch = "wasm32"))]
 fn set_app_menu(s: Session) {
     let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root), cfg!(target_os = "macos")));

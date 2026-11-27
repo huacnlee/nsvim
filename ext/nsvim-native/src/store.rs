@@ -221,6 +221,19 @@ impl Session {
             }
             Effect::PopupMenu { menu, x, y, then } => crate::ui::native_menu::native_menu(me, menu, x, y, then),
             Effect::WakeAfter(delay) => me.wake_after(delay),
+            #[cfg(not(target_arch = "wasm32"))]
+            Effect::Reveal(path) => {
+                let job = blocking(move || {
+                    crate::services::reveal::reveal(&path).map_err(|e| format!("could not reveal {}: {e}", path.display()))
+                });
+                spawn(async move {
+                    if let Ok(Err(e)) = job.await {
+                        me.update(|a, _| a.ed.error(e));
+                    }
+                });
+            }
+            #[cfg(target_arch = "wasm32")]
+            Effect::Reveal(_) => {}
             Effect::OpenProject(root) => {
                 // The same as `nvim <folder>`: an editor already running for the project
                 // takes it, else a new one opens.

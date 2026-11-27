@@ -15,6 +15,9 @@ pub enum Entry {
     Menu(String, Vec<Entry>),
     /// An item: what `app_menu_pick` gets, and what it shows.
     Item(String, String),
+    /// An item that turns something on or off: the id, the label, and whether it is on now.
+    /// The menu shows a check mark by an item that is on.
+    Check(String, String, bool),
     /// The platform's Quit item, which asks first as the close button does.
     Quit,
     /// macOS's Hide: the app's windows hide, and the Dock icon or `⌘ Tab` shows them again.
@@ -34,6 +37,10 @@ fn item(id: &str, label: &str) -> Entry {
     Entry::Item(id.to_string(), label.to_string())
 }
 
+fn check(id: &str, label: &str, on: bool) -> Entry {
+    Entry::Check(id.to_string(), label.to_string(), on)
+}
+
 /// The id of a recent project's item.
 fn recent_id(root: &std::path::Path) -> String {
     format!("recent:{}", root.display())
@@ -45,6 +52,12 @@ impl App {
     /// Then `⇧ ⌘ W`, as in VS Code.
     pub fn close_window_key(&self) -> &'static str {
         if self.ed.keymap == editor::editor::Keymap::Vim && !self.on_settings { "mod+w" } else { "mod+shift+w" }
+    }
+
+    /// What the menu bar shows that the app's state changes: Close Window's shortcut and the
+    /// check marks of View. The menu bar is made again when it changes.
+    pub fn app_menu_state(&self) -> (&'static str, bool, bool, bool) {
+        (self.close_window_key(), self.tree.show, self.cfg.editor.wrap, self.blame)
     }
 
     /// The menus, with `recent` as the projects of File › Open Recent. `mac` adds the Mac's
@@ -98,9 +111,9 @@ impl App {
         ];
         let view = vec![
             item("cmd:palette", "Command Palette…"),
-            item("cmd:tree", "Toggle File Tree"),
-            item("cmd:wrap", "Toggle Soft Wrap"),
-            item("cmd:git-blame", "Toggle Line Blame"),
+            check("cmd:tree", "File Tree", self.tree.show),
+            check("cmd:wrap", "Soft Wrap", self.cfg.editor.wrap),
+            check("cmd:git-blame", "Line Blame", self.blame),
             Entry::Separator,
             item("cmd:zoom-in", "Zoom In"),
             item("cmd:zoom-out", "Zoom Out"),

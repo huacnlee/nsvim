@@ -60,6 +60,13 @@ pub fn app_menu_items(s: Session, entries: Vec<Entry>, picked: Option<Rc<Cell<bo
                     s.update(|a, tx| a.app_menu_pick(&id, tx))
                 })
             }
+            Entry::Check(id, label, on) => {
+                let picked = picked.clone();
+                MenuItem::new(label).checked(on).on_select(move || {
+                    pick(&picked);
+                    s.update(|a, tx| a.app_menu_pick(&id, tx))
+                })
+            }
             Entry::Quit if popup => {
                 let picked = picked.clone();
                 MenuItem::new("Quit").on_select(move || {

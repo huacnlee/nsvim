@@ -14,6 +14,8 @@ pub const ITEMS: &[(&str, &str, &str, &str)] = &[
     ("paste", "Paste", "P", "Ctrl V"),
     ("all", "Select all", "ggVG", "Ctrl A"),
     ("-", "", "", ""),
+    ("reveal-in-file-manager", crate::services::reveal::TITLE, "", ""),
+    ("-", "", "", ""),
     ("definition", "Go to definition", "gd", "F12"),
     ("references", "Find references…", "SPC l r", ""),
     ("rename", "Rename symbol…", "SPC l n", "F2"),
@@ -52,6 +54,7 @@ impl App {
             }
         }
         let has_sel = self.selection_chars().is_some();
+        let has_path = self.ed.buf().path.is_some();
         if super::fx::NATIVE_MENU {
             let vim = self.is_vim();
             let mut menu = PopupMenu::new();
@@ -61,9 +64,13 @@ impl App {
                     continue;
                 }
                 let hint = if vim { vk } else { ck };
-                let mut item = PopupItem::new(id, format!("{title}    {hint}"));
+                let title = if hint.is_empty() { title.to_string() } else { format!("{title}    {hint}") };
+                let mut item = PopupItem::new(id, title);
                 if matches!(id, "cut" | "copy") {
                     item = item.enabled(has_sel);
+                }
+                if id == "reveal-in-file-manager" {
+                    item = item.enabled(has_path);
                 }
                 menu = menu.item(item);
             }
@@ -135,6 +142,11 @@ impl App {
                     Keymap::Classic => self.ed.doc_mut().view.anchor = Some(Pos::new(0, 0)),
                 }
                 self.ed.set_cursor(end);
+            }
+            "reveal-in-file-manager" => {
+                if let Some(path) = self.ed.buf().path.clone() {
+                    tx.reveal(path);
+                }
             }
             "definition" => self.run_actions(vec![Action::GotoDefinition], tx),
             "references" => self.references(),
