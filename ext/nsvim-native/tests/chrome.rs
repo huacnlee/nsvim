@@ -85,7 +85,11 @@ fn the_tabs_are_the_top_of_the_window() -> Result<(), String> {
     let top = |app: &Headless, sel: &str| app.screen().layout(sel).unwrap().map(|l| l.bounds.origin.y.0);
     assert_eq!(top(&app, "role:tablist"), Some(0.0), "the tab bar is at the top");
     assert_eq!(top(&app, "id:project"), Some(0.0), "the project folder is at the top");
-    assert!(has(&app, "id:bar-end"), "the end of the tab bar drags the window");
+    // The empty end of the tab bar drags the window, up to the window's right edge.
+    let right = |app: &Headless, sel: &str| app.screen().layout(sel).unwrap().map(|l| l.bounds.origin.x.0 + l.bounds.size.width.0);
+    let end = right(&app, "id:bar-end").ok_or("no bar end")?;
+    let bar = right(&app, "role:tablist").ok_or("no tab bar")?;
+    assert!((end - bar).abs() < 1.0, "the bar's end {end} reaches the bar's right edge {bar}");
     type_text(&mut app, ":Tree\n");
     app.wait_for_gone("id:project", WAIT)?;
     assert_eq!(top(&app, "role:tablist"), Some(0.0), "the tab bar stays at the top without the tree");
