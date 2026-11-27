@@ -1375,7 +1375,7 @@ dependencies = [
 
 [[package]]
 name = "editor-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "ropey",
  "serde",
@@ -3675,7 +3675,7 @@ dependencies = [
 
 [[package]]
 name = "nsvim-native"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "dirs",
  "editor-core",
