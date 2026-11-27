@@ -820,7 +820,7 @@ It has these commands:
 | `Show every key…` | Show every key, with search |
 | `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
 | `Git: status in the tree` | Show and focus the file tree, with its git status letters |
-| `Git: toggle line blame` | Show who last changed each line and when, after its text. The cursor's line also shows the commit's summary |
+| `Git: toggle line blame` | Show or hide who last changed the cursor's line, when, and the commit's summary, after its text. On by default |
 | `Go to line…`, `Go to symbol in file…` | Go to a line, a symbol of this file. See [Go to line and symbols](#go-to-line-and-symbols) |
 | `Back`, `Forward` | Go back, forward in the jump list |
 | `Go to definition`, `Find references…`, `Hover`, `Rename symbol…`, `Code actions…` | Ask the language server |

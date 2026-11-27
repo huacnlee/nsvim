@@ -112,8 +112,7 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" gs");
     f.settle("SPC g s focuses the tree", |a| a.tree.focus);
     f.keys("\x1b");
-    f.keys(" gb");
-    f.settle("SPC g b shows who changed each line", |a| {
+    f.settle("line blame is on by default and knows who changed each line", |a| {
         let m = a.meta.get(&a.ed.buf().path.clone().unwrap());
         a.blame
             && m.is_some_and(|m| {
@@ -121,7 +120,9 @@ fn every_leader_menu_key_does_what_it_says() {
             })
     });
     f.keys(" gb");
-    f.settle("SPC g b hides it again", |a| !a.blame);
+    f.settle("SPC g b hides it", |a| !a.blame);
+    f.keys(" gb");
+    f.settle("SPC g b shows it again", |a| a.blame);
 
     // +lsp, on `twice` where main calls it.
     if lsp {
@@ -269,7 +270,7 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "zoom-out", "zoom-out makes the text smaller", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
     f.update(|a, t| a.run_command("zoom-in", t));
     run_check(&mut f, t, "zoom-reset", "zoom-reset gives the default sizes", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
-    run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| a.blame);
+    run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| !a.blame);
     f.update(|a, t| a.toggle_blame(t));
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
     // A test build is no installed copy, so NSH's updater does not take it. With a release

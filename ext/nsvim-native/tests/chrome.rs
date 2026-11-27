@@ -357,7 +357,7 @@ fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<()
 }
 
 #[test]
-fn line_blame_shows_who_changed_each_line_after_its_text() -> Result<(), String> {
+fn line_blame_shows_who_changed_the_cursor_line_after_its_text() -> Result<(), String> {
     let dir = scratch();
     let a = write(dir.path(), "a.txt", "alpha\nbeta\n");
     let git = |args: &[&str]| {
@@ -370,10 +370,9 @@ fn line_blame_shows_who_changed_each_line_after_its_text() -> Result<(), String>
     }
     let mut app = start(&a);
     app.wait_for("text:alpha")?;
-    type_text(&mut app, " gb");
-    // The cursor's line also shows the commit's summary.
+    // Line blame is on by default. Only the cursor's line shows it, with the commit's summary.
     app.wait_for("text:/Ada, (just now|1 minute ago) · Add the words$/")?;
-    app.wait_for("text:/Ada, (just now|1 minute ago)$/")?;
+    assert!(!has(&app, "text:/Ada, (just now|1 minute ago)$/"), "the other lines show no blame");
     type_text(&mut app, " gb");
     app.wait_until("the blame hides", WAIT, |s| !s.matches("text:/Add the words$/").unwrap())?;
     Ok(())

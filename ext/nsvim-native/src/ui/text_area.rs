@@ -16,6 +16,8 @@ use crate::ui::{popups, review_view};
 
 /// Lines one notch of a mouse wheel scrolls.
 const WHEEL_LINES: f32 = 3.0;
+/// The space between the end of the code and the line blame, eight cells.
+const BLAME_GAP: &str = "        ";
 
 /// The advance of one char of `font`. 100 chars average out rounding.
 pub fn cell_width(font: &CodeFont) -> f32 {
@@ -286,7 +288,8 @@ fn line(g: Grid, font: &CodeFont, gutter: usize, row: Row) -> AnyElement {
         let (label, token) = match a {
             After::Diag(l, m) => (format!("    ■ {m}"), level_token(l)),
             After::Note(m) => (format!("    ◆ {m}"), "mode-visual"),
-            After::Blame(m) => (format!("    {m}"), "text-faint"),
+            // Blame stands well clear of the code, so it does not read as part of it.
+            After::Blame(m) => (format!("{BLAME_GAP}{m}"), "text-faint"),
         };
         code_box = code_box.child(code_text(font, label).flex_shrink(1.0).text_color(move || color(token)));
     }

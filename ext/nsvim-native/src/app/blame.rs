@@ -1,5 +1,5 @@
-//! Line blame: each line of the active file shows who last changed it and when, after its
-//! text. The git worker runs `git blame` on the buffer's text, so unsaved lines show as not
+//! Line blame: the cursor's line shows who last changed it, when, and the commit's summary, after
+//! its text. It is on by default. The git worker runs `git blame` on the buffer's text, so unsaved lines show as not
 //! committed yet. `Git: toggle line blame` turns it on and off.
 
 use std::path::PathBuf;
