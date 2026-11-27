@@ -51,6 +51,7 @@ pub const COMMANDS: &[Command] = &[
     cmd("Save", "save", "w", "", "Mod S"),
     cmd("Save all", "save-all", "W", ":wa", ""),
     cmd("Close tab", "close", "q", "", "Mod W"),
+    cmd("Reopen closed tab", "reopen", "t u", "", "Mod ⇧ T"),
     cmd("Quit", "quit", "Q", ":qa", "Mod Q"),
     cmd("Diagnostics…", "diagnostics", "d", "", ""),
     cmd("Open settings…", "settings", ",", "", "Mod ,"),
@@ -90,7 +91,16 @@ pub const COMMANDS: &[Command] = &[
     cmd("Copy", "copy", "y y", "y", "Mod C"),
     cmd("Paste", "paste", "y p", "p", "Mod V"),
     cmd("Select all", "all", "y a", "ggVG", "Mod A"),
+    cmd("Toggle comment", "comment", "y c", "gcc", "Mod /"),
+    cmd("Move line up", "line-up", "y k", "", "Alt ↑"),
+    cmd("Move line down", "line-down", "y j", "", "Alt ↓"),
+    cmd("Delete line", "delete-line", "y d", "dd", "Mod ⇧ K"),
+    cmd("Indent", "indent", "y >", ">>", "Mod ]"),
+    cmd("Outdent", "outdent", "y <", "<<", "Mod ["),
     cmd("Toggle soft wrap", "wrap", "u w", "", ""),
+    cmd("Zoom in", "zoom-in", "u +", "", "Mod ="),
+    cmd("Zoom out", "zoom-out", "u -", "", "Mod -"),
+    cmd("Reset zoom", "zoom-reset", "u 0", "", "Mod 0"),
     cmd("Keymap: Neovim", "keymap=neovim", "u v", "", ""),
     cmd("Keymap: classic", "keymap=classic", "u c", "", ""),
     cmd("Theme: dark", "theme=dark", "u d", "", ""),
@@ -151,6 +161,12 @@ const ON_FILE: &[&str] = &[
     "copy",
     "paste",
     "all",
+    "comment",
+    "line-up",
+    "line-down",
+    "delete-line",
+    "indent",
+    "outdent",
     "definition",
     "references",
     "hover",
@@ -189,6 +205,12 @@ impl App {
             }
             return;
         }
+        if let Some(z) = super::view_cmds::Zoom::from_id(id) {
+            return self.zoom(z);
+        }
+        if let Some(op) = super::view_cmds::line_edit_of(id) {
+            return self.line_edit(op);
+        }
         if let Some(pane) = editor::editor::PaneCmd::from_id(id) {
             return self.ask_pane(pane);
         }
@@ -220,6 +242,7 @@ impl App {
             "setup" => Action::Setup,
             "update" => Action::Update,
             "close" => return self.close_tab(self.ed.active, tx),
+            "reopen" => return self.reopen_closed(),
             "next" => Action::NextBuffer,
             "prev" => Action::PrevBuffer,
             "undo" | "redo" => return self.undo_redo(id == "undo"),

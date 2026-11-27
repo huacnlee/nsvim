@@ -15,7 +15,7 @@ light = "light"          # the theme for light mode, and for system mode on a li
 
 [font]
 family = "JetBrains Mono"  # any installed monospace font
-size = 13.0              # points, 9 to 24
+size = 13.0              # points, 9 to 24 in Settings. Zoom (Ctrl = and Ctrl -) goes from 8 to 40
 line_height = 1.7        # a multiple of the size, 1.0 to 2.4
 letter_spacing = 0.0     # points, -1.0 to 2.0
 weight = 400             # 400, 500 or 700
@@ -23,7 +23,7 @@ ligatures = true         # join -> != => into single glyphs
 
 [ui]
 font = "editor"          # the tree, tabs and status line: "editor" or "system"
-size = 12.5              # points
+size = 12.5              # points. Zoom changes it by the same ratio as font.size
 tree_width = 260.0       # points
 
 [window]

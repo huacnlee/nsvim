@@ -64,6 +64,18 @@ impl App {
             }
             return;
         }
+        // Zoom and Reopen Closed Tab work in every keymap, with or without a file, as in a
+        // desktop editor.
+        if let Some(z) = super::view_cmds::Zoom::from_key(&k) {
+            self.overlay = Overlay::None;
+            self.zoom(z);
+            return;
+        }
+        if super::view_cmds::is_reopen_key(&k) {
+            self.overlay = Overlay::None;
+            self.reopen_closed();
+            return;
+        }
         match &self.overlay {
             Overlay::Leader(group) => {
                 let group = *group;
