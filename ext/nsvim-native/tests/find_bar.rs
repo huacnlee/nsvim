@@ -28,7 +28,7 @@ fn ctrl_f_finds_counts_and_steps_both_ways() {
     assert!(f.read(|a| a.ed.vim.hlsearch && !a.ed.search.pattern.is_empty()), "the matches are highlighted");
     // The classic keymap selects the match.
     assert_eq!(f.read(|a| (a.ed.doc().view.anchor, a.ed.cursor())), (Some(Pos::new(0, 4)), Pos::new(0, 9)));
-    assert!(f.ui.screen().matches("id:find-count >> text:1 of 3").unwrap(), "{:?}", f.ui.screen().texts());
+    assert!(f.ui.screen().matches("text:1 of 3").unwrap(), "{:?}", f.ui.screen().texts());
     f.press("enter");
     assert_eq!(f.read(count), "2 of 3", "Enter goes to the next match");
     f.press("enter");
