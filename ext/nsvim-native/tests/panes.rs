@@ -152,3 +152,53 @@ fn close_pane_joins_its_tabs_to_the_pane_next_to_it() -> Result<(), String> {
     app.wait_for("text:/only one pane/")?;
     Ok(())
 }
+
+/// The tabs of the panes' tab bars, as the area lays them out: each one's bounds and whether
+/// it holds what `renderTab` draws (a view `tab-<index>`). The row of the tabs is the closest
+/// view around both `tab-0` and `tab-1`.
+fn dock_tabs(app: &Headless) -> Vec<(Bounds<Points>, bool)> {
+    let nodes = app.screen().layout_nodes();
+    let up = |id| -> Vec<_> {
+        let mut chain = vec![id];
+        while let Some(n) = nodes.iter().find(|n| n.id == *chain.last().unwrap()) {
+            if n.parent == n.id || chain.contains(&n.parent) {
+                break;
+            }
+            chain.push(n.parent);
+        }
+        chain
+    };
+    let by_id = |t: &str| nodes.iter().find(|n| n.test_id.as_deref() == Some(t)).map(|n| n.id);
+    let (Some(a), Some(b)) = (by_id("tab-0"), by_id("tab-1")) else { return Vec::new() };
+    let (a, b) = (up(a), up(b));
+    let Some(&row) = a.iter().find(|id| b.contains(id)) else { return Vec::new() };
+    let drawn: Vec<_> = nodes
+        .iter()
+        .filter(|n| n.test_id.as_deref().is_some_and(|t| t.strip_prefix("tab-").is_some_and(|i| i.parse::<usize>().is_ok())))
+        .map(|n| up(n.id))
+        .collect();
+    nodes
+        .iter()
+        .filter(|n| n.parent == row)
+        .map(|n| (n.bounds, drawn.iter().any(|chain| chain.contains(&n.id))))
+        .collect()
+}
+
+#[test]
+fn many_open_files_each_get_a_drawn_tab() -> Result<(), String> {
+    let dir = scratch();
+    let first = write(dir.path(), "f00.txt", "zero\n");
+    let mut f = common::flow_files(&[&first], None);
+    f.ui.wait_for("text:/zero/")?;
+    // Opened in one burst, as `nvim *.txt` from a running editor or a folder's files.
+    let all: Vec<_> = (1..30).map(|i| write(dir.path(), &format!("f{i:02}.txt"), &format!("file {i}\n"))).collect();
+    let paths = all.clone();
+    f.update(move |a, _| paths.into_iter().for_each(|p| a.open_path(p, None)));
+    f.wait_open(all.last().unwrap());
+    f.ui.wait_until("30 tabs", WAIT, |s| s.layout_nodes().iter().any(|n| n.test_id.as_deref() == Some("tab-29")))?;
+    let tabs = dock_tabs(&f.ui);
+    let blank: Vec<_> = tabs.iter().filter(|(_, drawn)| !drawn).collect();
+    assert_eq!(tabs.len(), 30, "one tab for each open file: {tabs:?}");
+    assert!(blank.is_empty(), "every tab draws its file: {blank:?}");
+    Ok(())
+}
