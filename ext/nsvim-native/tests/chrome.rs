@@ -335,6 +335,29 @@ fn the_status_line_shows_the_branch_and_the_tree_shows_git_status() -> Result<()
     Ok(())
 }
 
+#[test]
+fn line_blame_shows_who_changed_each_line_after_its_text() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\nbeta\n");
+    let git = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(dir.path()).output().map(|o| o.status.success()).unwrap_or(false)
+    };
+    let commit = ["-c", "user.name=Ada", "-c", "user.email=a@a", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "Add the words"];
+    if !git(&["init", "-q"]) || !git(&["add", "a.txt"]) || !git(&commit) {
+        eprintln!("no git: skipped");
+        return Ok(());
+    }
+    let mut app = start(&a);
+    app.wait_for("text:alpha")?;
+    type_text(&mut app, " gb");
+    // The cursor's line also shows the commit's summary.
+    app.wait_for("text:/Ada, (just now|1 minute ago) · Add the words$/")?;
+    app.wait_for("text:/Ada, (just now|1 minute ago)$/")?;
+    type_text(&mut app, " gb");
+    app.wait_until("the blame hides", WAIT, |s| !s.matches("text:/Add the words$/").unwrap())?;
+    Ok(())
+}
+
 fn app_with_file(root: &Path, text: &str) -> App {
     let mut app = App::new(Config::default(), root.to_path_buf(), false, None);
     let mut buf = editor::buffer::Buffer::from_str(text);
