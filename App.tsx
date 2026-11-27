@@ -4,7 +4,7 @@
 
 import { mount, signal, View } from "nsh";
 import { currentWindow, isAvailable as hasWindows } from "nsh/desktop";
-import { Shell, TextArea, Workspace, type ScreenState } from "nsvim-native";
+import { Shell, TextArea, Welcome, Workspace, type ScreenState, type WelcomeState } from "nsvim-native";
 import { Tree } from "./src/tree";
 import { BufferLine } from "./src/buffer-line";
 import { CommandLine } from "./src/command-line";
@@ -12,10 +12,14 @@ import { StatusLine } from "./src/status-line";
 import { Settings } from "./src/settings/Settings";
 import { Setup } from "./src/setup/Setup";
 import { Overlays } from "./src/overlays/Overlays";
+import { WelcomePage } from "./src/welcome";
 
 /** The editor: the buffer line, the tree beside the text, the status line and the command
- * line, with the overlays over them. Settings covers all of it, the overlays too. */
+ * line, with the overlays over them. Settings covers all of it, the overlays too. A window
+ * with no project and no file open shows the welcome page in place of the text. */
 function Editor(props: { screen: () => ScreenState }) {
+  const welcome = signal<WelcomeState>({ show: false, version: "", actions: [], recent: [] });
+  Welcome.onChange((w) => welcome.set(w));
   return (
     <View class="flex-1 bg-background">
       <BufferLine />
@@ -23,7 +27,14 @@ function Editor(props: { screen: () => ScreenState }) {
         <If when={props.screen().tree}>
           <Tree />
         </If>
-        <TextArea />
+        {/* The welcome page covers the text area and keeps it in place, so the Rust view stays
+            mounted for the first file. */}
+        <View class="flex-1 min-w-0">
+          <TextArea />
+          <If when={welcome().show}>
+            <WelcomePage state={welcome} />
+          </If>
+        </View>
       </View>
       <StatusLine />
       <CommandLine />

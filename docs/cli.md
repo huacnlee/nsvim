@@ -28,7 +28,7 @@ nvim [PATH[:LINE]]... [+LINE] [--wait] [--new] [--tui]
 
 | Form | Does |
 | --- | --- |
-| `nvim` | Opens the current folder as the project, with the files of the last session. In your home folder, it opens the last project you had open. |
+| `nvim` | Opens the current folder as the project, with the files of the last session. In your home folder, it opens the last project you had open. With no last project, it shows the welcome page. |
 | `nvim .` | The same, for the folder you name. |
 | `nvim src/main.rs` | Opens the file, in the project around it. |
 | `nvim src/main.rs:42` | Opens the file with the cursor on line 42. |
@@ -66,7 +66,9 @@ window forward. `--new` skips this and always opens a new window.
 
 NsVim opens a window, from a launcher (Finder, the Start menu, a desktop entry) and from a
 terminal alike. With no path, from a launcher or in the home folder, it opens the last
-project you had open, with its files and cursors. `--tui` edits in the terminal instead, as
+project you had open, with its files and cursors. With no last project, it shows the welcome
+page: a new file, a folder, a project, Settings, the keys and the recent projects. The home
+folder is never a project of its own. `--tui` edits in the terminal instead, as
 vim does: over SSH, in tmux, or anywhere you type `nvim --tui`. The old `-g` flag is still
 accepted and changes nothing. It is the same editor. It runs the same screens and the same Rust core, so
 the keymaps, the finder, search, the file tree, git signs, the language servers, settings and

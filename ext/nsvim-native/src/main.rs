@@ -70,7 +70,7 @@ fn without_window() -> Option<i32> {
         return None;
     }
     let (root, files) = args::targets();
-    ipc::client::open_in_running(&root, &files, wait)
+    ipc::client::open_in_running(&root.unwrap_or_else(args::no_project_dir), &files, wait)
 }
 
 /// On the web, the page runs App.tsx with the library. This program has nothing to do there.

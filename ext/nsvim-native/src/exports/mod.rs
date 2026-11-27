@@ -14,6 +14,7 @@ mod settings;
 mod setup;
 mod status;
 mod tree;
+mod welcome;
 mod workspace;
 
 use std::cell::RefCell;
@@ -31,6 +32,7 @@ pub use settings::*;
 pub use setup::*;
 pub use status::*;
 pub use tree::*;
+pub use welcome::*;
 pub use workspace::*;
 
 /// Registers every export in `registry`.
@@ -46,7 +48,8 @@ pub fn register(registry: &mut Registry) {
         .module::<Status>()
         .module::<Cmdline>()
         .module::<SettingsPage>()
-        .module::<SetupFlow>();
+        .module::<SetupFlow>()
+        .module::<Welcome>();
 }
 
 thread_local! {

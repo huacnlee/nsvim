@@ -475,3 +475,17 @@ fn refilter(c: &mut Completion, word: &str) {
     c.shown = shown.into_iter().map(|(_, i)| i).take(12).collect();
     c.sel = c.sel.min(c.shown.len().saturating_sub(1));
 }
+
+/// Applies LSP text edits to a buffer as one undo step, last edit first so earlier positions
+/// hold.
+pub fn apply_edits(buf: &mut editor::buffer::Buffer, edits: &[crate::services::lsp::TextEdit]) {
+    let mut order: Vec<&crate::services::lsp::TextEdit> = edits.iter().collect();
+    order.sort_by_key(|e| std::cmp::Reverse(e.start));
+    let at = order.last().map(|e| e.start).unwrap_or_default();
+    buf.begin(at);
+    for e in order {
+        let (a, b) = (buf.idx(e.start), buf.idx(e.end));
+        buf.replace(a, b, &e.text);
+    }
+    buf.commit(at);
+}

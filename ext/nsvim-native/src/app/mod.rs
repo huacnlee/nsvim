@@ -38,6 +38,9 @@ pub mod unsaved;
 pub mod update;
 #[cfg(test)]
 mod update_tests;
+pub mod welcome;
+#[cfg(test)]
+mod welcome_tests;
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -52,6 +55,7 @@ use crate::config::{self, Config};
 use crate::services::{AfterSave, EditorConfig, Event, GitInfo, Hit, Services, Sign, WriteKind};
 use crate::theme::Omarchy;
 
+pub use lsp::apply_edits;
 pub use picker::{PickKind, Picker};
 pub use settings::Settings;
 pub use setup::Setup;
@@ -210,6 +214,8 @@ pub struct App {
     pub migration: crate::migrate::Migration,
     /// A newer release an update check found; `:Update` installs it.
     pub update: Option<crate::services::update::Release>,
+    /// The window started with no project: the recent projects the welcome page lists.
+    pub welcome: Option<Vec<PathBuf>>,
 }
 
 impl App {
@@ -225,6 +231,8 @@ impl App {
         };
         crate::timing::mark("config read");
         let (root, targets) = crate::args::targets();
+        let no_project = root.is_none();
+        let root = root.unwrap_or_else(crate::args::no_project_dir);
         crate::timing::mark("project root found");
         let omarchy = crate::theme::read_omarchy();
         crate::timing::mark("omarchy theme read");
@@ -232,7 +240,11 @@ impl App {
         app.config_file = Some(config::config_path());
         app.migration = migration;
         app.to_open = targets;
-        app.restore_session();
+        if no_project {
+            app.start_welcome()
+        } else {
+            app.restore_session()
+        }
         if let Some((p, _)) = app.to_open.first()
             && let Some(dir) = p.parent().and_then(|d| d.strip_prefix(&root).ok())
         {
@@ -317,6 +329,7 @@ impl App {
             key_focus: false,
             migration: Default::default(),
             update: None,
+            welcome: None,
         }
     }
 
@@ -379,28 +392,6 @@ impl App {
             self.title = title;
         }
         changed
-    }
-
-    /// Writes unsaved text to swap files once editing has paused for two seconds.
-    fn write_swaps(&mut self, clock: f64, tx: &mut Tx) {
-        let Some(svc) = &self.svc else { return };
-        let idle = clock - self.last_edit;
-        for d in &self.ed.docs {
-            let Some(path) = &d.buf.path else { continue };
-            let Some(m) = self.meta.get_mut(path) else { continue };
-            if !d.buf.is_dirty() || m.swapped == d.buf.version() + 1 {
-                continue;
-            }
-            if d.buf.len_bytes() > 4 * BIG {
-                continue;
-            }
-            if idle < 2.0 {
-                tx.wake_after(Duration::from_secs_f64(2.05 - idle));
-                continue;
-            }
-            m.swapped = d.buf.version() + 1;
-            svc.swap(path.clone(), d.buf.text());
-        }
     }
 
     pub fn event(&mut self, e: Event, tx: &mut Tx) {
@@ -776,20 +767,6 @@ impl App {
     pub fn search_shown(&self) -> bool {
         !self.ed.search.pattern.is_empty() && self.ed.vim.hlsearch
     }
-}
-
-/// Applies LSP text edits to a buffer as one undo step, last edit first so earlier positions
-/// hold.
-pub fn apply_edits(buf: &mut Buffer, edits: &[crate::services::lsp::TextEdit]) {
-    let mut order: Vec<&crate::services::lsp::TextEdit> = edits.iter().collect();
-    order.sort_by_key(|e| std::cmp::Reverse(e.start));
-    let at = order.last().map(|e| e.start).unwrap_or_default();
-    buf.begin(at);
-    for e in order {
-        let (a, b) = (buf.idx(e.start), buf.idx(e.end));
-        buf.replace(a, b, &e.text);
-    }
-    buf.commit(at);
 }
 
 /// Buffers above this many bytes skip git signs and LSP: copying their text on every pause
