@@ -44,6 +44,8 @@ pub const COMMANDS: &[Command] = &[
     cmd("Open folder…", "folder", "O", "", ""),
     cmd("Toggle file tree", "tree", "e", "", "Mod B"),
     cmd("Find in project…", "grep", "/", "", "Mod ⇧ F"),
+    cmd("Find in file…", "find-in-file", "y f", "/", "Mod F"),
+    cmd("Replace in file…", "replace-in-file", "y s", ":s", "Mod ⌥ F"),
     cmd("Buffers…", "buffers", "b", "", ""),
     cmd("New file", "new", "n", ":enew", "Mod N"),
     cmd("Save", "save", "w", "", "Mod S"),
@@ -132,7 +134,21 @@ fn short_label(label: &str, group: &str) -> String {
 }
 
 /// The commands that work on the open file. They do nothing with no file open.
-const ON_FILE: &[&str] = &["undo", "redo", "cut", "copy", "paste", "all", "definition", "references", "hover", "rename", "actions"];
+const ON_FILE: &[&str] = &[
+    "find-in-file",
+    "replace-in-file",
+    "undo",
+    "redo",
+    "cut",
+    "copy",
+    "paste",
+    "all",
+    "definition",
+    "references",
+    "hover",
+    "rename",
+    "actions",
+];
 
 impl Command {
     /// The keys to show for `keymap`, with `leader` for `SPC` and the platform's modifier. The
@@ -173,6 +189,7 @@ impl App {
             "palette" => Action::Palette,
             "find" => Action::FindFile,
             "grep" => Action::GrepProject,
+            "find-in-file" | "replace-in-file" => return self.open_find(id == "replace-in-file"),
             "project" => Action::OpenProject,
             "folder" => return self.choose_folder(tx),
             "new" => Action::NewBuffer,

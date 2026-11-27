@@ -78,6 +78,8 @@ impl App {
             item("edit:paste", "Paste"),
             item("edit:all", "Select All"),
             Entry::Separator,
+            item("cmd:find-in-file", "Find…"),
+            item("cmd:replace-in-file", "Replace…"),
             item("cmd:grep", "Find in Project…"),
         ];
         let view = vec![

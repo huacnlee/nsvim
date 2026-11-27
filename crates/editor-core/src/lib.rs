@@ -4,5 +4,6 @@
 pub mod buffer;
 pub mod classic;
 pub mod editor;
+pub mod find;
 pub mod syntax;
 pub mod vim;
