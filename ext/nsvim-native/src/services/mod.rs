@@ -29,7 +29,7 @@ use crate::theme::Omarchy;
 pub type Waker = Arc<dyn Fn() + Send + Sync>;
 
 pub use editorconfig::EditorConfig;
-pub use git::{GitInfo, Sign};
+pub use git::{BlameLine, GitInfo, Sign};
 pub use grep::Hit;
 
 /// What to do once a save lands.
@@ -88,6 +88,12 @@ pub enum Event {
         path: PathBuf,
         version: u64,
         signs: Vec<Sign>,
+    },
+    /// Who last changed each line of `path` at buffer `version`. Empty when git doesn't track it.
+    Blame {
+        path: PathBuf,
+        version: u64,
+        lines: Vec<BlameLine>,
     },
     Grep {
         generation: u64,
@@ -282,6 +288,10 @@ impl Services {
 
     pub fn git_signs(&self, path: PathBuf, text: String, version: u64) {
         let _ = self.git.send(git::Job::Signs { path, text, version });
+    }
+
+    pub fn git_blame(&self, path: PathBuf, text: String, version: u64) {
+        let _ = self.git.send(git::Job::Blame { path, text, version });
     }
 
     pub fn grep(&self, pattern: String, generation: u64) {

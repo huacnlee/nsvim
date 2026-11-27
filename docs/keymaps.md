@@ -44,6 +44,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC p` | Open the command palette. See [Command palette](#command-palette) |
 | `SPC g n`, `SPC g p` | Next, previous git change against `HEAD`. Wraps around |
 | `SPC g s` | Show and focus the file tree, with its git status letters |
+| `SPC g b` | Show or hide who last changed each line |
 | `SPC l d` | Go to the definition |
 | `SPC l r` | List the references |
 | `SPC l h` | Show hover information |
@@ -737,6 +738,7 @@ It has these commands:
 | `Show every key…` | Show every key, with search |
 | `Git: next change`, `Git: previous change` | Next, previous git change against `HEAD` |
 | `Git: status in the tree` | Show and focus the file tree, with its git status letters |
+| `Git: toggle line blame` | Show who last changed each line and when, after its text. The cursor's line also shows the commit's summary |
 | `Go to definition`, `Find references…`, `Hover`, `Rename symbol…`, `Code actions…` | Ask the language server |
 | `Agent: list outside changes…` | List the changes made on disk from outside the editor |
 | `Agent: clear change marks` | Clear the outside-change marks |

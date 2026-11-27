@@ -4,7 +4,7 @@
 //! it.
 //!
 //! `frame` reads the core `Editor` and a `Look`: the options and marks the app keeps beside
-//! the core (config.toml's look, git signs, diagnostics, an agent's note). `Look::of` makes
+//! the core (config.toml's look, git signs and blame, diagnostics, an agent's note). `Look::of` makes
 //! one from the app.
 
 use editor::buffer::Pos;
@@ -13,7 +13,7 @@ use editor::syntax::highlight::{self, Kind};
 use unicode_width::UnicodeWidthChar;
 
 use crate::app::App;
-use crate::services::git::{Sign as GitSign, SignKind};
+use crate::services::git::{BlameLine, Sign as GitSign, SignKind};
 use crate::services::lsp::Diag;
 
 /// Columns of the gutter before the line numbers: room for a sign.
@@ -85,11 +85,13 @@ impl Sign {
     }
 }
 
-/// Text after the end of a row: a diagnostic's message or an agent's note.
+/// Text after the end of a row: a diagnostic's message, an agent's note, or who last changed
+/// the line.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum After {
     Diag(Level, String),
     Note(String),
+    Blame(String),
 }
 
 /// A row of the text area.
@@ -205,6 +207,8 @@ pub struct Look<'a> {
     /// Show leading spaces as `·` and leading tabs as `→`.
     pub whitespace: bool,
     pub signs: &'a [GitSign],
+    /// Who last changed each line. Empty when line blame is off.
+    pub blame: &'a [BlameLine],
     pub diags: &'a [Diag],
     /// Lines changed on disk from outside.
     pub outside: &'a [usize],
@@ -222,6 +226,7 @@ impl Default for Look<'_> {
             ruler: 0,
             whitespace: false,
             signs: &[],
+            blame: &[],
             diags: &[],
             outside: &[],
             note: None,
@@ -253,6 +258,7 @@ impl<'a> Look<'a> {
             ruler: e.ruler as usize,
             whitespace: e.whitespace,
             signs: meta.map_or(&[], |m| m.signs.as_slice()),
+            blame: meta.filter(|_| app.blame).map_or(&[], |m| m.blame.lines.as_slice()),
             diags: meta.map_or(&[], |m| m.diags.as_slice()),
             outside: meta.map_or(&[], |m| m.outside.as_slice()),
             note,
@@ -562,6 +568,11 @@ pub fn frame_of(ed: &Editor, look: &Look, rows: usize, ix: usize, cols: usize, l
                 (_, Some(d)) if last_piece && d.severity <= 2 => {
                     Some(After::Diag(Level::of(d.severity), d.message.lines().next().unwrap_or("").chars().take(MESSAGE_CHARS).collect()))
                 }
+                // The cursor's line also shows the commit's summary.
+                _ if last_piece => look.blame.get(line).filter(|b| !b.who.is_empty()).map(|b| match current && !b.summary.is_empty() {
+                    true => After::Blame(format!("{} · {}", b.who, b.summary).chars().take(MESSAGE_CHARS).collect()),
+                    false => After::Blame(b.who.clone()),
+                }),
                 _ => None,
             };
             out.push(Row::Line {

@@ -112,6 +112,16 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" gs");
     f.settle("SPC g s focuses the tree", |a| a.tree.focus);
     f.keys("\x1b");
+    f.keys(" gb");
+    f.settle("SPC g b shows who changed each line", |a| {
+        let m = a.meta.get(&a.ed.buf().path.clone().unwrap());
+        a.blame
+            && m.is_some_and(|m| {
+                m.blame.lines.get(3).is_some_and(|b| b.who == "Not committed yet") && m.blame.lines[0].who.starts_with("test, ")
+            })
+    });
+    f.keys(" gb");
+    f.settle("SPC g b hides it again", |a| !a.blame);
 
     // +lsp, on `twice` where main calls it.
     if lsp {
@@ -251,6 +261,8 @@ fn every_palette_command_does_what_it_says() {
     }
     let wrap = f.read(|a| a.cfg.editor.wrap);
     run_check(&mut f, t, "wrap", "wrap toggles soft wrap", move |a| a.cfg.editor.wrap != wrap);
+    run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| a.blame);
+    f.update(|a, t| a.toggle_blame(t));
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
     // A test build is no installed copy, so NSH's updater does not take it. With a release
     // found, the command tries to install it and says why it cannot: no network in the test.
