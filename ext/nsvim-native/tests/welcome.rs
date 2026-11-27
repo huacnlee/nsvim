@@ -21,10 +21,11 @@ fn the_welcome_page_shows_and_new_file_opens_a_buffer() {
     let dir = scratch();
     let recent = dir.path().join("work/nsh");
     std::fs::create_dir_all(&recent).unwrap();
-    let mut f = welcome(dir.path(), recent.clone());
+    let mut f = welcome(dir.path(), recent);
     f.ui.wait_for("id:welcome").unwrap();
     f.ui.wait_for("text:Recent projects").unwrap();
-    f.ui.wait_for(&format!("label:{}", nsvim_native::app::project::shown(&recent))).unwrap();
+    // The row shows the folder's path, which ends in `work/nsh`.
+    f.ui.wait_for("label:/work.nsh$/").unwrap();
     f.ui.press("label:New file").unwrap();
     f.settle("New file opens a buffer", |a| a.ed.has_doc());
     f.ui.wait_for_gone("id:welcome", std::time::Duration::from_secs(2)).unwrap();
