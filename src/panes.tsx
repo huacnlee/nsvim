@@ -17,7 +17,8 @@
 import { effect, platform, signal, Text, View, type ContextMenuEvent, type MouseEvent, type ViewRef } from "nsh";
 import { DockArea, type DockAreaLayout, type DockTab } from "nsh/base";
 import { Icon, Shell, Tabs, TextArea, type TabState } from "nsvim-native";
-import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync } from "./dock-layout";
+import { BarEnd, EmptyBar } from "./buffer-line";
+import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync, topRight } from "./dock-layout";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
  * size and not the system text size. */
@@ -127,8 +128,10 @@ function Tab(props: { tab: () => TabState | undefined; index: () => number; font
   );
 }
 
-/** The panes of the open files. With no file open, the one text area shows what to do. */
-export function Panes(props: { font: () => Font }) {
+/** The panes of the open files, at the top of the window: their tab bars are the title bar.
+ * `lead` is the width at the start of each tab bar that the window controls and the menu button
+ * take. With no file open, the one text area shows what to do, under an empty bar. */
+export function Panes(props: { font: () => Font; lead: () => number }) {
   const tabs = signal<TabState[]>([]);
   const layout = signal<DockAreaLayout>({ center: { type: "tabs", panels: [] } });
   // The panels that their groups display, so a hidden tab draws nothing.
@@ -180,7 +183,15 @@ export function Panes(props: { font: () => Font }) {
 
   return (
     <View class="flex-1 min-w-0 min-h-0">
-      <If when={tabs().length > 0} else={<TextArea />}>
+      <If
+        when={tabs().length > 0}
+        else={
+          <>
+            <EmptyBar lead={props.lead()} />
+            <TextArea />
+          </>
+        }
+      >
         <DockArea
           class="flex-1 bg-background"
           layout={layout()}
@@ -201,13 +212,15 @@ export function Panes(props: { font: () => Font }) {
           renderTab={(t: DockTab) => (
             <Tab tab={() => tabs()[indexOf(t.panel)]} index={() => indexOf(t.panel)} font={props.font} />
           )}
+          renderToolbar={(t: DockTab) => <BarEnd controls={topRight(layout().center)?.panels.includes(t.panel) ?? false} />}
           renderDragPreview={(t: DockTab) => (
             <View class="flex-row items-center h-9 px-3 bg-surface-raised border border-border opacity-90">
               <Label font={props.font} on text={tabs()[indexOf(t.panel)]?.name ?? ""} />
             </View>
           )}
           groupClass="bg-background"
-          tabBarClass="h-9 bg-muted border-b border-border"
+          tabBarClass="flex-row h-9 bg-muted border-b border-border"
+          tabBarStyle={{ paddingLeft: props.lead() }}
           tabClass="h-9 cursor-pointer selected:bg-surface-raised hover:bg-surface-raised/50"
           contentClass="bg-background"
           dropIndicatorClass="bg-primary/15 border border-primary"
