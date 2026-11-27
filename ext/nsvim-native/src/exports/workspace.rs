@@ -66,6 +66,7 @@ pub fn Workspace(props: WorkspaceProps) -> impl IntoElement {
     let focus_win = win.clone();
     s.attach(win);
     s.start();
+    crate::ui::popups::host_events(s);
     if !crate::terminal() {
         // The menu follows the keymap and Settings: they decide the shortcut of Close Window.
         let menu_keys = s.view(|a| a.close_window_key());

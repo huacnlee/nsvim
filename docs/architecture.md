@@ -92,7 +92,8 @@ asks Rust for changes.
 | File | Shows |
 | --- | --- |
 | `App.tsx` | The window: setup, or the editor with Settings over it. |
-| `src/buffer-line.tsx` | The tabs of the open files, and the project folder over the tree. |
+| `src/buffer-line.tsx` | The title bar: the project folder over the tree, and the name of the active file. |
+| `src/panes.tsx`, `src/dock-layout.ts` | The panes of the open files in NSH's `DockArea`: a tab bar for each pane, tab drags, and splits from a tab dropped on a pane's edge. |
 | `src/tree.tsx` | The file tree. |
 | `src/status-line.tsx`, `src/command-line.tsx` | The status line and the command line. |
 | `src/overlays/` | The leader menu, the finder with its pickers, and the in-app context menu. |
@@ -106,7 +107,7 @@ asks Rust for changes.
 | Export | Kind | Does |
 | --- | --- | --- |
 | `Workspace` | component | Makes the session, sets the theme tokens, starts the workers and takes every key. The screens go inside it. |
-| `TextArea` | component | The code, drawn by Rust. |
+| `TextArea` | component | The code, drawn by Rust. With `doc`, a pane that shows that file. The pane of the active file has the cursor. |
 | `Icon` | component | A Lucide icon in the text colour. |
 | `Shell` | module | What the window shows, `focusKeys`, and the close button. |
 | `Overlays`, `FileTree`, `Tabs`, `Status`, `Cmdline`, `SettingsPage`, `SetupFlow`, `Welcome` | modules | The state of one area each, and the changes its clicks ask for. |

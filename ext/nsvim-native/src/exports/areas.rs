@@ -8,11 +8,27 @@ use super::current;
 use crate::app::Screen as AppScreen;
 use crate::ui;
 
+/// The props of [`TextArea`].
+#[derive(Debug, Clone, PartialEq, Props)]
+pub struct TextAreaProps {
+    /// The id of the document the area shows (`TabState.id`): a pane of the dock. Left out,
+    /// the area shows the active document.
+    pub doc: Prop<Option<f64>>,
+    /// The pane shows: it is the displayed tab of its group. A pane that does not show draws
+    /// nothing. True when left out.
+    #[prop(default = true)]
+    pub shown: Prop<bool>,
+}
+
 /// The code with its gutter, cursor and selections. Rust draws it, as it changes each key.
+/// With `doc`, it is a pane that shows that document. The pane of the active document has
+/// the cursor. A press on another pane makes its document the active one.
 #[component]
-pub fn TextArea() -> impl IntoElement {
+pub fn TextArea(props: TextAreaProps) -> impl IntoElement {
     let (s, keys) = current();
-    ui::text_area::text_area(s, keys)
+    let doc = props.doc.get_untracked().map(|d| d as u64);
+    let shown = props.shown;
+    ui::text_area::text_area(s, keys, doc, computed(move || shown.get()))
 }
 
 /// What the window shows.

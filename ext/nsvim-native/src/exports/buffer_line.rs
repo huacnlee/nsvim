@@ -8,6 +8,9 @@ use crate::app::App;
 /// One tab.
 #[derive(Debug, Clone, PartialEq, JsObject)]
 pub struct TabState {
+    /// The document's id, which stays the same while the file is open: the key of its panel in
+    /// the dock, and the `doc` of its `TextArea`.
+    pub id: f64,
     /// The name on the tab: the file name.
     pub name: String,
     /// The file has unsaved changes.
@@ -47,7 +50,7 @@ pub fn state_of(a: &App) -> BufferLineState {
             .docs
             .iter()
             .enumerate()
-            .map(|(i, d)| TabState { name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == a.ed.active })
+            .map(|(i, d)| TabState { id: d.id as f64, name: d.buf.name(), dirty: d.buf.is_dirty(), on: i == a.ed.active })
             .collect(),
         font_family: if a.cfg.ui.font == "system" { "system-ui".into() } else { a.font_family.into() },
         font_size: a.cfg.ui.size,
@@ -70,6 +73,16 @@ impl Tabs {
         crate::bridge::update(move |a, _| a.show_tab(index as usize));
     }
 
+    /// Shows the file with id `id` (`TabState.id`) and gives it the keys: a pane's tab, by its
+    /// key in the dock.
+    pub fn show_file(id: f64) {
+        crate::bridge::update(move |a, _| {
+            if let Some(i) = a.ed.docs.iter().position(|d| d.id == id as u64) {
+                a.show_tab(i);
+            }
+        });
+    }
+
     /// Opens the menu of tab `index` at `x`, `y` in the window: close it, the others, the tabs
     /// to its left or right, the clean tabs or all, copy its path, or reveal it in the tree.
     pub fn open_menu(index: u32, x: f64, y: f64) {
@@ -90,5 +103,12 @@ impl Tabs {
     /// dragged tab. The tab that shows stays the one that shows.
     pub fn move_tab(from: u32, to: u32) {
         crate::bridge::update(move |a, _| a.ed.move_doc(from as usize, to as usize));
+    }
+
+    /// Puts the open files in the order of `ids` (`TabState.id`): the order of the tabs across
+    /// the panes, so that the next and previous buffer follow what shows.
+    pub fn order(ids: Vec<f64>) {
+        let ids: Vec<u64> = ids.into_iter().map(|i| i as u64).collect();
+        crate::bridge::update(move |a, _| a.ed.order_docs(&ids));
     }
 }
