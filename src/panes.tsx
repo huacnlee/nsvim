@@ -9,11 +9,15 @@
 // menu. A tab with unsaved changes shows a small square in place of the close mark. Rust owns
 // the open files (`Tabs` in `ext/nsvim-native/src/exports/buffer_line.rs`). The layout of the
 // panes is this screen's: `./dock-layout.ts` keeps it in step with Rust's tabs.
+//
+// The pane commands (Split Right, `Ctrl w v`, `:vsplit`, Close Pane...) come from Rust as a
+// numbered ask in the tabs' state. This screen carries out each number once, on the pane of
+// the active file: DockArea has no focused pane, so the active file's pane is the focused one.
 
 import { effect, platform, signal, Text, View, type ContextMenuEvent, type MouseEvent, type ViewRef } from "nsh";
 import { DockArea, type DockAreaLayout, type DockTab } from "nsh/base";
 import { Icon, Shell, Tabs, TextArea, type TabState } from "nsvim-native";
-import { groups, panelsOf, sameLayout, sync } from "./dock-layout";
+import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync } from "./dock-layout";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
  * size and not the system text size. */
@@ -141,14 +145,37 @@ export function Panes(props: { font: () => Font }) {
     if (keys.join(",") !== tabs().map(keyOf).join(",")) Tabs.order(keys.map(Number));
   };
 
+  // The number of the last pane ask carried out. The ask that shows at the start is old.
+  let asked: number | undefined;
+
+  /** Carries out pane command `cmd` on the pane of `active`, from `l`. */
+  const pane = (l: DockAreaLayout, cmd: string, active: string): DockAreaLayout => {
+    if (cmd === "pane-next" || cmd === "pane-prev") {
+      const to = neighbour(l, active, cmd === "pane-next" ? 1 : -1);
+      if (to === undefined) Tabs.say("only one pane");
+      // The press of a pane's tab does the same: its file gets the keys.
+      else Tabs.showFile(Number(to));
+      return l;
+    }
+    const next = cmd === "pane-close" ? closeGroup(l, active) : split(l, active, cmd === "split-down" ? "vertical" : "horizontal");
+    if (!next) Tabs.say(cmd === "pane-close" ? "only one pane" : "one tab in this pane: open another file to split");
+    return next ?? l;
+  };
+
   Tabs.onChange((s) => {
     tabs.set(s.tabs);
     const keys = s.tabs.map(keyOf);
     const on = s.tabs.find((t) => t.on);
     const active = on ? keyOf(on) : undefined;
-    const next = sync(layout(), keys, active, near);
+    let next = sync(layout(), keys, active, near);
     near = active;
-    if (!sameLayout(next, layout())) layout.set(next);
+    const ask = s.pane;
+    if (ask && asked !== undefined && ask.seq !== asked && active !== undefined) next = pane(next, ask.cmd, active);
+    asked = ask?.seq ?? 0;
+    if (!sameLayout(next, layout())) {
+      layout.set(next);
+      order(next);
+    }
   });
 
   return (

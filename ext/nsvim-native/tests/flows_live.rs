@@ -354,6 +354,11 @@ fn every_palette_command_does_what_it_says() {
     f.keys(":set theme=nope\n");
     f.settle(":set theme=nope is an error", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
 
+    // The pane commands ask the panes' screen, which `tests/panes.rs` runs.
+    for id in ["split-right", "split-down", "pane-next", "pane-prev", "pane-close"] {
+        run_check(&mut f, t, id, &format!("{id} asks the panes"), move |a| a.pane_ask.is_some_and(|(_, c)| c.id() == id));
+    }
+
     // The commands that close a group of tabs, from the tab that shows.
     let names = |a: &App| a.ed.docs.iter().map(|d| d.buf.name()).collect::<Vec<_>>().join(" ");
     let more: Vec<_> = ["c.txt", "d.txt", "e.txt"].iter().map(|n| write(dir.path(), n, "more\n")).collect();

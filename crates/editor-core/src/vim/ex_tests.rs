@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use super::tests::{at, cur, ed, feed, text};
 use super::{move_lines, run_ex, search_matches};
 use crate::buffer::Buffer;
-use crate::editor::{Action, Mode};
+use crate::editor::{Action, Mode, PaneCmd};
 
 #[test]
 fn substitute_with_g_and_ranges() {
@@ -295,12 +295,21 @@ fn ex_commands_that_ask_the_app() {
         ("Commands", Action::Palette),
         ("e", Action::Reload),
         ("close", Action::Quit { force: false }),
+        ("vsplit", Action::Pane(PaneCmd::SplitRight)),
+        ("vs", Action::Pane(PaneCmd::SplitRight)),
+        ("split", Action::Pane(PaneCmd::SplitDown)),
+        ("sp", Action::Pane(PaneCmd::SplitDown)),
         ("qa!", Action::QuitAll { force: true }),
         ("sav /abs/f.rs", Action::Save(Some(PathBuf::from("/abs/f.rs")))),
     ];
     for (cmd, act) in one {
         assert_eq!(run_ex(&mut e, cmd), vec![act], ":{cmd}");
     }
+    assert_eq!(
+        run_ex(&mut e, "vsplit /abs/f.rs"),
+        vec![Action::Open(PathBuf::from("/abs/f.rs")), Action::Pane(PaneCmd::SplitRight)],
+        ":vsplit file opens the file in the new pane"
+    );
     for cmd in ["wqa", "xa"] {
         assert_eq!(run_ex(&mut e, cmd), vec![Action::SaveAll, Action::QuitAll { force: false }], ":{cmd}");
     }
