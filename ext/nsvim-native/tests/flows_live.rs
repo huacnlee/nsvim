@@ -261,6 +261,14 @@ fn every_palette_command_does_what_it_says() {
     }
     let wrap = f.read(|a| a.cfg.editor.wrap);
     run_check(&mut f, t, "wrap", "wrap toggles soft wrap", move |a| a.cfg.editor.wrap != wrap);
+    // Zoom changes the font sizes and writes config.toml at once.
+    run_check(&mut f, t, "zoom-in", "zoom-in makes the text larger", |a| a.cfg.font.size == 14.0 && a.cfg.ui.size == 13.5);
+    f.settle("config.toml has the new size", |_| {
+        std::fs::read_to_string(nsvim_native::config::config_path()).is_ok_and(|t| t.contains("size = 14.0"))
+    });
+    run_check(&mut f, t, "zoom-out", "zoom-out makes the text smaller", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
+    f.update(|a, t| a.run_command("zoom-in", t));
+    run_check(&mut f, t, "zoom-reset", "zoom-reset gives the default sizes", |a| a.cfg.font.size == 13.0 && a.cfg.ui.size == 12.5);
     run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| a.blame);
     f.update(|a, t| a.toggle_blame(t));
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
@@ -326,6 +334,22 @@ fn every_palette_command_does_what_it_says() {
     f.press("enter");
     f.settle("paste puts it back", move |a| text(a).len() >= full.len());
     t.push("paste");
+    // The line commands of the Edit menu, on a buffer of two lines.
+    f.update(|a, _| {
+        let buf = &mut a.ed.doc_mut().buf;
+        let n = buf.len_chars();
+        buf.begin(Pos::new(0, 0));
+        buf.remove(0, n);
+        buf.insert_at(0, "one\ntwo\n");
+        buf.commit(Pos::new(0, 0));
+        a.ed.set_cursor(Pos::new(0, 0));
+    });
+    run_check(&mut f, t, "comment", "comment comments the line out", |a| text(a) == "// one\ntwo\n");
+    run_check(&mut f, t, "line-down", "line-down moves the line down", |a| text(a) == "two\n// one\n");
+    run_check(&mut f, t, "line-up", "line-up moves the line up", |a| text(a) == "// one\ntwo\n");
+    run_check(&mut f, t, "indent", "indent indents the line", |a| text(a).starts_with(char::is_whitespace));
+    run_check(&mut f, t, "outdent", "outdent takes the indent away", |a| text(a) == "// one\ntwo\n");
+    run_check(&mut f, t, "delete-line", "delete-line deletes the line", |a| text(a) == "two\n");
     for id in ["definition", "references", "actions", "format"] {
         f.update(|a, _| a.ed.msg = None);
         run_check(&mut f, t, id, id, |a| said(a, "no language server"));
@@ -357,6 +381,18 @@ fn every_palette_command_does_what_it_says() {
     .unwrap();
     f.settle("cancel keeps the window", |a| !a.asking_quit && a.ed.has_doc());
     run_check(&mut f, t, "close", "close closes the buffer", |a| a.ed.docs.len() == 1);
+    // Reopen closed tab takes the closed files back, the last closed first.
+    let first = f.read(|a| a.ed.docs[0].buf.path.clone().unwrap());
+    f.update(|a, t| a.close_tab(0, t));
+    f.settle("the last tab closes", |a| a.ed.docs.is_empty());
+    let last = first.clone();
+    run_check(&mut f, t, "reopen", "reopen opens the last closed file", move |a| {
+        a.ed.docs.len() == 1 && a.ed.buf().path.as_ref() == Some(&last)
+    });
+    f.update(|a, t| a.run_command("reopen", t));
+    f.settle("reopen again opens the file closed before it", move |a| {
+        a.ed.docs.len() == 2 && a.ed.buf().path.as_ref().is_some_and(|p| *p != first)
+    });
 
     // `:set theme=` takes a theme id too.
     f.keys(":set theme=gruvbox\n");

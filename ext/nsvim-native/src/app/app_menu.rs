@@ -65,6 +65,7 @@ impl App {
             item("cmd:save-all", "Save All"),
             Entry::Separator,
             item("cmd:close", "Close Tab"),
+            item("cmd:reopen", "Reopen Closed Tab"),
         ];
         if mac {
             file.push(Entry::Hide("Close Window".into(), Some(self.close_window_key().into())));
@@ -78,6 +79,13 @@ impl App {
             item("edit:paste", "Paste"),
             item("edit:all", "Select All"),
             Entry::Separator,
+            item("edit:comment", "Toggle Comment"),
+            item("edit:line-up", "Move Line Up"),
+            item("edit:line-down", "Move Line Down"),
+            item("edit:delete-line", "Delete Line"),
+            item("edit:indent", "Indent"),
+            item("edit:outdent", "Outdent"),
+            Entry::Separator,
             item("cmd:format", "Format Document"),
             item("cmd:format-selection", "Format Selection"),
             Entry::Separator,
@@ -90,6 +98,10 @@ impl App {
             item("cmd:tree", "Toggle File Tree"),
             item("cmd:wrap", "Toggle Soft Wrap"),
             item("cmd:git-blame", "Toggle Line Blame"),
+            Entry::Separator,
+            item("cmd:zoom-in", "Zoom In"),
+            item("cmd:zoom-out", "Zoom Out"),
+            item("cmd:zoom-reset", "Reset Zoom"),
             Entry::Separator,
             item("cmd:next", "Next Tab"),
             item("cmd:prev", "Previous Tab"),
