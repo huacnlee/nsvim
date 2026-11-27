@@ -95,6 +95,8 @@ pub struct FormatCfg {
     pub final_newline: bool,
     /// `lf` or `crlf`, for new files.
     pub line_endings: String,
+    /// The language server formats a file before it is saved.
+    pub on_save: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -179,7 +181,7 @@ impl Default for IndentCfg {
 
 impl Default for FormatCfg {
     fn default() -> Self {
-        FormatCfg { trim_whitespace: true, final_newline: true, line_endings: "lf".into() }
+        FormatCfg { trim_whitespace: true, final_newline: true, line_endings: "lf".into(), on_save: false }
     }
 }
 

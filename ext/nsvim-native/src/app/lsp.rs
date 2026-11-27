@@ -10,7 +10,7 @@ use editor::editor::{KeyCode, KeyInput, Keymap, Mode};
 
 use super::{App, Overlay, PickKind};
 use crate::services::Event;
-use crate::services::lsp::{Item, Job, Loc};
+use crate::services::lsp::{Item, Job, Loc, TextEdit};
 
 /// The completion list while it shows.
 pub struct Completion {
@@ -40,6 +40,9 @@ impl App {
     /// Sends changed buffers to their servers once typing pauses for 150 ms, and asks for
     /// completions while a word is typed in Insert mode.
     pub fn lsp_sync(&mut self, clock: f64, tx: &mut Tx) {
+        if !self.format_saves.is_empty() {
+            self.format_timeouts(tx);
+        }
         let Some(svc) = &self.svc else { return };
         let idle = clock - self.last_edit;
         for d in &self.ed.docs {
@@ -124,6 +127,13 @@ impl App {
                     .collect(),
             },
             Some("hover") => Event::Hover { path, text: text(v, "text") },
+            Some("format") => {
+                let pos = |p: &serde_json::Value| Pos::new(num(p, "line"), num(p, "col"));
+                let edits = list("edits");
+                let edits = edits.iter().map(|e| TextEdit { start: pos(&e["start"]), end: pos(&e["end"]), text: text(e, "text") });
+                let version = self.ed.buf().version();
+                return self.formatted(path, version, edits.collect(), false, None);
+            }
             Some("diagnostics") => Event::Diagnostics {
                 path,
                 diags: list("diags")
@@ -166,7 +176,7 @@ impl App {
     }
 
     /// The active buffer's path and cursor, for a request.
-    fn here(&self) -> Option<(PathBuf, Pos)> {
+    pub(super) fn here(&self) -> Option<(PathBuf, Pos)> {
         if !self.ed.has_doc() || self.on_settings {
             return None;
         }
@@ -309,7 +319,7 @@ impl App {
     }
 
     /// Sends the buffer now, so a request sees the latest text.
-    fn flush_lsp(&mut self, path: &std::path::Path) {
+    pub(super) fn flush_lsp(&mut self, path: &std::path::Path) {
         let (Some(svc), Some(i)) = (&self.svc, self.doc_index(path)) else { return };
         let buf = &self.ed.docs[i].buf;
         if let Some(m) = self.meta.get_mut(path)
@@ -478,13 +488,13 @@ fn refilter(c: &mut Completion, word: &str) {
 }
 
 /// Applies LSP text edits to a buffer as one undo step, last edit first so earlier positions
-/// hold.
+/// hold. Inserts at one place keep the server's order, as LSP asks.
 pub fn apply_edits(buf: &mut editor::buffer::Buffer, edits: &[crate::services::lsp::TextEdit]) {
-    let mut order: Vec<&crate::services::lsp::TextEdit> = edits.iter().collect();
-    order.sort_by_key(|e| std::cmp::Reverse(e.start));
-    let at = order.last().map(|e| e.start).unwrap_or_default();
+    let mut order: Vec<(usize, &crate::services::lsp::TextEdit)> = edits.iter().enumerate().collect();
+    order.sort_by_key(|&(i, e)| std::cmp::Reverse((e.start, e.end, i)));
+    let at = order.last().map(|(_, e)| e.start).unwrap_or_default();
     buf.begin(at);
-    for e in order {
+    for (_, e) in order {
         let (a, b) = (buf.idx(e.start), buf.idx(e.end));
         buf.replace(a, b, &e.text);
     }

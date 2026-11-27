@@ -177,7 +177,7 @@ impl App {
     }
 
     /// Ends Visual mode or the classic selection, with the cursor at char `at` when given.
-    fn leave_selection(&mut self, at: Option<usize>) {
+    pub(super) fn leave_selection(&mut self, at: Option<usize>) {
         if self.ed.keymap == Keymap::Vim && matches!(self.ed.mode, Mode::Visual(_)) {
             self.ed.mode = Mode::Normal;
         }

@@ -146,6 +146,14 @@ pub enum Event {
         label: String,
         files: Vec<lsp::FileEdit>,
     },
+    /// A format request's edits for a file at buffer `version`, or why there are none.
+    Formatted {
+        path: PathBuf,
+        version: u64,
+        edits: Vec<lsp::TextEdit>,
+        save: bool,
+        error: Option<String>,
+    },
     /// The code actions at the cursor, by title.
     CodeActions {
         titles: Vec<String>,

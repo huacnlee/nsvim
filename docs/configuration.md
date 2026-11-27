@@ -46,6 +46,7 @@ spaces = true            # Tab inserts spaces
 trim_whitespace = true   # on save
 final_newline = true     # on save
 line_endings = "lf"      # lf or crlf, for new files
+on_save = false          # the language server formats the file before it is saved
 
 [keys]
 map = "neovim"           # neovim or classic

@@ -71,6 +71,8 @@ pub const COMMANDS: &[Command] = &[
     cmd("Hover", "hover", "l h", "K", ""),
     cmd("Rename symbol…", "rename", "l n", "", "F2"),
     cmd("Code actions…", "actions", "l a", "", "Mod ."),
+    cmd("Format document", "format", "l f", ":Format", "⇧ Alt F"),
+    cmd("Format selection", "format-selection", "l F", "", ""),
     cmd("Agent: list outside changes…", "outside", "a l", "", ""),
     cmd("Agent: clear change marks", "clear-outside", "a c", "", ""),
     cmd("Agent: show the next proposal", "proposal", "a p", "", ""),
@@ -161,6 +163,8 @@ const ON_FILE: &[&str] = &[
     "hover",
     "rename",
     "actions",
+    "format",
+    "format-selection",
 ];
 
 impl Command {
@@ -184,7 +188,7 @@ impl Command {
                     }
                     None => self.classic,
                 };
-                keys.replace("Mod", if mac { "⌘" } else { "Ctrl" })
+                keys.replace("Mod", if mac { "⌘" } else { "Ctrl" }).replace("Alt", if mac { "⌥" } else { "Alt" })
             }
         }
     }
@@ -230,6 +234,7 @@ impl App {
             "git-status" => Action::FocusTree,
             "git-blame" => return self.toggle_blame(tx),
             "hover" => Action::Hover,
+            "format" | "format-selection" => return self.format_doc(id == "format-selection"),
             "settings" => Action::Settings,
             "setup" => Action::Setup,
             "update" => Action::Update,
