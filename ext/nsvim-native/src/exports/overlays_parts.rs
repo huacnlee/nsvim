@@ -190,9 +190,14 @@ pub(super) fn leader(a: &App) -> LeaderState {
     LeaderState { title, items, bottom }
 }
 
-/// Whether the context menu's item `id` can run now. Cut and copy need a selection.
+/// Whether the context menu's item `id` can run now. Cut and copy need a selection. Reveal
+/// needs a file with a path.
 pub(super) fn menu_enabled(a: &App, id: &str) -> bool {
-    !matches!(id, "cut" | "copy") || a.selection_chars().is_some()
+    match id {
+        "cut" | "copy" => a.selection_chars().is_some(),
+        "reveal-in-file-manager" => a.ed.has_doc() && a.ed.buf().path.is_some(),
+        _ => true,
+    }
 }
 
 pub(super) fn menu(a: &App) -> MenuState {

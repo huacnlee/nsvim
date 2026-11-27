@@ -934,7 +934,8 @@ Any key closes it. `Esc` does nothing more. Other keys then do their usual work 
 ### Context menu
 
 When `mouse.right_click` is on, a right-click in the text opens a menu. It has cut, copy,
-paste and select all. It also has go to definition, find references, rename symbol, code
+paste and select all, and reveal the file in the system's file manager (see
+[Tab menu](#tab-menu)). It also has go to definition, find references, rename symbol, code
 actions and find in project. macOS and Windows show the system's menu. On Linux, these keys work in the menu:
 
 | Keys | Does |
@@ -990,6 +991,12 @@ need `mouse.right_click`.
 | `Split right`, `Split down` | Move this tab to a new pane on the right, below |
 | `Copy path`, `Copy relative path` | Copy the file's path, or its path in the project |
 | `Reveal in file tree` | Show the file in the file tree |
+| `Reveal in Finder` | Show the file, selected, in the system's file manager |
+
+The last item has the name of the system's file manager, as in Zed: `Reveal in Finder` on
+macOS, `Reveal in File Explorer` on Windows and `Reveal in file manager` on Linux. The text
+area's menu and the file tree's menu have it too. On Linux, a file manager that supports
+`org.freedesktop.FileManager1` selects the file. Others open its folder.
 
 A tab with unsaved changes stays open, and the status line names it. `Close clean` leaves
 those tabs alone and says nothing. The tab that showed
