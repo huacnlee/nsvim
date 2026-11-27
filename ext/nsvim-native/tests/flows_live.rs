@@ -276,6 +276,8 @@ fn every_palette_command_does_what_it_says() {
     run_check(&mut f, t, "git-status", "git-status focuses the tree", |a| a.tree.show && a.tree.focus);
     // Hover needs a language server: `every_leader_menu_key_does_what_it_says` checks it with clangd.
     t.push("hover");
+    run_check(&mut f, t, "find-in-file", "find-in-file opens the find bar", |a| a.find.as_ref().is_some_and(|b| !b.replace));
+    run_check(&mut f, t, "replace-in-file", "replace-in-file opens the replace field", |a| a.find.as_ref().is_some_and(|b| b.replace));
     // The Edit and Go menus, which Linux and Windows do not show.
     let before = f.read(text);
     f.keys("x");

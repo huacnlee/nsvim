@@ -8,6 +8,7 @@ import { Shell, Tabs, Welcome, Workspace, type ScreenState, type WelcomeState } 
 import { Tree } from "./src/tree";
 import { BufferLine } from "./src/buffer-line";
 import { CommandLine } from "./src/command-line";
+import { FindBar } from "./src/find-bar";
 import { StatusLine } from "./src/status-line";
 import { Settings } from "./src/settings/Settings";
 import { Setup } from "./src/setup/Setup";
@@ -34,6 +35,7 @@ function Editor(props: { screen: () => ScreenState }) {
         </If>
         {/* The welcome page covers the panes. */}
         <View class="flex-1 min-w-0">
+          <FindBar />
           <Panes font={font} />
           <If when={welcome().show}>
             <WelcomePage state={welcome} />

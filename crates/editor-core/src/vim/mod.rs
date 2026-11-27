@@ -7,15 +7,15 @@
 mod cmdline;
 mod cmds;
 mod confirm;
-mod ex;
+pub(crate) mod ex;
 mod insert;
 mod motion;
 mod normal;
 mod ops;
 mod options;
-mod regex;
+pub(crate) mod regex;
 mod replace;
-mod search;
+pub(crate) mod search;
 mod sentence;
 mod tags;
 mod textobj;

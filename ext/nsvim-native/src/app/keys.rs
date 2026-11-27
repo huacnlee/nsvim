@@ -80,6 +80,22 @@ impl App {
             }
             Overlay::None => {}
         }
+        if self.find.is_some() && self.ed.has_doc() && self.find_key(k, tx) {
+            return;
+        }
+        // Classic `⌘ F` and `⌘ ⌥ F` open the find bar in a window. The terminal keeps the
+        // search line and `:%s/`.
+        if self.ed.keymap == Keymap::Classic
+            && k.cmd
+            && !k.shift
+            && !crate::terminal()
+            && self.ed.has_doc()
+            && self.ed.mode != Mode::Command
+            && matches!(k.code, KeyCode::Char('f' | 'F'))
+        {
+            self.open_find(k.alt);
+            return;
+        }
         // An agent's proposal takes y, n and scrolling while it shows.
         if self.ed.mode != Mode::Command && self.proposal_key(k) {
             return;

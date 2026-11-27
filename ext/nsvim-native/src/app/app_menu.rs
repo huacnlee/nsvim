@@ -81,6 +81,8 @@ impl App {
             item("cmd:format", "Format Document"),
             item("cmd:format-selection", "Format Selection"),
             Entry::Separator,
+            item("cmd:find-in-file", "Find…"),
+            item("cmd:replace-in-file", "Replace…"),
             item("cmd:grep", "Find in Project…"),
         ];
         let view = vec![

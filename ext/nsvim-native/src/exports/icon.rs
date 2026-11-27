@@ -16,6 +16,8 @@ pub enum IconName {
     /// A chevron right: a closed folder, a step on.
     #[default]
     ChevronRight,
+    /// A chevron up: the match before.
+    ChevronUp,
     /// An empty circle: a choice not made.
     Circle,
     /// A circle with a dot: the choice made.
@@ -46,6 +48,7 @@ impl IconName {
             IconName::Check => "✓",
             IconName::ChevronDown => "▾",
             IconName::ChevronRight => "▸",
+            IconName::ChevronUp => "▴",
             IconName::Circle => "○",
             IconName::CircleDot => "◉",
             IconName::Diff => "±",
@@ -65,6 +68,7 @@ impl IconName {
             IconName::Check => Lucide::Check,
             IconName::ChevronDown => Lucide::ChevronDown,
             IconName::ChevronRight => Lucide::ChevronRight,
+            IconName::ChevronUp => Lucide::ChevronUp,
             IconName::Circle => Lucide::Circle,
             IconName::CircleDot => Lucide::CircleDot,
             IconName::Diff => Lucide::Diff,
