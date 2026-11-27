@@ -43,7 +43,8 @@ and file watcher events of the open. It is not work, and a real window does not 
 - **Link-time optimization.** Release builds use fat LTO, one codegen unit and stripped
   symbols. `cargo build --profile quick` builds without LTO, for quick local checks.
 - **Limits.** Buffers over 4 MiB skip git signs and LSP. Swap files stop at 16 MiB. Tree-sitter
-  skips files over 4 MiB. The index stops at 200,000 files.
+  skips files over 4 MiB. The index stops at 200,000 files, the first ones in name order, so a
+  bigger folder shows the same part of itself after each change.
 
 ## Measure it yourself
 
