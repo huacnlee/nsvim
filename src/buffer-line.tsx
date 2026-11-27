@@ -13,7 +13,7 @@ import { Controls, controlsLeft, DRAG } from "./title-bar";
 
 /** The top of the tree: the menu button and the project folder, as wide as the tree. The path
  * keeps its end, which tells folders apart. The row of menus takes the place of the path while
- * it shows. Nothing while the tree does not show. */
+ * it shows, and the folder grows when the tree is too narrow for it. Nothing while the tree does not show. */
 export function ProjectBar(props: { font: () => Font }) {
   const project = signal<BufferLineState["project"]>(undefined);
   // Rust posts the state only when it changed. The project is set only when it changed.
@@ -26,7 +26,7 @@ export function ProjectBar(props: { font: () => Font }) {
       {(p) => (
         <View
           class="flex-row shrink-0 h-9 items-center pr-3 overflow-hidden bg-muted border-r border-b border-border"
-          style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
+          style={{ width: menusShown() ? undefined : p().width, minWidth: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
           accessibilityLabel={p().path}
           testID="project"
           desktop={DRAG}
