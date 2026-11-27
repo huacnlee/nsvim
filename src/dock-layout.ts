@@ -169,3 +169,13 @@ export function topRight(node: DockNode): Tabs | undefined {
   }
   return undefined;
 }
+
+/** The group at the top left of `node`, under the window controls and the menu button. */
+export function topLeft(node: DockNode): Tabs | undefined {
+  if (node.type === "tabs") return node.panels.length > 0 ? node : undefined;
+  for (const c of node.children) {
+    const g = topLeft(c);
+    if (g) return g;
+  }
+  return undefined;
+}

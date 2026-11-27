@@ -19,7 +19,7 @@ import { DockArea, type DockAreaLayout, type DockTab } from "nsh/base";
 import { Icon, Shell, Tabs, TextArea, type TabState } from "nsvim-native";
 import { BarEnd, EmptyBar } from "./buffer-line";
 import { DRAG } from "./title-bar";
-import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync, topRight } from "./dock-layout";
+import { closeGroup, groups, neighbour, panelsOf, sameLayout, split, sync, topLeft, topRight } from "./dock-layout";
 
 /** The font of the interface: the chrome has fixed heights, so its text follows config.toml's
  * size and not the system text size. */
@@ -130,8 +130,8 @@ function Tab(props: { tab: () => TabState | undefined; index: () => number; font
 }
 
 /** The panes of the open files, at the top of the window: their tab bars are the title bar.
- * `lead` is the width at the start of each tab bar that the window controls and the menu button
- * take. With no file open, the one text area shows what to do, under an empty bar. */
+ * `lead` is the width at the start of the top-left tab bar that the window controls and the menu
+ * button take. With no file open, the one text area shows what to do, under an empty bar. */
 export function Panes(props: { font: () => Font; lead: () => number }) {
   const tabs = signal<TabState[]>([]);
   const layout = signal<DockAreaLayout>({ center: { type: "tabs", panels: [] } });
@@ -220,6 +220,11 @@ export function Panes(props: { font: () => Font; lead: () => number }) {
               <BarEnd />
             </If>
           )}
+          renderTabBarPrefix={(t: DockTab) => (
+            <If when={topLeft(layout().center)?.panels.includes(t.panel)}>
+              <View class="shrink-0" style={{ width: props.lead() }} />
+            </If>
+          )}
           renderDragPreview={(t: DockTab) => (
             <View class="flex-row items-center h-9 px-3 bg-surface-raised border border-border opacity-90">
               <Label font={props.font} on text={tabs()[indexOf(t.panel)]?.name ?? ""} />
@@ -227,7 +232,6 @@ export function Panes(props: { font: () => Font; lead: () => number }) {
           )}
           groupClass="bg-background"
           tabBarClass="flex-row h-9 bg-muted border-b border-border"
-          tabBarStyle={{ paddingLeft: props.lead() }}
           tabClass="h-9 cursor-pointer selected:bg-surface-raised hover:bg-surface-raised/50"
           contentClass="bg-background"
           dropIndicatorClass="bg-primary/15 border border-primary"
