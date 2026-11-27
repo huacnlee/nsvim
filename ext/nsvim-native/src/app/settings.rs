@@ -201,6 +201,7 @@ pub fn items(section: Section, cfg: &Config, omarchy: Option<&Omarchy>, system_d
             out.push(Item::Head("On save"));
             out.push(tog("format.trim_whitespace", "Remove trailing spaces", cfg.format.trim_whitespace));
             out.push(tog("format.final_newline", "End every file with a newline", cfg.format.final_newline));
+            out.push(tog("format.on_save", "Format with the language server", cfg.format.on_save));
             out.push(seg("format.line_endings", "Line endings for new files", &cfg.format.line_endings, &[("lf", "LF"), ("crlf", "CRLF")]));
         }
         Section::Keys => {
@@ -268,6 +269,7 @@ pub fn toggle(cfg: &mut Config, key: &str) {
         "indent.spaces" => cfg.indent.spaces ^= true,
         "format.trim_whitespace" => cfg.format.trim_whitespace ^= true,
         "format.final_newline" => cfg.format.final_newline ^= true,
+        "format.on_save" => cfg.format.on_save ^= true,
         "keys.auto_close" => cfg.keys.auto_close ^= true,
         "mouse.enabled" => cfg.mouse.enabled ^= true,
         "mouse.scroll" => cfg.mouse.scroll ^= true,

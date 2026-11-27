@@ -24,6 +24,8 @@ pub struct Server {
     pub ready: bool,
     /// `utf-32` when the server agreed to count columns in chars, else `utf-16`.
     pub utf32: bool,
+    /// The `capabilities` of the `initialize` answer.
+    pub caps: Value,
     /// Messages to send once `initialize` has answered.
     pub queue: Vec<Value>,
 }
@@ -53,7 +55,7 @@ impl Server {
                 let _ = out.send(FromServer::Exited(index));
             })
             .ok()?;
-        let mut s = Server { child, stdin, next_id: 1, name, ready: false, utf32: false, queue: Vec::new() };
+        let mut s = Server { child, stdin, next_id: 1, name, ready: false, utf32: false, caps: Value::Null, queue: Vec::new() };
         let uri = super::uri(root);
         let params = json!({
             "processId": std::process::id(),
@@ -68,7 +70,9 @@ impl Server {
                     "completion": { "completionItem": { "snippetSupport": false } },
                     "definition": {},
                     "references": {},
-                    "rename": {}
+                    "rename": {},
+                    "formatting": {},
+                    "rangeFormatting": {}
                 },
                 "workspace": { "workspaceFolders": true }
             },
@@ -108,6 +112,7 @@ impl Server {
     /// The `initialize` answer arrived: say `initialized` and send what waited.
     pub fn initialized(&mut self, result: &Value) {
         self.utf32 = result.pointer("/capabilities/positionEncoding").and_then(Value::as_str) == Some("utf-32");
+        self.caps = result["capabilities"].clone();
         self.ready = true;
         self.send_raw(json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} }));
         for m in std::mem::take(&mut self.queue) {

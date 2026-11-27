@@ -50,6 +50,8 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC l h` | Show hover information |
 | `SPC l n` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `SPC l a` | List the code actions |
+| `SPC l f` | Format the file, with the language server |
+| `SPC l F` | Format the selection, with the language server |
 | `SPC a l` | List the changes made on disk from outside the editor |
 | `SPC a c` | Clear the outside-change marks |
 | `SPC a p` | Show the next agent proposal |
@@ -445,6 +447,7 @@ A command takes a range when the table shows one. The next section explains rang
 | `:Commands` | Open the command palette |
 | `:Rename name`, `:rename name` | Rename the symbol under the cursor, with the language server |
 | `:CodeAction`, `:codeaction`, `:ca` | List the code actions, with the language server |
+| `:Format`, `:{range}Format` | Format the file, or the lines of the range (`:'<,'>Format`), with the language server |
 | `:{range}` | Go to the last line of the range: `:42`, `:$`, `:'a` |
 | `:{range}s/pat/rep/flags`, `:substitute` | Substitute. See [Substitute](#substitute) |
 | `:{range}&`, `:{range}&&` | Run the last `:s` again, without its flags, with its flags |
@@ -580,6 +583,7 @@ classic keymap.
 | `F12` | Go to the definition |
 | `F2` | Rename the symbol. Opens `:Rename` with the word under the cursor |
 | `Ctrl .` | List the code actions |
+| `⇧ Alt F` | Format the file, or the selection, with the language server. `⇧ ⌥ F` on macOS |
 | `Ctrl B` | Show or hide the file tree |
 | `Ctrl \` | Move this tab to a new pane on the right. `⌘ \` on macOS. See [Panes](#panes) |
 | `Ctrl ⇧ E` | Show the file tree and give it the focus. From the tree, give the focus back to the text |
