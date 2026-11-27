@@ -7,12 +7,13 @@
 
 import { signal, View } from "nsh";
 import { MainMenu, Tabs, type BufferLineState } from "nsvim-native";
-import { MainMenuButton } from "./main-menu";
+import { MainMenuBar, MainMenuButton, menusShown } from "./main-menu";
 import { Label, type Font } from "./panes";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
 /** The top of the tree: the menu button and the project folder, as wide as the tree. The path
- * keeps its end, which tells folders apart. Nothing while the tree does not show. */
+ * keeps its end, which tells folders apart. The row of menus takes the place of the path while
+ * it shows, and the folder grows when the tree is too narrow for it. Nothing while the tree does not show. */
 export function ProjectBar(props: { font: () => Font }) {
   const project = signal<BufferLineState["project"]>(undefined);
   // Rust posts the state only when it changed. The project is set only when it changed.
@@ -25,13 +26,15 @@ export function ProjectBar(props: { font: () => Font }) {
       {(p) => (
         <View
           class="flex-row shrink-0 h-9 items-center pr-3 overflow-hidden bg-muted border-r border-b border-border"
-          style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
+          style={{ width: menusShown() ? undefined : p().width, minWidth: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
           accessibilityLabel={p().path}
           testID="project"
           desktop={DRAG}
         >
           <MainMenuButton size={() => props.font().size} />
-          <Label font={props.font} text={p().path} class="flex-1 min-w-0" cutStart />
+          <If when={menusShown()} else={<Label font={props.font} text={p().path} class="flex-1 min-w-0" cutStart />}>
+            <MainMenuBar font={props.font} />
+          </If>
         </View>
       )}
     </If>
@@ -39,7 +42,7 @@ export function ProjectBar(props: { font: () => Font }) {
 }
 
 /** The start of the top bar while the tree does not show: the space of the window controls at
- * the left and the menu button. It lies over the start of the tab bar, and `onWidth` gives its
+ * the left and the menu button, with the row of menus while it shows. It lies over the start of the tab bar, and `onWidth` gives its
  * width, which the tab bar keeps clear. */
 export function Corner(props: { font: () => Font; onWidth: (width: number) => void }) {
   return (
@@ -51,6 +54,9 @@ export function Corner(props: { font: () => Font; onWidth: (width: number) => vo
     >
       <Controls side="left" />
       <MainMenuButton size={() => props.font().size} />
+      <If when={menusShown()}>
+        <MainMenuBar font={props.font} />
+      </If>
     </View>
   );
 }

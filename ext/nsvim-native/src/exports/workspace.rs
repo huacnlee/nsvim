@@ -278,7 +278,7 @@ fn make_app(p: Option<&crate::Pending>) -> app::App {
 #[cfg(not(target_arch = "wasm32"))]
 fn set_app_menu(s: Session) {
     let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root), cfg!(target_os = "macos")));
-    nsh_core::element::desktop::set_application_menu(crate::ui::native_menu::app_menu_items(s, entries, false));
+    nsh_core::element::desktop::set_application_menu(crate::ui::native_menu::app_menu_items(s, entries, None));
 }
 
 #[cfg(target_arch = "wasm32")]
