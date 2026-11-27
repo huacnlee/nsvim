@@ -6,7 +6,7 @@
 
 import { signal, View } from "nsh";
 import { MainMenu, Tabs, type BufferLineState } from "nsvim-native";
-import { MainMenuButton } from "./main-menu";
+import { MainMenuBar, MainMenuButton, menusShown } from "./main-menu";
 import { Label, type Font } from "./panes";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
@@ -30,20 +30,26 @@ export function BufferLine(props: { font: () => Font }) {
           <>
             <Controls side="left" />
             <MainMenuButton size={() => props.font().size} />
+            <If when={menusShown()}>
+              <MainMenuBar font={props.font} />
+            </If>
           </>
         }
       >
         {(p) => (
           // As wide as the tree, with the window controls or the menu button at its start. The
-          // path keeps its end, which tells folders apart.
+          // path keeps its end, which tells folders apart. The row of menus takes the place of
+          // the path while it shows, and the folder grows when the tree is too narrow for it.
           <View
             class="flex-row shrink-0 self-stretch items-center pr-3 overflow-hidden border-r border-border"
-            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
+            style={{ width: menusShown() ? undefined : p().width, minWidth: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
             accessibilityLabel={p().path}
             testID="project"
           >
             <MainMenuButton size={() => props.font().size} />
-            <Label font={props.font} text={p().path} class="flex-1 min-w-0" cutStart />
+            <If when={menusShown()} else={<Label font={props.font} text={p().path} class="flex-1 min-w-0" cutStart />}>
+              <MainMenuBar font={props.font} />
+            </If>
           </View>
         )}
       </If>

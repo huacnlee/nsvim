@@ -27,6 +27,9 @@ pub enum Entry {
     Separator,
 }
 
+/// The names of the menus, in the order of the menu bar.
+pub const MENUS: [&str; 6] = ["NsVim", "File", "Edit", "View", "Go", "Help"];
+
 fn item(id: &str, label: &str) -> Entry {
     Entry::Item(id.to_string(), label.to_string())
 }
@@ -131,15 +134,8 @@ impl App {
             app.extend([Entry::Hide("Hide NsVim".into(), None), Entry::HideOthers, Entry::ShowAll, Entry::Separator]);
         }
         app.push(Entry::Quit);
-        vec![
-            // The app menu on macOS; elsewhere a menu named after the app.
-            Entry::Menu("NsVim".into(), app),
-            Entry::Menu("File".into(), file),
-            Entry::Menu("Edit".into(), edit),
-            Entry::Menu("View".into(), view),
-            Entry::Menu("Go".into(), go),
-            Entry::Menu("Help".into(), help),
-        ]
+        // The app menu on macOS; elsewhere a menu named after the app.
+        MENUS.iter().zip([app, file, edit, view, go, help]).map(|(name, items)| Entry::Menu(name.to_string(), items)).collect()
     }
 
     /// Carries out the menu item `id`. Every item but Open Recent is a palette command.
