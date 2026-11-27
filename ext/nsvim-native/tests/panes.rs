@@ -5,7 +5,7 @@ mod common;
 
 use std::time::Duration;
 
-use common::{scratch, start_files, write};
+use common::{scratch, start_files, typ, type_text, write};
 use nsh_engine::{Bounds, Point, Points};
 use nsh_testing::{DragOptions, Headless};
 
@@ -58,5 +58,97 @@ fn a_tab_dropped_on_the_right_edge_splits_the_pane_and_a_click_moves_the_keys() 
     app.wait_until("a.txt has the keys", WAIT, |s| s.accessibility(Some("id:file")).ok().flatten().is_some_and(|n| n.name == "a.txt"))?;
     // Both files still show.
     assert!(app.screen().texts().iter().any(|t| t.contains("beta")), "b.txt still shows in its pane");
+    Ok(())
+}
+
+/// The panes that show, left to right, then top to bottom.
+fn shown_panes(app: &Headless) -> Vec<Bounds<Points>> {
+    let mut v: Vec<_> = panes(app).into_iter().filter(|b| b.size.width.0 > 1.0 && b.size.height.0 > 1.0).collect();
+    v.sort_by(|l, r| l.origin.y.0.total_cmp(&r.origin.y.0).then(l.origin.x.0.total_cmp(&r.origin.x.0)));
+    v
+}
+
+fn has_file(app: &mut Headless, name: &'static str) -> Result<(), String> {
+    app.wait_until(name, WAIT, move |s| s.accessibility(Some("id:file")).ok().flatten().is_some_and(|n| n.name == name))
+}
+
+#[test]
+fn vsplit_and_split_move_the_tab_to_a_new_pane_and_ctrl_w_moves_the_keys() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let c = write(dir.path(), "c.txt", "gamma\n");
+    let mut app = start_files(&[&a, &b, &c], None);
+    app.wait_for("text:/gamma/")?;
+    assert_eq!(shown_panes(&app).len(), 1, "one pane at the start");
+
+    // :vsplit moves c.txt to a new pane on the right. It keeps the keys.
+    type_text(&mut app, ":vsplit\n");
+    app.wait_until("two panes side by side", WAIT, |s| {
+        s.texts().iter().any(|t| t.contains("gamma")) && s.texts().iter().any(|t| t.contains("beta"))
+    })?;
+    let two = shown_panes(&app);
+    assert_eq!(two.len(), 2, "two panes: {two:?}");
+    assert!(two[1].origin.x.0 > two[0].origin.x.0 && (two[1].origin.y.0 - two[0].origin.y.0).abs() < 1.0, "side by side: {two:?}");
+    has_file(&mut app, "c.txt")?;
+
+    // Ctrl w k gives the keys to the pane on the left, Ctrl w l back to the right.
+    typ(&mut app, &["ctrl+w", "k"]);
+    has_file(&mut app, "b.txt")?;
+    typ(&mut app, &["ctrl+w", "l"]);
+    has_file(&mut app, "c.txt")?;
+
+    // Ctrl w h still goes to the tree.
+    typ(&mut app, &["ctrl+w", "h"]);
+    app.wait_until("the tree has the keys", WAIT, |_| true)?;
+    typ(&mut app, &["ctrl+w", "l"]);
+
+    // In the left pane, Ctrl w s moves b.txt to a new pane below: three panes.
+    typ(&mut app, &["ctrl+w", "k"]);
+    has_file(&mut app, "b.txt")?;
+    typ(&mut app, &["ctrl+w", "s"]);
+    app.wait_until("three panes", WAIT, |s| s.texts().iter().any(|t| t.contains("alpha")) && s.texts().iter().any(|t| t.contains("beta")))?;
+    app.wait_until("three panes show", WAIT, {
+        let n = 3;
+        move |s| {
+            s.layout_nodes()
+                .into_iter()
+                .filter(|x| {
+                    x.test_id.as_deref().is_some_and(|t| t.starts_with("pane-"))
+                        && x.bounds.size.width.0 > 1.0
+                        && x.bounds.size.height.0 > 1.0
+                })
+                .count()
+                == n
+        }
+    })?;
+    let three = shown_panes(&app);
+    let below = three.iter().filter(|p| p.origin.y.0 > three[0].origin.y.0 + 1.0).count();
+    assert_eq!(below, 1, "one pane below: {three:?}");
+    has_file(&mut app, "b.txt")?;
+    Ok(())
+}
+
+#[test]
+fn close_pane_joins_its_tabs_to_the_pane_next_to_it() -> Result<(), String> {
+    let dir = scratch();
+    let a = write(dir.path(), "a.txt", "alpha\n");
+    let b = write(dir.path(), "b.txt", "beta\n");
+    let mut app = start_files(&[&a, &b], None);
+    app.wait_for("text:/beta/")?;
+    // One tab in a pane: nothing to split, the command line says why.
+    type_text(&mut app, ":vsplit\n");
+    app.wait_until("two panes", WAIT, |s| s.texts().iter().any(|t| t.contains("alpha")) && s.texts().iter().any(|t| t.contains("beta")))?;
+    typ(&mut app, &["ctrl+w", "v"]);
+    app.wait_for("text:/one tab in this pane/")?;
+    // Ctrl w c closes the right pane: b.txt joins a.txt's pane, shows and keeps the keys.
+    typ(&mut app, &["ctrl+w", "c"]);
+    app.wait_until("one pane", WAIT, |s| !s.texts().iter().any(|t| t.contains("alpha")))?;
+    assert_eq!(shown_panes(&app).len(), 1, "one pane: {:?}", shown_panes(&app));
+    has_file(&mut app, "b.txt")?;
+    assert!(bounds(&app, "tab-0").is_some() && bounds(&app, "tab-1").is_some(), "both tabs in the one pane");
+    // With one pane, Ctrl w c says so.
+    typ(&mut app, &["ctrl+w", "c"]);
+    app.wait_for("text:/only one pane/")?;
     Ok(())
 }

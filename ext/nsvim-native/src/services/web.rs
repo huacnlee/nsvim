@@ -265,6 +265,11 @@ mod page {
             self.out.send(Event::Signs { path, version, signs });
         }
 
+        /// The web build has no git history: no line shows an author.
+        pub fn git_blame(&self, path: PathBuf, _text: String, version: u64) {
+            self.out.send(Event::Blame { path, version, lines: Vec::new() });
+        }
+
         pub fn grep(&self, pattern: String, generation: u64) {
             let hits = self.disk.borrow().grep(&pattern);
             self.out.send(Event::Grep { generation, hits, error: None });

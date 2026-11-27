@@ -112,6 +112,16 @@ fn every_leader_menu_key_does_what_it_says() {
     f.keys(" gs");
     f.settle("SPC g s focuses the tree", |a| a.tree.focus);
     f.keys("\x1b");
+    f.keys(" gb");
+    f.settle("SPC g b shows who changed each line", |a| {
+        let m = a.meta.get(&a.ed.buf().path.clone().unwrap());
+        a.blame
+            && m.is_some_and(|m| {
+                m.blame.lines.get(3).is_some_and(|b| b.who == "Not committed yet") && m.blame.lines[0].who.starts_with("test, ")
+            })
+    });
+    f.keys(" gb");
+    f.settle("SPC g b hides it again", |a| !a.blame);
 
     // +lsp, on `twice` where main calls it.
     if lsp {
@@ -251,6 +261,8 @@ fn every_palette_command_does_what_it_says() {
     }
     let wrap = f.read(|a| a.cfg.editor.wrap);
     run_check(&mut f, t, "wrap", "wrap toggles soft wrap", move |a| a.cfg.editor.wrap != wrap);
+    run_check(&mut f, t, "git-blame", "git blame toggles line blame", |a| a.blame);
+    f.update(|a, t| a.toggle_blame(t));
     run_check(&mut f, t, "keys", "keys shows every key", |a| picking(a, PickKind::Keys));
     // A test build is no installed copy, so NSH's updater does not take it. With a release
     // found, the command tries to install it and says why it cannot: no network in the test.
@@ -351,6 +363,11 @@ fn every_palette_command_does_what_it_says() {
     f.settle(":set theme=flexoki-light", |a| a.cfg.theme.mode == "light" && a.cfg.theme.light == "flexoki-light");
     f.keys(":set theme=nope\n");
     f.settle(":set theme=nope is an error", |a| a.ed.msg.as_ref().is_some_and(|m| m.error));
+
+    // The pane commands ask the panes' screen, which `tests/panes.rs` runs.
+    for id in ["split-right", "split-down", "pane-next", "pane-prev", "pane-close"] {
+        run_check(&mut f, t, id, &format!("{id} asks the panes"), move |a| a.pane_ask.is_some_and(|(_, c)| c.id() == id));
+    }
 
     // The commands that close a group of tabs, from the tab that shows.
     let names = |a: &App| a.ed.docs.iter().map(|d| d.buf.name()).collect::<Vec<_>>().join(" ");

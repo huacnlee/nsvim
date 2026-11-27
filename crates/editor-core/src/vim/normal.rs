@@ -1,7 +1,7 @@
 //! Normal mode: reading a command from the keys typed so far, and running it.
 
 use crate::buffer::Pos;
-use crate::editor::{Action, Editor, KeyCode, KeyInput, Mode, VisualKind};
+use crate::editor::{Action, Editor, KeyCode, KeyInput, Mode, PaneCmd, VisualKind};
 
 use super::cmds;
 use super::motion::{self, MKind, Motion, Reach, Want};
@@ -153,13 +153,19 @@ pub(crate) fn parse(keys: &[KeyInput], leader: char, recording: bool) -> Parse<C
     if i == 0 && keys.len() == 1 && ch(&k) == Some(leader) {
         return done(Act::Leader);
     }
-    // Ctrl-w and a second key move between the tree and the text. The text is the right
-    // window, so h, w, p and Ctrl-w go to the tree, and l stays here.
+    // Ctrl-w and a second key move between the tree and the panes, and split them. The tree
+    // is the window on the left, so h, w, p and Ctrl-w go to it. l and j go to the next pane,
+    // k to the previous one. v and s split the pane, c closes it.
     if ctrl_ch(&k) == Some('w') {
         return match rest.get(1) {
             None => Parse::More,
             Some(k2) => match ctrl_ch(k2).or_else(|| ch(k2)) {
                 Some('h' | 'w' | 'p') => done(Act::App(Action::FocusTree)),
+                Some('l' | 'j') => done(Act::App(Action::Pane(PaneCmd::Next))),
+                Some('k') => done(Act::App(Action::Pane(PaneCmd::Prev))),
+                Some('v') => done(Act::App(Action::Pane(PaneCmd::SplitRight))),
+                Some('s') => done(Act::App(Action::Pane(PaneCmd::SplitDown))),
+                Some('c') => done(Act::App(Action::Pane(PaneCmd::Close))),
                 _ => Parse::Bad,
             },
         };

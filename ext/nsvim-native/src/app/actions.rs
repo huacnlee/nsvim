@@ -62,6 +62,7 @@ impl App {
                     self.tree.focus = false;
                 }
                 Action::FocusTree => self.focus_tree(),
+                Action::Pane(cmd) => self.ask_pane(cmd),
                 a @ (Action::OpenFolder(_)
                 | Action::NewFile(_)
                 | Action::NewFolder(_)

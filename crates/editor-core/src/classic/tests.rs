@@ -86,6 +86,7 @@ fn app_shortcuts() {
     assert_eq!(feed(&mut e, "<c-p>"), vec![Action::FindFile]);
     assert_eq!(feed(&mut e, "<c-s-p>"), vec![Action::Palette]);
     assert_eq!(feed(&mut e, "<c-b>"), vec![Action::ToggleTree]);
+    assert_eq!(feed(&mut e, "<c-\\>"), vec![Action::Pane(crate::editor::PaneCmd::SplitRight)]);
     assert_eq!(feed(&mut e, "<f12>"), vec![Action::GotoDefinition]);
     assert_eq!(feed(&mut e, "<c-tab>"), vec![Action::NextBuffer]);
     assert_eq!(feed(&mut e, "<c-s-tab>"), vec![Action::PrevBuffer]);

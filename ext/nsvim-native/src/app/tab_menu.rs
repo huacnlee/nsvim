@@ -56,6 +56,9 @@ pub const TAB_ITEMS: &[(&str, &str)] = &[
     ("close-clean", "Close clean"),
     ("close-all", "Close all"),
     ("-", ""),
+    ("split-right", "Split right"),
+    ("split-down", "Split down"),
+    ("-", ""),
     ("copy-path", "Copy path"),
     ("copy-relative-path", "Copy relative path"),
     ("reveal", "Reveal in file tree"),
@@ -117,6 +120,11 @@ impl App {
         if let Some(which) = CloseTabs::from_id(id) {
             self.close_tabs(i, which, tx);
             return;
+        }
+        // A split moves this tab, so it becomes the active one first.
+        if let Some(pane) = editor::editor::PaneCmd::from_id(id) {
+            self.show_tab(i);
+            return self.ask_pane(pane);
         }
         let Some(path) = self.ed.docs.get(i).and_then(|d| d.buf.path.clone()) else {
             if id == "close" {

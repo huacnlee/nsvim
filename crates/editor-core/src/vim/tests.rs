@@ -536,12 +536,24 @@ fn leader_and_app_keys_return_actions() {
 }
 
 #[test]
-fn ctrl_w_moves_to_the_tree_and_l_stays_in_the_text() {
+fn ctrl_w_moves_to_the_tree_and_between_the_panes() {
+    use crate::editor::PaneCmd;
     let mut e = ed("x");
     for keys in ["<c-w>h", "<c-w>w", "<c-w>p", "<c-w><c-w>", "<c-w><c-h>"] {
         assert_eq!(feed(&mut e, keys), vec![Action::FocusTree], "{keys}");
     }
-    assert_eq!(feed(&mut e, "<c-w>l"), vec![], "the text is the right window");
+    let panes = [
+        ("<c-w>l", PaneCmd::Next),
+        ("<c-w>j", PaneCmd::Next),
+        ("<c-w>k", PaneCmd::Prev),
+        ("<c-w>v", PaneCmd::SplitRight),
+        ("<c-w><c-v>", PaneCmd::SplitRight),
+        ("<c-w>s", PaneCmd::SplitDown),
+        ("<c-w>c", PaneCmd::Close),
+    ];
+    for (keys, cmd) in panes {
+        assert_eq!(feed(&mut e, keys), vec![Action::Pane(cmd)], "{keys}");
+    }
     assert_eq!(text(&e), "x");
     assert_eq!(cur(&e), (0, 0));
 }

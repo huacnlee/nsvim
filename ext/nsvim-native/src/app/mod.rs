@@ -5,6 +5,7 @@ pub mod actions;
 pub mod app_menu;
 #[cfg(test)]
 mod app_menu_tests;
+pub mod blame;
 pub mod disk_dialogs;
 pub mod files;
 pub mod find;
@@ -22,6 +23,7 @@ pub mod mouse;
 pub mod palette;
 #[cfg(test)]
 mod palette_tests;
+pub mod panes;
 pub mod picker;
 pub mod project;
 pub mod review;
@@ -78,6 +80,8 @@ pub struct DocMeta {
     pub signs_version: u64,
     /// The version last sent to the git worker, so each version is diffed once.
     pub signs_asked: u64,
+    /// Who last changed each line, while line blame shows.
+    pub blame: blame::DocBlame,
     /// The version last written to the swap file.
     pub swapped: u64,
     /// The version last sent to the language server.
@@ -159,6 +163,8 @@ pub struct App {
     pub on_settings: bool,
     pub files: Vec<String>,
     pub git: GitInfo,
+    /// Each line shows who last changed it (`Git: toggle line blame`).
+    pub blame: bool,
     pub omarchy: Option<Omarchy>,
     pub svc: Option<Services>,
     pub m: Metrics,
@@ -196,6 +202,8 @@ pub struct App {
     pub polls: u32,
     /// Lines an agent pointed at, with its note.
     pub note: Option<ipc::Note>,
+    /// The last pane command and its number, for the panes' screen to carry out (`panes.rs`).
+    pub pane_ask: Option<(u64, editor::editor::PaneCmd)>,
     /// Changed blocks of files that changed on disk, newest first.
     pub outside: Vec<review::Hunk>,
     /// Changes agents proposed, waiting for y or n.
@@ -301,6 +309,7 @@ impl App {
             on_settings: false,
             files: Vec::new(),
             git: GitInfo::default(),
+            blame: false,
             omarchy,
             svc: None,
             m: Metrics { cw: 7.8, row_h: 22.0, text: [0.0, 0.0, 800.0, 600.0], gutter: 60.0 },
@@ -323,6 +332,7 @@ impl App {
             polls: 0,
             scripted: Vec::new(),
             note: None,
+            pane_ask: None,
             outside: Vec::new(),
             proposals: Vec::new(),
             raise: None,
@@ -379,6 +389,7 @@ impl App {
         if self.ask_signs(clock, tx) {
             changed = true;
         }
+        self.ask_blame(clock, tx);
         self.write_swaps(clock, tx);
         self.lsp_sync(clock, tx);
         self.check_waiters();
@@ -458,7 +469,8 @@ impl App {
                 }
                 self.ask_preview();
             }
-            Event::Git(info) => self.git = info,
+            Event::Git(info) => self.git_info(info),
+            Event::Blame { path, version, lines } => self.blame_done(path, version, lines),
             Event::Signs { path, version, signs } => {
                 if let Some(m) = self.meta.get_mut(&path)
                     && version >= m.signs_version

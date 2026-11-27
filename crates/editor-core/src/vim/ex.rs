@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use crate::buffer::Pos;
-use crate::editor::{Action, Editor, KeyCode, KeyInput, Mode};
+use crate::editor::{Action, Editor, KeyCode, KeyInput, Mode, PaneCmd};
 
 use super::ops::{self, Op, Range};
 use super::options::set;
@@ -138,6 +138,14 @@ fn run(ed: &mut Editor, line: &str, out: &mut Vec<Action>) -> Res {
             dir => out.push(Action::OpenFolder(dir.to_string())),
         },
         "ene" | "enew" => out.push(Action::NewBuffer),
+        // `:vsplit file` opens the file, then moves it to the new pane.
+        "vs" | "vsp" | "vsplit" | "sp" | "split" => {
+            if let Some(p) = path(ed, args) {
+                out.push(Action::Open(p));
+            }
+            let right = name.starts_with('v');
+            out.push(Action::Pane(if right { PaneCmd::SplitRight } else { PaneCmd::SplitDown }));
+        }
         "NewFile" | "Create" | "Touch" => out.push(Action::NewFile(required(args)?)),
         "Mkdir" | "NewFolder" => out.push(Action::NewFolder(required(args)?)),
         "Move" => out.push(Action::MovePath(required(args)?)),

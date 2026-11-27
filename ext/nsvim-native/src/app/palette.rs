@@ -33,7 +33,7 @@ const fn cmd(label: &'static str, id: &'static str, leader: &'static str, vim: &
 
 /// The leader menu's groups: the key that opens one, and its name. A command whose label
 /// starts with the name and `: ` shows without that part in the group.
-pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('y', "Edit"), ('u', "UI")];
+pub const GROUPS: &[(char, &str)] = &[('g', "Git"), ('l', "LSP"), ('a', "Agent"), ('t', "Tab"), ('s', "Pane"), ('y', "Edit"), ('u', "UI")];
 
 /// `SPC p`: the leader menu's key for the palette itself, which the palette does not list.
 pub const PALETTE_KEY: char = 'p';
@@ -61,6 +61,7 @@ pub const COMMANDS: &[Command] = &[
     cmd("Git: next change", "git-next", "g n", "", ""),
     cmd("Git: previous change", "git-prev", "g p", "", ""),
     cmd("Git: status in the tree", "git-status", "g s", "", "Mod ⇧ E"),
+    cmd("Git: toggle line blame", "git-blame", "g b", "", ""),
     cmd("Go to line…", "line", "j", ":N, NG", "⌘ L|Ctrl G"),
     cmd("Go to symbol in file…", "symbols", "l s", "", "Mod ⇧ O"),
     cmd("Back", "back", "[", "Ctrl o", "⌃ -|Ctrl Alt -"),
@@ -81,6 +82,11 @@ pub const COMMANDS: &[Command] = &[
     cmd("Close tabs to the right", "close-right", "t r", "", ""),
     cmd("Close clean tabs", "close-clean", "t c", "", ""),
     cmd("Close all tabs", "close-all", "t a", "", ""),
+    cmd("Pane: split right", "split-right", "s v", "Ctrl w v", "Mod \\"),
+    cmd("Pane: split down", "split-down", "s s", "Ctrl w s", ""),
+    cmd("Pane: focus next", "pane-next", "s n", "Ctrl w l", ""),
+    cmd("Pane: focus previous", "pane-prev", "s p", "Ctrl w k", ""),
+    cmd("Pane: close", "pane-close", "s c", "Ctrl w c", ""),
     cmd("Undo", "undo", "y u", "u", "Mod Z"),
     cmd("Redo", "redo", "y r", "Ctrl r", "Mod ⇧ Z"),
     cmd("Cut", "cut", "y x", "d", "Mod X"),
@@ -198,6 +204,9 @@ impl App {
             }
             return;
         }
+        if let Some(pane) = editor::editor::PaneCmd::from_id(id) {
+            return self.ask_pane(pane);
+        }
         if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
             if self.ed.has_doc() && !self.on_settings {
                 self.close_tabs(self.ed.active, which, tx);
@@ -219,6 +228,7 @@ impl App {
             "diagnostics" => Action::Diagnostics,
             "git-next" | "git-prev" => return self.jump_sign(id == "git-next"),
             "git-status" => Action::FocusTree,
+            "git-blame" => return self.toggle_blame(tx),
             "hover" => Action::Hover,
             "settings" => Action::Settings,
             "setup" => Action::Setup,

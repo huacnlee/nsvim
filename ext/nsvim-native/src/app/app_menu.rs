@@ -86,9 +86,16 @@ impl App {
             item("cmd:palette", "Command Palette…"),
             item("cmd:tree", "Toggle File Tree"),
             item("cmd:wrap", "Toggle Soft Wrap"),
+            item("cmd:git-blame", "Toggle Line Blame"),
             Entry::Separator,
             item("cmd:next", "Next Tab"),
             item("cmd:prev", "Previous Tab"),
+            Entry::Separator,
+            item("cmd:split-right", "Split Right"),
+            item("cmd:split-down", "Split Down"),
+            item("cmd:pane-next", "Focus Next Pane"),
+            item("cmd:pane-prev", "Focus Previous Pane"),
+            item("cmd:pane-close", "Close Pane"),
         ];
         let go = vec![
             item("cmd:back", "Back"),
