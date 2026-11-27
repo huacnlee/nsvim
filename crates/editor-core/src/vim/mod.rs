@@ -422,6 +422,25 @@ pub(crate) fn push_jump(ed: &mut Editor, p: Pos) {
     set_mark(ed, '\'', p);
 }
 
+/// Puts the cursor's place on the jump list, as a jump does. The app calls it before it moves
+/// the cursor far (Go to Line, a symbol, a definition), so `Ctrl-o` and Back come back here.
+pub fn remember_jump(ed: &mut Editor) {
+    if ed.has_doc() {
+        let p = ed.cursor();
+        push_jump(ed, p);
+    }
+}
+
+/// Back (`by` below zero) or forward on the jump list, as `Ctrl-o` and `Ctrl-i`. The Back and
+/// Forward commands use it in every keymap. A place in another file comes back as an action.
+pub fn jump_list(ed: &mut Editor, by: isize) -> Vec<Action> {
+    let mut out = Vec::new();
+    if ed.has_doc() {
+        cmds::jump(ed, by, &mut out);
+    }
+    out
+}
+
 /// Puts known text: `p`, `P`, a named register, or the clipboard's answer.
 pub(crate) fn put_reg(ed: &mut Editor, text: &str, linewise: bool, before: bool, count: usize) {
     begin(ed);

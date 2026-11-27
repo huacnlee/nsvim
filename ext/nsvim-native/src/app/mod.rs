@@ -13,6 +13,7 @@ pub mod format;
 #[cfg(test)]
 mod format_tests;
 pub mod fx;
+pub mod goto;
 pub mod ipc;
 pub mod key_list;
 pub mod keys;

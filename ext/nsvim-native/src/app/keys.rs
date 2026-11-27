@@ -143,6 +143,14 @@ impl App {
             self.run_actions(vec![Action::CodeActions], tx);
             return;
         }
+        // The Go menu: Back and Forward in every keymap, Go to Line and Go to Symbol in File in
+        // the classic one. The Neovim keymap has `:N`, `Ctrl-o` and `SPC l s`.
+        let go = super::goto::jump_key(&k)
+            .or_else(|| super::goto::classic_go_key(&k, cfg!(target_os = "macos")).filter(|_| self.ed.keymap == Keymap::Classic));
+        if let Some(id) = go {
+            self.run_command(id, tx);
+            return;
+        }
         // Shift+Alt+F formats, as in VS Code. With a selection, it formats the selection.
         if k.alt && k.shift && !k.cmd && matches!(k.code, KeyCode::Char('F' | 'f' | 'Ï')) && self.ed.keymap == Keymap::Classic {
             let sel = self.selection_chars().is_some();

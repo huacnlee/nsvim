@@ -294,6 +294,16 @@ fn every_palette_command_does_what_it_says() {
     f.update(|a, _| a.ed.msg = None);
     run_check(&mut f, t, "git-prev", "git-prev says when there is no change", |a| said(a, "no changes against HEAD"));
     run_check(&mut f, t, "git-status", "git-status focuses the tree", |a| a.tree.show && a.tree.focus);
+    run_check(&mut f, t, "line", "line opens Go to Line", |a| picking(a, PickKind::Line));
+    run_check(&mut f, t, "symbols", "symbols lists the file's symbols", |a| picking(a, PickKind::Symbols));
+    // A jump from b.txt to a.txt: Back opens b.txt again, Forward a.txt.
+    f.update(|a, _| {
+        editor::vim::remember_jump(&mut a.ed);
+        a.ed.active = a.ed.docs.iter().position(|d| d.buf.path.as_ref().is_some_and(|p| p.ends_with("a.txt"))).unwrap();
+    });
+    run_check(&mut f, t, "back", "back goes to the place before the jump", |a| active_ends_with(a, "b.txt"));
+    run_check(&mut f, t, "forward", "forward goes to the jump again", |a| active_ends_with(a, "a.txt"));
+    run_check(&mut f, t, "back", "back again, to b.txt for the next checks", |a| active_ends_with(a, "b.txt"));
     // Hover needs a language server: `every_leader_menu_key_does_what_it_says` checks it with clangd.
     t.push("hover");
     run_check(&mut f, t, "find-in-file", "find-in-file opens the find bar", |a| a.find.as_ref().is_some_and(|b| !b.replace));

@@ -32,6 +32,10 @@ pub enum PickKind {
     Keys,
     /// Projects to open: a folder from the system's dialog, then the recent projects.
     Projects,
+    /// Go to Line: a line number, or `line:col`. It lists no rows.
+    Line,
+    /// The active file's symbols, from the tree-sitter tree.
+    Symbols,
 }
 
 impl PickKind {
@@ -45,6 +49,8 @@ impl PickKind {
             PickKind::Actions => "Code actions",
             PickKind::Keys => "Keys",
             PickKind::Projects => "Open project",
+            PickKind::Line => "Go to line",
+            PickKind::Symbols => "Go to symbol in file",
         }
     }
 }
@@ -72,6 +78,10 @@ pub struct Picker {
     pub follow: bool,
     /// The part of a row the wheel has turned but not scrolled.
     pub wheel_rest: f32,
+    /// What each Symbols item goes to.
+    pub symbols: Vec<editor::syntax::Symbol>,
+    /// Go to Line: the cursor and the first row before it, for Esc.
+    pub back: Option<(Pos, usize)>,
 }
 
 impl Picker {
@@ -90,7 +100,15 @@ impl Picker {
             fit: 0,
             follow: true,
             wheel_rest: 0.0,
+            symbols: Vec::new(),
+            back: None,
         }
+    }
+
+    /// Lists `syms` as the Symbols picker's items.
+    pub fn set_symbols(&mut self, syms: Vec<editor::syntax::Symbol>) {
+        self.items = syms.iter().map(|s| s.name.clone()).collect();
+        self.symbols = syms;
     }
 
     /// Rows that show: as many as fit, or `FIT` until the list reports its height.
@@ -146,13 +164,17 @@ impl Picker {
                 (m, n)
             }
             // With nothing typed, buffers, commands and code actions keep their own order.
-            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects if self.query.is_empty() => {
+            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects | PickKind::Symbols
+                if self.query.is_empty() =>
+            {
                 let all: Vec<Match> = (0..self.items.len().min(LIMIT)).map(|index| Match { index, score: 0, hits: Vec::new() }).collect();
                 let n = self.items.len();
                 (all, n)
             }
-            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects => fuzzy::rank(&self.query, &self.items, LIMIT),
-            PickKind::Grep | PickKind::Locations => (Vec::new(), 0),
+            PickKind::Buffers | PickKind::Commands | PickKind::Actions | PickKind::Projects | PickKind::Symbols => {
+                fuzzy::rank(&self.query, &self.items, LIMIT)
+            }
+            PickKind::Grep | PickKind::Locations | PickKind::Line => (Vec::new(), 0),
         };
         self.matches = matches;
         self.total = total;
@@ -205,7 +227,7 @@ impl App {
                     p.folders.push(Some(root));
                 }
             }
-            PickKind::Files | PickKind::Locations | PickKind::Actions => {}
+            PickKind::Files | PickKind::Locations | PickKind::Actions | PickKind::Line | PickKind::Symbols => {}
         }
         p.refilter(&self.files);
         self.overlay = Overlay::Pick(Box::new(p));
@@ -219,11 +241,15 @@ impl App {
         p.settle(rows);
         p.follow = true;
         let mut requery = false;
+        let line = p.kind == PickKind::Line;
         match k.code {
+            KeyCode::Esc if line => return self.cancel_line(),
             KeyCode::Esc => {
                 self.overlay = Overlay::None;
                 return;
             }
+            // Go to Line takes a line number and a column, and nothing else.
+            KeyCode::Char(c) if line && !k.ctrl && !k.cmd && !(c.is_ascii_digit() || c == ':') => return,
             KeyCode::Enter => {
                 self.pick_accept(tx);
                 return;
@@ -260,6 +286,9 @@ impl App {
         }
         if requery {
             p.sel = 0;
+            if p.kind == PickKind::Line {
+                return self.preview_line();
+            }
             if p.kind == PickKind::Grep {
                 self.grep.generation += 1;
                 self.grep.running = !p.query.is_empty();
@@ -314,7 +343,11 @@ impl App {
                 let l = self.locations.get(p.sel)?;
                 Some((l.path.clone(), Some(l.pos)))
             }
-            PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects => None,
+            PickKind::Symbols => {
+                let s = p.matches.get(p.sel).and_then(|m| p.symbols.get(m.index))?;
+                Some((self.ed.buf().path.clone()?, Some(s.pos)))
+            }
+            PickKind::Commands | PickKind::Actions | PickKind::Keys | PickKind::Projects | PickKind::Line => None,
         }
     }
 
@@ -337,6 +370,12 @@ impl App {
     pub fn pick_accept(&mut self, tx: &mut Tx) {
         let Overlay::Pick(p) = &self.overlay else { return };
         let kind = p.kind;
+        if kind == PickKind::Line {
+            return self.accept_line();
+        }
+        if kind == PickKind::Symbols {
+            return self.accept_symbol();
+        }
         if kind == PickKind::Actions {
             let index = p.matches.get(p.sel).map(|m| m.index);
             self.overlay = Overlay::None;
@@ -378,6 +417,10 @@ impl App {
         let picked = self.picked();
         self.overlay = Overlay::None;
         if let Some((path, at)) = picked {
+            // A hit or a location is a jump: Back comes here again.
+            if at.is_some() {
+                editor::vim::remember_jump(&mut self.ed);
+            }
             self.open_path(path, at);
         }
     }

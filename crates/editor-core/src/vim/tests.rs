@@ -660,3 +660,14 @@ fn gi_returns_to_the_last_insert() {
     feed(&mut e, "giy<esc>");
     assert_eq!(text(&e), "abc\ndefxy");
 }
+
+#[test]
+fn remember_jump_and_jump_list_go_back_and_forward() {
+    let mut e = ed("one\ntwo\nthree\nfour\n");
+    remember_jump(&mut e);
+    e.set_cursor(Pos::new(3, 0));
+    assert!(jump_list(&mut e, -1).is_empty());
+    assert_eq!(e.cursor(), Pos::new(0, 0));
+    jump_list(&mut e, 1);
+    assert_eq!(e.cursor(), Pos::new(3, 0));
+}

@@ -15,11 +15,11 @@ pub struct Doc<'a> {
 }
 
 impl<'a> Doc<'a> {
-    fn ch(&self, byte: usize) -> usize {
+    pub(super) fn ch(&self, byte: usize) -> usize {
         self.buf.rope().byte_to_char(byte.min(self.buf.len_bytes()))
     }
 
-    fn start(&self, n: Node) -> usize {
+    pub(super) fn start(&self, n: Node) -> usize {
         self.ch(n.start_byte())
     }
 
@@ -33,7 +33,7 @@ impl<'a> Doc<'a> {
         b
     }
 
-    fn text(&self, n: Node) -> String {
+    pub(super) fn text(&self, n: Node) -> String {
         let r = self.buf.rope();
         r.byte_slice(n.start_byte().min(r.len_bytes())..n.end_byte().min(r.len_bytes())).to_string()
     }
@@ -68,7 +68,7 @@ impl<'a> Doc<'a> {
 }
 
 /// Every node `keep` accepts, in document order.
-fn collect<'a>(root: Node<'a>, keep: impl Fn(Node<'a>) -> bool) -> Vec<Node<'a>> {
+pub(super) fn collect<'a>(root: Node<'a>, keep: impl Fn(Node<'a>) -> bool) -> Vec<Node<'a>> {
     let mut out = Vec::new();
     let mut c = root.walk();
     loop {
@@ -90,15 +90,15 @@ fn collect<'a>(root: Node<'a>, keep: impl Fn(Node<'a>) -> bool) -> Vec<Node<'a>>
     }
 }
 
-fn field<'a>(n: Node<'a>, name: &str) -> Option<Node<'a>> {
+pub(super) fn field<'a>(n: Node<'a>, name: &str) -> Option<Node<'a>> {
     n.child_by_field_name(name)
 }
 
-fn is_function(doc: &Doc, n: Node) -> bool {
+pub(super) fn is_function(doc: &Doc, n: Node) -> bool {
     doc.lang.functions().contains(&n.kind())
 }
 
-fn is_class(doc: &Doc, n: Node) -> bool {
+pub(super) fn is_class(doc: &Doc, n: Node) -> bool {
     if !doc.lang.classes().contains(&n.kind()) {
         return false;
     }

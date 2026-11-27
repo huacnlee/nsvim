@@ -22,7 +22,8 @@ pub struct Command {
     /// The Neovim keymap's own keys, when it has some besides the leader (`u`, `gd`). The
     /// palette shows them before the leader keys.
     pub vim: &'static str,
-    /// The keys in the classic keymap. `Mod` is `⌘` on macOS and `Ctrl` elsewhere.
+    /// The keys in the classic keymap. `Mod` is `⌘` on macOS and `Ctrl` elsewhere. Keys that
+    /// differ more come as the Mac's, `|`, and the others' (`⌘ L|Ctrl G`).
     pub classic: &'static str,
 }
 
@@ -62,6 +63,10 @@ pub const COMMANDS: &[Command] = &[
     cmd("Git: previous change", "git-prev", "g p", "", ""),
     cmd("Git: status in the tree", "git-status", "g s", "", "Mod ⇧ E"),
     cmd("Git: toggle line blame", "git-blame", "g b", "", ""),
+    cmd("Go to line…", "line", "j", ":N, NG", "⌘ L|Ctrl G"),
+    cmd("Go to symbol in file…", "symbols", "l s", "", "Mod ⇧ O"),
+    cmd("Back", "back", "[", "Ctrl o", "⌃ -|Ctrl Alt -"),
+    cmd("Forward", "forward", "]", "Ctrl i", "⌃ ⇧ -|Ctrl ⇧ -"),
     cmd("Go to definition", "definition", "l d", "gd", "F12"),
     cmd("Find references…", "references", "l r", "", ""),
     cmd("Hover", "hover", "l h", "K", ""),
@@ -161,6 +166,8 @@ const ON_FILE: &[&str] = &[
     "copy",
     "paste",
     "all",
+    "line",
+    "symbols",
     "comment",
     "line-up",
     "line-down",
@@ -186,7 +193,19 @@ impl Command {
                 let lead = if self.leader.is_empty() { String::new() } else { format!("{spc} {}", self.leader) };
                 [self.vim, lead.as_str()].iter().filter(|s| !s.is_empty()).copied().collect::<Vec<_>>().join(", ")
             }
-            Keymap::Classic => self.classic.replace("Mod", if mac { "⌘" } else { "Ctrl" }).replace("Alt", if mac { "⌥" } else { "Alt" }),
+            Keymap::Classic => {
+                let keys = match self.classic.split_once('|') {
+                    Some((apple, other)) => {
+                        if mac {
+                            apple
+                        } else {
+                            other
+                        }
+                    }
+                    None => self.classic,
+                };
+                keys.replace("Mod", if mac { "⌘" } else { "Ctrl" }).replace("Alt", if mac { "⌥" } else { "Alt" })
+            }
         }
     }
 }
@@ -246,6 +265,9 @@ impl App {
             "next" => Action::NextBuffer,
             "prev" => Action::PrevBuffer,
             "undo" | "redo" => return self.undo_redo(id == "undo"),
+            "line" => return self.open_go_to_line(),
+            "symbols" => return self.open_symbols(),
+            "back" | "forward" => return self.jump_list(id == "forward", tx),
             "cut" | "copy" | "paste" | "all" | "definition" | "references" | "rename" | "actions" => return self.menu_pick(id, tx),
             "wrap" => Action::SetOption("wrap".into(), (!self.cfg.editor.wrap).to_string()),
             "keys" => Action::KeyList(String::new()),

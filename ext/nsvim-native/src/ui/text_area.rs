@@ -159,6 +159,15 @@ pub fn text_area(s: Session, keys: ElementRef, doc: Option<u64>, shown: Memo<boo
             };
             s.wheel(dx, dy, mods(e.modifiers));
         })
+        // The mouse's back and forward buttons go back and forward on the jump list.
+        .on_mouse_up(move |e: &MouseEvent| {
+            let id = match e.button {
+                Some(MouseButton::Back) => "back",
+                Some(MouseButton::Forward) => "forward",
+                _ => return,
+            };
+            s.update(move |a, tx| a.run_command(id, tx));
+        })
         .on_context_menu(move |e: &ContextMenuEvent| {
             keys.focus();
             if !live.get_untracked() {
