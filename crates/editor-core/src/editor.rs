@@ -381,7 +381,13 @@ pub struct Editor {
     pub vim: crate::vim::VimState,
     /// The project root: the folder the editor opened, or the file's folder.
     pub root: PathBuf,
+    /// The files of the closed tabs with their cursors, the last closed at the end. Reopen
+    /// Closed Tab takes them back. It keeps the last `CLOSED_KEPT`.
+    pub closed: Vec<(PathBuf, Pos)>,
 }
+
+/// How many closed tabs `Editor::closed` keeps.
+pub const CLOSED_KEPT: usize = 20;
 
 impl Editor {
     pub fn new(root: PathBuf) -> Editor {
@@ -399,6 +405,7 @@ impl Editor {
             cols: 100,
             vim: Default::default(),
             root,
+            closed: Vec::new(),
         }
     }
 
@@ -457,7 +464,13 @@ impl Editor {
     /// Closes document `i` and picks the one before it.
     pub fn close(&mut self, i: usize) {
         if i < self.docs.len() {
-            self.docs.remove(i);
+            let doc = self.docs.remove(i);
+            if let Some(path) = doc.buf.path {
+                self.closed.retain(|(p, _)| *p != path);
+                self.closed.push((path, doc.view.cursor));
+                let extra = self.closed.len().saturating_sub(CLOSED_KEPT);
+                self.closed.drain(..extra);
+            }
             if self.active >= self.docs.len() || self.active > i {
                 self.active = self.active.saturating_sub(1);
             }

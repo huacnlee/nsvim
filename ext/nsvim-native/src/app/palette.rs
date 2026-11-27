@@ -49,6 +49,7 @@ pub const COMMANDS: &[Command] = &[
     cmd("Save", "save", "w", "", "Mod S"),
     cmd("Save all", "save-all", "W", ":wa", ""),
     cmd("Close tab", "close", "q", "", "Mod W"),
+    cmd("Reopen closed tab", "reopen", "t u", "", "Mod ⇧ T"),
     cmd("Quit", "quit", "Q", ":qa", "Mod Q"),
     cmd("Diagnostics…", "diagnostics", "d", "", ""),
     cmd("Open settings…", "settings", ",", "", "Mod ,"),
@@ -80,7 +81,16 @@ pub const COMMANDS: &[Command] = &[
     cmd("Copy", "copy", "y y", "y", "Mod C"),
     cmd("Paste", "paste", "y p", "p", "Mod V"),
     cmd("Select all", "all", "y a", "ggVG", "Mod A"),
+    cmd("Toggle comment", "comment", "y c", "gcc", "Mod /"),
+    cmd("Move line up", "line-up", "y k", "", "Alt ↑"),
+    cmd("Move line down", "line-down", "y j", "", "Alt ↓"),
+    cmd("Delete line", "delete-line", "y d", "dd", "Mod ⇧ K"),
+    cmd("Indent", "indent", "y >", ">>", "Mod ]"),
+    cmd("Outdent", "outdent", "y <", "<<", "Mod ["),
     cmd("Toggle soft wrap", "wrap", "u w", "", ""),
+    cmd("Zoom in", "zoom-in", "u +", "", "Mod ="),
+    cmd("Zoom out", "zoom-out", "u -", "", "Mod -"),
+    cmd("Reset zoom", "zoom-reset", "u 0", "", "Mod 0"),
     cmd("Keymap: Neovim", "keymap=neovim", "u v", "", ""),
     cmd("Keymap: classic", "keymap=classic", "u c", "", ""),
     cmd("Theme: dark", "theme=dark", "u d", "", ""),
@@ -132,7 +142,25 @@ fn short_label(label: &str, group: &str) -> String {
 }
 
 /// The commands that work on the open file. They do nothing with no file open.
-const ON_FILE: &[&str] = &["undo", "redo", "cut", "copy", "paste", "all", "definition", "references", "hover", "rename", "actions"];
+const ON_FILE: &[&str] = &[
+    "undo",
+    "redo",
+    "cut",
+    "copy",
+    "paste",
+    "all",
+    "comment",
+    "line-up",
+    "line-down",
+    "delete-line",
+    "indent",
+    "outdent",
+    "definition",
+    "references",
+    "hover",
+    "rename",
+    "actions",
+];
 
 impl Command {
     /// The keys to show for `keymap`, with `leader` for `SPC` and the platform's modifier. The
@@ -144,7 +172,10 @@ impl Command {
                 let lead = if self.leader.is_empty() { String::new() } else { format!("{spc} {}", self.leader) };
                 [self.vim, lead.as_str()].iter().filter(|s| !s.is_empty()).copied().collect::<Vec<_>>().join(", ")
             }
-            Keymap::Classic => self.classic.replace("Mod", if mac { "⌘" } else { "Ctrl" }),
+            Keymap::Classic => {
+                let keys = self.classic.replace("Mod", if mac { "⌘" } else { "Ctrl" });
+                if mac { keys.replace("Alt", "⌥") } else { keys }
+            }
         }
     }
 }
@@ -162,6 +193,12 @@ impl App {
                 self.ed.message("no file is open");
             }
             return;
+        }
+        if let Some(z) = super::view_cmds::Zoom::from_id(id) {
+            return self.zoom(z);
+        }
+        if let Some(op) = super::view_cmds::line_edit_of(id) {
+            return self.line_edit(op);
         }
         if let Some(which) = super::tab_menu::CloseTabs::from_id(id) {
             if self.ed.has_doc() && !self.on_settings {
@@ -188,6 +225,7 @@ impl App {
             "setup" => Action::Setup,
             "update" => Action::Update,
             "close" => return self.close_tab(self.ed.active, tx),
+            "reopen" => return self.reopen_closed(),
             "next" => Action::NextBuffer,
             "prev" => Action::PrevBuffer,
             "undo" | "redo" => return self.undo_redo(id == "undo"),

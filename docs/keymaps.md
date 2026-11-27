@@ -58,10 +58,16 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC t l`, `SPC t r` | Close the tabs to the left, to the right of this tab |
 | `SPC t c` | Close the tabs with no unsaved changes |
 | `SPC t a` | Close all tabs |
+| `SPC t u` | Reopen the last closed tab |
 | `SPC y u`, `SPC y r` | Undo, redo one change |
 | `SPC y x`, `SPC y y`, `SPC y p` | Cut, copy, paste, on the Visual selection |
 | `SPC y a` | Select every line |
+| `SPC y c` | Toggle comments on the line, or on the lines of the Visual selection |
+| `SPC y k`, `SPC y j` | Move the line, or the lines of the Visual selection, up, down |
+| `SPC y d` | Delete the line, or the lines of the Visual selection |
+| `SPC y >`, `SPC y <` | Indent, outdent the line, or the lines of the Visual selection |
 | `SPC u w` | Turn soft wrap on or off |
+| `SPC u +`, `SPC u -`, `SPC u 0` | Zoom in, zoom out, reset the zoom |
 | `SPC u v`, `SPC u c` | Switch to the Neovim keymap, to the classic keymap |
 | `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
 | `SPC u S` | Open App Setup to change keymap, theme and other picks. See [Setup](#setup) |
@@ -627,6 +633,20 @@ puts one line at each. Cursors that meet become one. `Ctrl D`, `Ctrl S`, `Ctrl P
 
 These keys work in both keymaps, unless a row says otherwise.
 
+### Zoom and closed tabs
+
+On macOS, `Ctrl` is `⌘` in these keys.
+
+| Keys | Does |
+| --- | --- |
+| `Ctrl =`, `Ctrl +` | Zoom in: the editor font one point larger, up to 40 points |
+| `Ctrl -` | Zoom out: the editor font one point smaller, down to 8 points |
+| `Ctrl 0` | Reset the zoom to the default font sizes |
+| `Ctrl ⇧ T` | Reopen the last closed tab, with the cursor where it was. Again opens the tab closed before it |
+
+A zoom changes `font.size` and changes `ui.size` by the same ratio, and writes config.toml at
+once. NsVim keeps the last 20 closed tabs. Reopen passes over a file that is open or gone.
+
 ### File tree
 
 `SPC e`, `SPC g s` and `Ctrl w h` in the Neovim keymap, and `Ctrl ⇧ E` in the classic keymap,
@@ -708,6 +728,7 @@ It has these commands:
 | `Buffers…` | Pick an open buffer |
 | `Save`, `Save all` | Write the buffer, every modified buffer |
 | `Close tab` | Close the tab |
+| `Reopen closed tab` | Open the last closed tab again |
 | `Quit` | Quit. A modified buffer stops it |
 | `Diagnostics…` | List the diagnostics of this file |
 | `Open settings…` | Open Settings |
@@ -726,7 +747,9 @@ It has these commands:
 | `Close clean tabs`, `Close all tabs` | Close the tabs with no unsaved changes, every tab |
 | `Undo`, `Redo` | Undo or redo one change |
 | `Cut`, `Copy`, `Paste`, `Select all` | The clipboard, on the selection or the Visual selection |
+| `Toggle comment`, `Move line up`, `Move line down`, `Delete line`, `Indent`, `Outdent` | Change the line, or the lines of the selection |
 | `Toggle soft wrap` | Turn soft wrap on or off |
+| `Zoom in`, `Zoom out`, `Reset zoom` | Make the text larger, smaller, or the default size |
 | `Keymap: Neovim`, `Keymap: classic` | Switch the keymap |
 | `Theme: dark`, `Theme: light`, `Theme: follow the OS` | Switch the theme |
 
@@ -913,10 +936,13 @@ again to quit and keep the edits for recovery.
 
 - **NsVim**: Check for Updates…, Settings…, App Setup…, Quit. On macOS also Hide NsVim (`⌘ H`),
   Hide Others and Show All.
-- **File**: New File, Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
+- **File**: New File, Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab,
+  Reopen Closed Tab.
   On macOS also Close Window.
-- **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….
-- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
+- **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Toggle Comment, Move Line Up, Move Line Down,
+  Delete Line, Indent, Outdent, Find in Project….
+- **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Zoom In, Zoom Out, Reset Zoom,
+  Next Tab, Previous Tab.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
 - **Help**: Keyboard Shortcuts….
 

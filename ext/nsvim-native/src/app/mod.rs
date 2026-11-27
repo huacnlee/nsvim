@@ -38,6 +38,9 @@ pub mod unsaved;
 pub mod update;
 #[cfg(test)]
 mod update_tests;
+pub mod view_cmds;
+#[cfg(test)]
+mod view_cmds_tests;
 pub mod welcome;
 #[cfg(test)]
 mod welcome_tests;

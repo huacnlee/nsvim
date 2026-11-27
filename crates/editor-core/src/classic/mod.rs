@@ -46,6 +46,66 @@ pub(crate) fn paste_multi(ed: &mut Editor, text: &str) -> bool {
     true
 }
 
+/// A line command of the Edit menu and the command palette.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LineEdit {
+    Comment,
+    MoveUp,
+    MoveDown,
+    Delete,
+    Indent,
+    Outdent,
+}
+
+impl LineEdit {
+    /// The classic keymap's key for the command.
+    fn key(self) -> KeyInput {
+        let k = |code, alt, shift, cmd| KeyInput { code, ctrl: false, alt, shift, cmd };
+        match self {
+            LineEdit::Comment => k(KeyCode::Char('/'), false, false, true),
+            LineEdit::MoveUp => k(KeyCode::Up, true, false, false),
+            LineEdit::MoveDown => k(KeyCode::Down, true, false, false),
+            LineEdit::Delete => k(KeyCode::Char('K'), false, true, true),
+            LineEdit::Indent => k(KeyCode::Char(']'), false, false, true),
+            LineEdit::Outdent => k(KeyCode::Char('['), false, false, true),
+        }
+    }
+}
+
+/// Runs `op` on the lines that the selection touches, or on the cursor's line, as its classic
+/// key does (`Mod /`, `Alt ↑`, `Alt ↓`, `Mod ⇧ K`, `Mod ]`, `Mod [`). The menu and the palette
+/// run it in both keymaps. In the Neovim keymap, Visual mode takes its whole lines and ends.
+pub fn line_edit(ed: &mut Editor, op: LineEdit) {
+    if !ed.has_doc() {
+        return;
+    }
+    let mode = ed.mode;
+    let visual = matches!(mode, Mode::Visual(_));
+    if visual {
+        // A Visual selection holds the char under the cursor: take the last line whole.
+        let v = ed.doc().view;
+        if let Some(a) = v.anchor {
+            let (s, e) = if a < v.cursor { (a, v.cursor) } else { (v.cursor, a) };
+            let end = Pos::new(e.line, ed.buf().line_len(e.line).max(1));
+            let view = &mut ed.doc_mut().view;
+            view.anchor = Some(s);
+            view.cursor = end;
+        }
+    }
+    let classic = ed.keymap == crate::editor::Keymap::Classic;
+    ed.mode = Mode::Insert;
+    let mut out = Vec::new();
+    run(ed, op.key(), &mut out);
+    if !classic {
+        stop_typing(ed);
+        ed.mode = if visual { Mode::Normal } else { mode };
+        if visual {
+            ed.doc_mut().view.anchor = None;
+        }
+    }
+    vim::settle(ed);
+}
+
 fn letter(k: &KeyInput) -> Option<char> {
     match k.code {
         KeyCode::Char(c) => Some(c.to_ascii_lowercase()),
