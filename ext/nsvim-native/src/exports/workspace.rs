@@ -276,33 +276,8 @@ fn make_app(p: Option<&crate::Pending>) -> app::App {
 /// change Close Window's shortcut.
 #[cfg(not(target_arch = "wasm32"))]
 fn set_app_menu(s: Session) {
-    use nsh_core::desktop::MenuRole;
-    use nsh_core::element::desktop::{MenuItem, set_application_menu};
-
-    fn build(s: Session, entries: Vec<app::app_menu::Entry>) -> Vec<MenuItem> {
-        use app::app_menu::Entry;
-        entries
-            .into_iter()
-            .map(|e| match e {
-                Entry::Menu(label, items) => MenuItem::submenu(label, build(s, items)),
-                Entry::Item(id, label) if id == "none" => MenuItem::new(label).disabled(true),
-                Entry::Item(id, label) => MenuItem::new(label).on_select(move || s.update(|a, tx| a.app_menu_pick(&id, tx))),
-                Entry::Quit => MenuItem::role(MenuRole::Quit),
-                Entry::Hide(label, key) => {
-                    let item = MenuItem::role(MenuRole::Hide).label(label);
-                    match key {
-                        Some(key) => item.shortcut(&key),
-                        None => item,
-                    }
-                }
-                Entry::HideOthers => MenuItem::role(MenuRole::HideOthers),
-                Entry::ShowAll => MenuItem::role(MenuRole::ShowAll),
-                Entry::Separator => MenuItem::separator(),
-            })
-            .collect()
-    }
     let entries = s.read(|a| a.app_menu(&app::session::recent(&a.ed.root), cfg!(target_os = "macos")));
-    set_application_menu(build(s, entries));
+    nsh_core::element::desktop::set_application_menu(crate::ui::native_menu::app_menu_items(s, entries, false));
 }
 
 #[cfg(target_arch = "wasm32")]

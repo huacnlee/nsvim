@@ -56,6 +56,9 @@ impl Lucide {
     pub const GitCompareArrows: Icon = Icon(
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5' cy='6' r='3'/%3E%3Cpath d='M12 6h5a2 2 0 0 1 2 2v7'/%3E%3Cpath d='m15 9-3-3 3-3'/%3E%3Ccircle cx='19' cy='18' r='3'/%3E%3Cpath d='M12 18H7a2 2 0 0 1-2-2V9'/%3E%3Cpath d='m9 15 3 3-3 3'/%3E%3C/svg%3E",
     );
+    pub const Menu: Icon = Icon(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5h16'/%3E%3Cpath d='M4 12h16'/%3E%3Cpath d='M4 19h16'/%3E%3C/svg%3E",
+    );
     pub const Minus: Icon = Icon(
         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E",
     );

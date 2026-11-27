@@ -3,12 +3,13 @@
 //! - `Workspace`: the window's content. It makes the session, sets the theme tokens, starts
 //!   the workers, and takes every key. The screens go inside it.
 //! - `TextArea` and the other Rust components: the parts of the screen that Rust draws.
-//! - Modules (`Shell`, ...): listeners of parts of the app, and the changes TSX asks for.
+//! - Modules (`Shell`, `MainMenu`, ...): listeners of parts of the app, and the changes TSX asks for.
 
 mod areas;
 mod buffer_line;
 mod command;
 mod icon;
+mod main_menu;
 mod overlays;
 mod settings;
 mod setup;
@@ -27,6 +28,7 @@ pub use areas::*;
 pub use buffer_line::*;
 pub use command::*;
 pub use icon::*;
+pub use main_menu::*;
 pub use overlays::*;
 pub use settings::*;
 pub use setup::*;
@@ -45,6 +47,7 @@ pub fn register(registry: &mut Registry) {
         .module::<Overlays>()
         .module::<FileTree>()
         .module::<Tabs>()
+        .module::<MainMenu>()
         .module::<Status>()
         .module::<Cmdline>()
         .module::<SettingsPage>()

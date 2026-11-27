@@ -1,10 +1,12 @@
-// The title bar of the editor: the project folder over the tree, then the name of the file that
-// has the keys. A press on it drags the window, and it keeps the system's window controls clear
-// (`./title-bar.tsx`). The tabs of the open files are in the panes below it (`./panes.tsx`).
+// The title bar of the editor: the menu button and the project folder over the tree, then the name
+// of the file that has the keys. A press on it drags the window, and it keeps the system's window
+// controls clear (`./title-bar.tsx`). The menu button (`./main-menu.tsx`) shows only on Windows and
+// Linux. The tabs of the open files are in the panes below it (`./panes.tsx`).
 // Rust owns the state (`Tabs` in `ext/nsvim-native/src/exports/buffer_line.rs`).
 
 import { signal, View } from "nsh";
-import { Tabs, type BufferLineState } from "nsvim-native";
+import { MainMenu, Tabs, type BufferLineState } from "nsvim-native";
+import { MainMenuButton } from "./main-menu";
 import { Label, type Font } from "./panes";
 import { Controls, controlsLeft, DRAG } from "./title-bar";
 
@@ -22,16 +24,25 @@ export function BufferLine(props: { font: () => Font }) {
   });
   return (
     <View class="flex-row items-center h-9 shrink-0 overflow-hidden bg-muted border-b border-border" testID="buffer-line" desktop={DRAG}>
-      <If when={project()} else={<Controls side="left" />}>
+      <If
+        when={project()}
+        else={
+          <>
+            <Controls side="left" />
+            <MainMenuButton size={() => props.font().size} />
+          </>
+        }
+      >
         {(p) => (
-          // As wide as the tree, with the window controls at its start. The path keeps its end,
-          // which tells folders apart.
+          // As wide as the tree, with the window controls or the menu button at its start. The
+          // path keeps its end, which tells folders apart.
           <View
             class="flex-row shrink-0 self-stretch items-center pr-3 overflow-hidden border-r border-border"
-            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : 12 }}
+            style={{ width: p().width, paddingLeft: controlsLeft() > 0 ? controlsLeft() + 4 : MainMenu.shown() ? 0 : 12 }}
             accessibilityLabel={p().path}
             testID="project"
           >
+            <MainMenuButton size={() => props.font().size} />
             <Label font={props.font} text={p().path} class="flex-1 min-w-0" cutStart />
           </View>
         )}

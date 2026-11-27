@@ -28,6 +28,8 @@ pub enum IconName {
     GitBranch,
     /// Two arrows between two points: changes to review.
     GitCompareArrows,
+    /// Three lines: the application menu.
+    Menu,
     /// A minus: less.
     Minus,
     /// A plus: more.
@@ -50,6 +52,7 @@ impl IconName {
             IconName::Dot => "●",
             IconName::GitBranch => "⎇",
             IconName::GitCompareArrows => "⇄",
+            IconName::Menu => "≡",
             IconName::Minus => "-",
             IconName::Plus => "+",
             IconName::X => "×",
@@ -68,6 +71,7 @@ impl IconName {
             IconName::Dot => Lucide::Dot,
             IconName::GitBranch => Lucide::GitBranch,
             IconName::GitCompareArrows => Lucide::GitCompareArrows,
+            IconName::Menu => Lucide::Menu,
             IconName::Minus => Lucide::Minus,
             IconName::Plus => Lucide::Plus,
             IconName::X => Lucide::X,
