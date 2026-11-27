@@ -186,7 +186,8 @@ jobs:
           import os, tarfile, zipfile
           from pathlib import Path
           version = os.environ['RELEASE_VERSION']
-          archives = sorted(Path('dist').glob(f'NsVim-{version}-*'))
+          # Windows globs ignore case, so match the prefix exactly to skip the nsvim CLI archive.
+          archives = sorted(a for a in Path('dist').iterdir() if a.name.startswith(f'NsVim-{version}-'))
           if not archives:
               raise SystemExit('dist has no update archive')
           for archive in archives:
