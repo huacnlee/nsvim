@@ -7,6 +7,7 @@ pub mod app_menu;
 mod app_menu_tests;
 pub mod disk_dialogs;
 pub mod files;
+pub mod find;
 pub mod fx;
 pub mod ipc;
 pub mod key_list;
@@ -219,6 +220,8 @@ pub struct App {
     pub update: Option<crate::services::update::Release>,
     /// The window started with no project: the recent projects the welcome page lists.
     pub welcome: Option<Vec<PathBuf>>,
+    /// The find bar over the panes, while it shows.
+    pub find: Option<find::FindBar>,
 }
 
 impl App {
@@ -333,6 +336,7 @@ impl App {
             migration: Default::default(),
             update: None,
             welcome: None,
+            find: None,
         }
     }
 

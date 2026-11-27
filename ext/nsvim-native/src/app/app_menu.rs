@@ -86,6 +86,8 @@ impl App {
             item("edit:indent", "Indent"),
             item("edit:outdent", "Outdent"),
             Entry::Separator,
+            item("cmd:find-in-file", "Find…"),
+            item("cmd:replace-in-file", "Replace…"),
             item("cmd:grep", "Find in Project…"),
         ];
         let view = vec![

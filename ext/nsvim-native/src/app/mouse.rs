@@ -82,6 +82,9 @@ impl App {
             return;
         }
         self.tree.focus = false;
+        if let Some(bar) = &mut self.find {
+            bar.keys = false;
+        }
         tx.instant();
         let vim = self.ed.keymap == Keymap::Vim;
         let in_gutter = d.start_x < self.m.gutter;
