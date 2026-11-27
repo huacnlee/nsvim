@@ -48,6 +48,7 @@ pub fn app_menu_items(s: Session, entries: Vec<Entry>, popup: bool) -> Vec<MenuI
             Entry::Menu(label, items) => MenuItem::submenu(label, app_menu_items(s, items, popup)),
             Entry::Item(id, label) if id == "none" => MenuItem::new(label).disabled(true),
             Entry::Item(id, label) => MenuItem::new(label).on_select(move || s.update(|a, tx| a.app_menu_pick(&id, tx))),
+            Entry::Check(id, label, on) => MenuItem::new(label).checked(on).on_select(move || s.update(|a, tx| a.app_menu_pick(&id, tx))),
             Entry::Quit if popup => MenuItem::new("Quit").on_select(move || s.update(|a, tx| a.close_requested(tx))),
             Entry::Quit => MenuItem::role(MenuRole::Quit),
             Entry::Hide(label, key) => {

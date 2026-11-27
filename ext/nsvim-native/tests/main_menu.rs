@@ -38,7 +38,7 @@ fn the_menu_button_opens_every_menu_of_the_application_menu() {
         "Edit > Undo",
         "Edit > Find in Project…",
         "View > Command Palette…",
-        "View > Toggle File Tree",
+        "View > File Tree",
         "Go > Go to Definition",
         "Help > Keyboard Shortcuts…",
     ] {
@@ -47,10 +47,18 @@ fn the_menu_button_opens_every_menu_of_the_application_menu() {
     assert!(labels.iter().any(|l| l.starts_with("File > Open Recent > ")), "Open Recent in {labels:?}");
     assert!(!labels.iter().any(|l| l.contains("Hide")), "the Mac's window items stay on the Mac: {labels:?}");
 
+    let tree = menu.iter().find(|e| e.label == "View > File Tree").unwrap();
+    assert_eq!(tree.checked, Some(false), "no check mark while the tree is closed");
+
     // A picked item runs as the same item of the menu bar does.
-    f.ui.choose_menu_item("View > Toggle File Tree").unwrap();
+    f.ui.choose_menu_item("View > File Tree").unwrap();
     f.ui.wait_for("id:tree").unwrap();
     assert!(f.read(|a| a.tree.show));
+    f.ui.press("id:main-menu").unwrap();
+    let menu = f.ui.menu().expect("the application menu shows");
+    let tree = menu.iter().find(|e| e.label == "View > File Tree").unwrap();
+    assert_eq!(tree.checked, Some(true), "a check mark by the open tree");
+    f.ui.close_menu().unwrap();
     // With the tree, the button sits in the folder over the tree, which stays as wide as the tree.
     f.ui.wait_for("id:project >> id:main-menu").unwrap();
     assert!((width(&f, "id:project") - width(&f, "id:tree")).abs() < 1.0, "the folder is as wide as the tree");
