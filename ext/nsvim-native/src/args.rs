@@ -126,8 +126,9 @@ fn in_terminal(tui: bool, terminal: bool, no_display: bool, dev: bool) -> bool {
     !dev && (no_display || (terminal && tui))
 }
 
-/// The project root and the files to open, with a cursor position when one was given.
-pub fn targets() -> (PathBuf, Vec<(PathBuf, Option<Pos>)>) {
+/// The project root and the files to open, with a cursor position when one was given. No root:
+/// the start names no project and there is no last one, so the welcome page shows.
+pub fn targets() -> (Option<PathBuf>, Vec<(PathBuf, Option<Pos>)>) {
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     // Under `nsh run` the program is NSH's development host, and its arguments are the host's
     // own (`--dev-server URL --app-id ID`). The editor then opens the folder it runs in.
@@ -136,7 +137,7 @@ pub fn targets() -> (PathBuf, Vec<(PathBuf, Option<Pos>)>) {
 }
 
 /// `targets` for `args` (without the program name), with relative paths from `cwd`.
-pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option<Pos>)>) {
+pub fn targets_in(cwd: &Path, args: &[String]) -> (Option<PathBuf>, Vec<(PathBuf, Option<Pos>)>) {
     let cwd = cwd.to_path_buf();
     let mut paths: Vec<(PathBuf, Option<Pos>)> = Vec::new();
     let mut line: Option<usize> = None;
@@ -158,17 +159,24 @@ pub fn targets_in(cwd: &Path, args: &[String]) -> (PathBuf, Vec<(PathBuf, Option
     let Some((first, _)) = paths.first().cloned() else { return (launch_dir(&cwd, dirs::home_dir()), Vec::new()) };
     if first.is_dir() {
         let rest = paths.into_iter().skip(1).filter(|(p, _)| !p.is_dir()).collect();
-        return (first, rest);
+        return (Some(first), rest);
     }
     let dir = first.parent().map(Path::to_path_buf).unwrap_or(cwd);
     let root = git_top(&dir).or_else(|| project_root(&dir)).unwrap_or(dir);
-    (root, paths.into_iter().filter(|(p, _)| !p.is_dir()).collect())
+    (Some(root), paths.into_iter().filter(|(p, _)| !p.is_dir()).collect())
+}
+
+/// The folder a window with no project works in: the home folder, else `cwd`. The welcome
+/// page shows in it.
+pub fn no_project_dir() -> PathBuf {
+    dirs::home_dir().filter(|h| h.is_dir()).or_else(|| std::env::current_dir().ok()).unwrap_or_else(|| PathBuf::from("."))
 }
 
 /// The folder to open when no path was given. A launcher (Finder, the Start menu, a desktop
 /// entry) starts the app in `/`, a drive root or the app's own folder. A start there or in the
-/// home folder names no project, so the project of the last session opens, else the home folder.
-fn launch_dir(cwd: &Path, home: Option<PathBuf>) -> PathBuf {
+/// home folder names no project, so the project of the last session opens, else none: the
+/// welcome page shows.
+fn launch_dir(cwd: &Path, home: Option<PathBuf>) -> Option<PathBuf> {
     let exe_dir = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf));
     let system = std::env::var_os("SystemRoot").map(PathBuf::from);
     let app_dirs: Vec<PathBuf> = [exe_dir, system].into_iter().flatten().collect();
@@ -178,18 +186,12 @@ fn launch_dir(cwd: &Path, home: Option<PathBuf>) -> PathBuf {
 /// `launch_dir` with the app's and the system's folders given; `cwd` inside one of them, or at a
 /// filesystem root, means a launcher started the app. `last` gives the project of the last
 /// session. It reads the disk, so it runs only when `cwd` names no project.
-fn launch_dir_with(cwd: &Path, home: Option<PathBuf>, app_dirs: &[PathBuf], last: impl FnOnce() -> Option<PathBuf>) -> PathBuf {
+fn launch_dir_with(cwd: &Path, home: Option<PathBuf>, app_dirs: &[PathBuf], last: impl FnOnce() -> Option<PathBuf>) -> Option<PathBuf> {
     let launched = cwd.parent().is_none() || app_dirs.iter().any(|d| cwd.starts_with(d));
     if !launched && home.as_deref() != Some(cwd) {
-        return cwd.to_path_buf();
+        return Some(cwd.to_path_buf());
     }
-    if let Some(last) = last() {
-        return last;
-    }
-    match home {
-        Some(home) if home.is_dir() => home,
-        _ => cwd.to_path_buf(),
-    }
+    last().filter(|l| home.as_deref() != Some(l.as_path()))
 }
 
 /// `src/main.rs:42` → (`src/main.rs`, line 41). A path that exists as written keeps its colon.
@@ -295,7 +297,7 @@ mod tests {
         std::fs::write(dir.path().join("Cargo.toml"), "").unwrap();
         std::fs::create_dir_all(dir.path().join("src")).unwrap();
         let (root, files) = targets_in(&dir.path().join("src"), &["main.rs:42".to_string(), "--wait".to_string()]);
-        assert_eq!(root, dir.path());
+        assert_eq!(root.as_deref(), Some(dir.path()));
         assert_eq!(files, vec![(dir.path().join("src/main.rs"), Some(Pos::new(41, 0)))]);
         let (_, files) = targets_in(dir.path(), &["+7".to_string(), "a.rs".to_string(), "b.rs".to_string()]);
         assert_eq!(files[0], (dir.path().join("a.rs"), Some(Pos::new(6, 0))));
@@ -303,21 +305,27 @@ mod tests {
     }
 
     #[test]
-    fn a_launcher_start_opens_the_home_folder() {
+    fn a_launcher_start_with_no_last_project_opens_no_project() {
         let home = tempfile::tempdir().unwrap();
         let h = Some(home.path().to_path_buf());
         let app = PathBuf::from("/Applications/nsvim.app/Contents/MacOS");
         let none = || None;
         // Finder and desktop launchers start in `/`, the Start menu in the app's or system folder.
-        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], none), home.path());
-        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), none), home.path());
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], none), None);
+        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), none), None);
+        assert_eq!(launch_dir_with(home.path(), h.clone(), &[], none), None, "a terminal start in the home folder");
+        // The home folder is no project, even when a session of it is the last one.
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], || h.clone()), None);
         // A terminal start keeps its folder, even above the app's own folder.
-        assert_eq!(launch_dir_with(Path::new("/work/proj"), h.clone(), std::slice::from_ref(&app), none), Path::new("/work/proj"));
         assert_eq!(
-            launch_dir_with(Path::new("/Applications"), h, &[PathBuf::from("/Applications/nsvim.app/Contents/MacOS")], none),
-            Path::new("/Applications")
+            launch_dir_with(Path::new("/work/proj"), h.clone(), std::slice::from_ref(&app), none).as_deref(),
+            Some(Path::new("/work/proj"))
         );
-        assert_eq!(launch_dir_with(Path::new("/"), None, &[], none), Path::new("/"));
+        assert_eq!(
+            launch_dir_with(Path::new("/Applications"), h, &[PathBuf::from("/Applications/nsvim.app/Contents/MacOS")], none).as_deref(),
+            Some(Path::new("/Applications"))
+        );
+        assert_eq!(launch_dir_with(Path::new("/"), None, &[], none), None);
     }
 
     #[test]
@@ -327,19 +335,19 @@ mod tests {
         let last = PathBuf::from("/work/last");
         let app = PathBuf::from("/Applications/nsvim.app/Contents/MacOS");
         // A launcher start, and a terminal start in the home folder, name no project.
-        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], || Some(last.clone())), last);
-        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), || Some(last.clone())), last);
-        assert_eq!(launch_dir_with(home.path(), h.clone(), &[], || Some(last.clone())), last);
+        assert_eq!(launch_dir_with(Path::new("/"), h.clone(), &[], || Some(last.clone())), Some(last.clone()));
+        assert_eq!(launch_dir_with(&app, h.clone(), std::slice::from_ref(&app), || Some(last.clone())), Some(last.clone()));
+        assert_eq!(launch_dir_with(home.path(), h.clone(), &[], || Some(last.clone())), Some(last.clone()));
         // A terminal start in a folder opens that folder, and does not read the last session.
         let read = |_: &str| -> Option<PathBuf> { panic!("reads the last session") };
-        assert_eq!(launch_dir_with(Path::new("/work/proj"), h, &[], || read("")), Path::new("/work/proj"));
+        assert_eq!(launch_dir_with(Path::new("/work/proj"), h, &[], || read("")).as_deref(), Some(Path::new("/work/proj")));
     }
 
     #[test]
     fn a_folder_opens_as_the_project() {
         let dir = tempfile::tempdir().unwrap();
         let (root, files) = targets_in(Path::new("/"), &[dir.path().to_string_lossy().into_owned()]);
-        assert_eq!(root, dir.path());
+        assert_eq!(root.as_deref(), Some(dir.path()));
         assert!(files.is_empty());
     }
 

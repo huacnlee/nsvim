@@ -64,4 +64,26 @@ impl App {
         self.config_changed();
         self.ed.message("config.toml changed on disk: settings applied");
     }
+
+    /// Writes unsaved text to swap files once editing has paused for two seconds.
+    pub(super) fn write_swaps(&mut self, clock: f64, tx: &mut Tx) {
+        let Some(svc) = &self.svc else { return };
+        let idle = clock - self.last_edit;
+        for d in &self.ed.docs {
+            let Some(path) = &d.buf.path else { continue };
+            let Some(m) = self.meta.get_mut(path) else { continue };
+            if !d.buf.is_dirty() || m.swapped == d.buf.version() + 1 {
+                continue;
+            }
+            if d.buf.len_bytes() > 4 * super::BIG {
+                continue;
+            }
+            if idle < 2.0 {
+                tx.wake_after(std::time::Duration::from_secs_f64(2.05 - idle));
+                continue;
+            }
+            m.swapped = d.buf.version() + 1;
+            svc.swap(path.clone(), d.buf.text());
+        }
+    }
 }

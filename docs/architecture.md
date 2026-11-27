@@ -98,6 +98,7 @@ asks Rust for changes.
 | `src/overlays/` | The leader menu, the finder with its pickers, and the in-app context menu. |
 | `src/settings/` | Settings, over the whole window. |
 | `src/setup/` | First-launch setup. |
+| `src/welcome.tsx` | The welcome page of a window with no project. |
 | `src/controls.tsx`, `src/font.tsx` | Shared controls, and the interface font. |
 
 `nsvim-native` exports these:
@@ -108,7 +109,7 @@ asks Rust for changes.
 | `TextArea` | component | The code, drawn by Rust. |
 | `Icon` | component | A Lucide icon in the text colour. |
 | `Shell` | module | What the window shows, `focusKeys`, and the close button. |
-| `Overlays`, `FileTree`, `Tabs`, `Status`, `Cmdline`, `SettingsPage`, `SetupFlow` | modules | The state of one area each, and the changes its clicks ask for. |
+| `Overlays`, `FileTree`, `Tabs`, `Status`, `Cmdline`, `SettingsPage`, `SetupFlow`, `Welcome` | modules | The state of one area each, and the changes its clicks ask for. |
 
 ### The bridge
 
