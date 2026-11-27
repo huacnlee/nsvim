@@ -55,8 +55,24 @@ fn bundle() -> nsh_engine::Bundle {
 
 /// The app (`App.tsx`) on a Linux desktop, opening `pending`. The editor is a desktop app, and
 /// Headless shows a window only on a desktop OS.
-pub fn engine(pending: nsvim_native::Pending) -> Headless {
+pub fn engine(mut pending: nsvim_native::Pending) -> Headless {
     isolate_home();
+    // The key view takes the focus some frames after the window shows. A key pressed before
+    // that goes nowhere, so the app is ready only when the key view has the focus.
+    let focused = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = focused.clone();
+    let then = pending.on_session.take();
+    pending.on_session = Some(Box::new(move |s: nsvim_native::Session| {
+        nsh_core::prelude::spawn(async move {
+            while !s.read(|a| a.key_focus) {
+                nsh_core::prelude::timer(std::time::Duration::from_millis(10)).await;
+            }
+            flag.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+        if let Some(f) = then {
+            f(s);
+        }
+    }));
     let app = bundle();
     // One engine starts at a time, so that each takes its own launch.
     static STARTING: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -73,6 +89,10 @@ pub fn engine(pending: nsvim_native::Pending) -> Headless {
     let start = std::time::Instant::now();
     while !nsvim_native::launch_taken() {
         assert!(start.elapsed() < std::time::Duration::from_secs(10), "App.tsx never made its Workspace");
+        ui.wait(std::time::Duration::from_millis(5)).unwrap();
+    }
+    while !focused.load(std::sync::atomic::Ordering::SeqCst) {
+        assert!(start.elapsed() < std::time::Duration::from_secs(10), "the key view never took the focus");
         ui.wait(std::time::Duration::from_millis(5)).unwrap();
     }
     ui
