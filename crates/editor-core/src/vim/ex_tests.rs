@@ -293,7 +293,7 @@ fn ex_commands_that_ask_the_app() {
         ("Tree", Action::ToggleTree),
         ("ca", Action::CodeActions),
         ("Format", Action::Format(None)),
-        ("2,1Format", Action::Format(Some((0, 1)))),
+        ("1,1Format", Action::Format(Some((0, 0)))),
         ("Commands", Action::Palette),
         ("e", Action::Reload),
         ("close", Action::Quit { force: false }),
