@@ -8,6 +8,7 @@
 mod areas;
 mod buffer_line;
 mod command;
+mod find;
 mod icon;
 mod main_menu;
 mod overlays;
@@ -27,6 +28,7 @@ use crate::store::Session;
 pub use areas::*;
 pub use buffer_line::*;
 pub use command::*;
+pub use find::*;
 pub use icon::*;
 pub use main_menu::*;
 pub use overlays::*;
@@ -50,6 +52,7 @@ pub fn register(registry: &mut Registry) {
         .module::<MainMenu>()
         .module::<Status>()
         .module::<Cmdline>()
+        .module::<Find>()
         .module::<SettingsPage>()
         .module::<SetupFlow>()
         .module::<Welcome>();

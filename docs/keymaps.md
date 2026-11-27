@@ -61,6 +61,7 @@ it. `Esc` or any other key closes the popup. With the Space leader, the status l
 | `SPC y u`, `SPC y r` | Undo, redo one change |
 | `SPC y x`, `SPC y y`, `SPC y p` | Cut, copy, paste, on the Visual selection |
 | `SPC y a` | Select every line |
+| `SPC y f`, `SPC y s` | Open the find bar, with its replace field for `SPC y s`. See [Find and replace](#find-and-replace) |
 | `SPC u w` | Turn soft wrap on or off |
 | `SPC u v`, `SPC u c` | Switch to the Neovim keymap, to the classic keymap |
 | `SPC u d`, `SPC u l`, `SPC u s` | Dark theme, light theme, follow the OS |
@@ -598,13 +599,33 @@ Brackets, quotes, `Enter` and `Backspace` work as in the Neovim keymap's Insert 
 
 ### Find and replace
 
-`Ctrl F` opens the search line. Type a pattern, and `Enter` selects the next match. To go to
-the match after it, press `Ctrl F` and then `Enter` on the empty line. The pattern takes the
-syntax that [Search](#search) shows.
+`Ctrl F` opens the find bar over the text. `Ctrl Alt F` opens it with its replace field.
+The selection on one line, else the word under the cursor, is the query. Type, and the bar
+highlights every match, selects the first one from the cursor and shows `3 of 12`. Edit ›
+Find… and Replace… and the palette's `Find in file…` and `Replace in file…` open the same
+bar, in both keymaps. The terminal editor opens the search line and `:%s/` in its place.
 
-`Ctrl Alt F` opens the command line with `%s/`. Type `old/new/g` and then `Enter` to replace
-every match in the file. The command line keys are the ones that
-[Command line](#command-line) shows. `Esc` closes the line. With the `c` flag,
+These keys work while the bar has the keys. A click on the text gives the keys to the text,
+and the bar stays open.
+
+| Keys | Does |
+| --- | --- |
+| `Enter`, `⇧ Enter` | In the find field: go to the next, the previous match. Both wrap around the file |
+| `Ctrl G`, `Ctrl ⇧ G`, `F3`, `⇧ F3` | Go to the next, the previous match |
+| `Enter` | In the replace field: replace the selected match, then go to the next one |
+| `Ctrl Enter` | In the replace field: replace every match in the file, as one undo step |
+| `Tab` | Move between the find and the replace field |
+| `Alt C`, `Alt W`, `Alt R` | Match case, whole word, regular expression. The bar's check boxes do the same |
+| `Ctrl V` | Paste into the field |
+| `Ctrl U`, `Ctrl Backspace` | Clear the field |
+| `Esc` | Close the bar and its highlight. The keys go back to the text |
+
+Without Match case, case does not matter. A regular expression takes the common syntax:
+`(a|b)+`, `\d{2}`, `[a-z]*?`, `(?:x)`. In its replacement, `$1` is a group, `$&` the match
+and `$$` a dollar. Plain text matches as typed.
+
+The search line stays as the Vim search: `/`, `?`, `n` and `N` in the Neovim keymap, with the
+syntax that [Search](#search) shows. `:%s/old/new/g` replaces with it, and with the `c` flag,
 `%s/old/new/gc` asks at each match, with the keys that [Substitute](#substitute) lists.
 
 ### Multiple cursors
@@ -705,6 +726,7 @@ It has these commands:
 | `Open project…`, `Open folder…` | Open a project from the list, or from the system's folder dialog |
 | `Toggle file tree` | Show or hide the file tree |
 | `Find in project…` | Search the project |
+| `Find in file…`, `Replace in file…` | Open the [find bar](#find-and-replace), with its replace field for Replace |
 | `Buffers…` | Pick an open buffer |
 | `Save`, `Save all` | Write the buffer, every modified buffer |
 | `Close tab` | Close the tab |
@@ -915,7 +937,7 @@ again to quit and keep the edits for recovery.
   Hide Others and Show All.
 - **File**: New File, Open Project…, Open Folder…, Open Recent, Find File…, Save, Save All, Close Tab.
   On macOS also Close Window.
-- **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find in Project….
+- **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, Find…, Replace…, Find in Project….
 - **View**: Command Palette…, Toggle File Tree, Toggle Soft Wrap, Next Tab, Previous Tab.
 - **Go**: Go to Definition, Find References…, Rename Symbol…, Code Actions….
 - **Help**: Keyboard Shortcuts….
