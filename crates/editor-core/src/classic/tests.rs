@@ -175,3 +175,65 @@ fn redo_select_all_home_end_tab_and_find_keys() {
     feed(&mut e, "<s-pgup>");
     assert_eq!((cur(&e).0, e.doc().view.anchor.map(|p| p.line)), (0, Some(19)));
 }
+
+#[test]
+fn shift_alt_arrows_copy_the_lines() {
+    let mut e = classic("a\nb\nc");
+    feed(&mut e, "<s-a-down>");
+    assert_eq!(text(&e), "a\na\nb\nc");
+    assert_eq!(cur(&e), (1, 0), "the cursor goes with the copy below");
+    feed(&mut e, "<down><s-down><s-end><s-a-up>");
+    assert_eq!(text(&e), "a\na\nb\nc\nb\nc");
+    assert_eq!(cur(&e), (3, 1), "the copy above keeps the cursor");
+    assert_eq!(e.doc().view.anchor.map(|p| p.line), Some(2), "and the selection");
+    feed(&mut e, "<c-z>");
+    assert_eq!(text(&e), "a\na\nb\nc");
+}
+
+#[test]
+fn mod_enter_opens_a_line_below_or_above() {
+    let mut e = classic("  ab\ncd");
+    feed(&mut e, "<right><right><right><c-cr>x");
+    assert_eq!(text(&e), "  ab\n  x\ncd");
+    feed(&mut e, "<c-s-cr>y");
+    assert_eq!(text(&e), "  ab\n  y\n  x\ncd");
+}
+
+#[test]
+fn cmd_backspace_and_delete_take_the_line_on_macos() {
+    if !cfg!(target_os = "macos") {
+        return;
+    }
+    let mut e = classic("    let x = 1;\nnext");
+    feed(&mut e, "<end><d-bs>");
+    assert_eq!(text(&e), "    \nnext");
+    feed(&mut e, "<d-bs>");
+    assert_eq!(text(&e), "\nnext");
+    feed(&mut e, "<down><d-bs>");
+    assert_eq!(text(&e), "next");
+    feed(&mut e, "<right><right><d-del>");
+    assert_eq!(text(&e), "ne");
+}
+
+#[test]
+fn emacs_control_keys_on_macos() {
+    if !cfg!(target_os = "macos") {
+        return;
+    }
+    let mut e = classic("  hello world\nnext");
+    feed(&mut e, "<ctrl-e>");
+    assert_eq!(cur(&e), (0, 13));
+    feed(&mut e, "<ctrl-a>");
+    assert_eq!(cur(&e), (0, 0), "Ctrl A goes to the line start");
+    feed(&mut e, "<ctrl-f><ctrl-f><ctrl-f><ctrl-d>");
+    assert_eq!(text(&e), "  hllo world\nnext");
+    feed(&mut e, "<ctrl-h>");
+    assert_eq!(text(&e), "  llo world\nnext");
+    let out = feed(&mut e, "<ctrl-k>");
+    assert_eq!(text(&e), "  \nnext");
+    assert!(out.contains(&Action::Copy("llo world".into())), "Ctrl K cuts: {out:?}");
+    feed(&mut e, "<ctrl-n>");
+    assert_eq!(cur(&e).0, 1);
+    feed(&mut e, "<ctrl-p><ctrl-b>");
+    assert_eq!(cur(&e), (0, 1));
+}

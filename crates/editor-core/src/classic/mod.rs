@@ -52,6 +52,8 @@ pub enum LineEdit {
     Comment,
     MoveUp,
     MoveDown,
+    DuplicateUp,
+    DuplicateDown,
     Delete,
     Indent,
     Outdent,
@@ -65,6 +67,8 @@ impl LineEdit {
             LineEdit::Comment => k(KeyCode::Char('/'), false, false, true),
             LineEdit::MoveUp => k(KeyCode::Up, true, false, false),
             LineEdit::MoveDown => k(KeyCode::Down, true, false, false),
+            LineEdit::DuplicateUp => k(KeyCode::Up, true, true, false),
+            LineEdit::DuplicateDown => k(KeyCode::Down, true, true, false),
             LineEdit::Delete => k(KeyCode::Char('K'), false, true, true),
             LineEdit::Indent => k(KeyCode::Char(']'), false, false, true),
             LineEdit::Outdent => k(KeyCode::Char('['), false, false, true),
@@ -73,7 +77,7 @@ impl LineEdit {
 }
 
 /// Runs `op` on the lines that the selection touches, or on the cursor's line, as its classic
-/// key does (`Mod /`, `Alt ↑`, `Alt ↓`, `Mod ⇧ K`, `Mod ]`, `Mod [`). The menu and the palette
+/// key does (`Mod /`, `Alt ↑`, `Alt ↓`, `⇧ Alt ↑`, `⇧ Alt ↓`, `Mod ⇧ K`, `Mod ]`, `Mod [`). The menu and the palette
 /// run it in both keymaps. In the Neovim keymap, Visual mode takes its whole lines and ends.
 pub fn line_edit(ed: &mut Editor, op: LineEdit) {
     if !ed.has_doc() {
@@ -201,7 +205,12 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
             _ => {}
         }
     }
+    if MAC && k.ctrl && !k.cmd && !k.alt && emacs_key(ed, k, out) {
+        return;
+    }
     let word = if MAC { k.alt } else { k.cmd };
+    // `⌘ Backspace` and `⌘ Delete` delete to the line start and end on macOS.
+    let line = MAC && k.cmd && !k.alt;
     match k.code {
         KeyCode::Esc => {
             stop_typing(ed);
@@ -212,6 +221,13 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
             delete_sel(ed);
             vim::type_char(ed, c);
         }
+        // `Mod Enter` and `Mod ⇧ Enter` open a line below, above, as in Zed and VS Code.
+        KeyCode::Enter if k.cmd => {
+            stop_typing(ed);
+            ed.doc_mut().view.anchor = None;
+            typing(ed);
+            vim::open_line(ed, !k.shift);
+        }
         KeyCode::Enter => {
             typing(ed);
             delete_sel(ed);
@@ -220,7 +236,10 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
         KeyCode::Backspace => {
             typing(ed);
             if !delete_sel(ed) {
-                if word {
+                if line && ed.cursor().col > 0 {
+                    let to = line_start(ed, ed.cursor());
+                    remove_to(ed, to);
+                } else if word {
                     let to = word_left(ed, ed.cursor());
                     remove_to(ed, to);
                 } else {
@@ -231,7 +250,11 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
         KeyCode::Delete => {
             typing(ed);
             if !delete_sel(ed) {
-                if word {
+                let cur = ed.cursor();
+                let len = ed.buf().line_len(cur.line);
+                if line && cur.col < len {
+                    remove_to(ed, Pos::new(cur.line, len));
+                } else if word {
                     let to = word_right(ed, ed.cursor());
                     remove_to(ed, to);
                 } else {
@@ -250,6 +273,10 @@ fn run(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) {
                 let unit = ed.indent_unit();
                 vim::insert_text(ed, &unit);
             }
+        }
+        KeyCode::Up | KeyCode::Down if k.alt && !k.cmd && k.shift => {
+            stop_typing(ed);
+            duplicate_lines(ed, k.code == KeyCode::Down);
         }
         KeyCode::Up | KeyCode::Down if k.alt && !k.cmd => {
             stop_typing(ed);
@@ -417,7 +444,7 @@ fn shift(ed: &mut Editor, right: bool) {
     view.anchor = anchor;
 }
 
-fn word_left(ed: &Editor, p: Pos) -> Pos {
+pub(crate) fn word_left(ed: &Editor, p: Pos) -> Pos {
     if p.col == 0 {
         return if p.line == 0 { p } else { Pos::new(p.line - 1, ed.buf().line_len(p.line - 1)) };
     }
@@ -435,7 +462,7 @@ fn word_left(ed: &Editor, p: Pos) -> Pos {
     Pos::new(p.line, i)
 }
 
-fn word_right(ed: &Editor, p: Pos) -> Pos {
+pub(crate) fn word_right(ed: &Editor, p: Pos) -> Pos {
     let len = ed.buf().line_len(p.line);
     if p.col >= len {
         return if p.line >= ed.buf().last_line() { p } else { Pos::new(p.line + 1, 0) };
@@ -452,6 +479,87 @@ fn word_right(ed: &Editor, p: Pos) -> Pos {
         }
     }
     Pos::new(p.line, i)
+}
+
+/// Where `⌘ Backspace` deletes to: the first non-blank, or the line start from there.
+fn line_start(ed: &Editor, p: Pos) -> Pos {
+    let fnb = ed.buf().first_non_blank(p.line);
+    Pos::new(p.line, if p.col > fnb { fnb } else { 0 })
+}
+
+/// `⇧ Alt ↑` and `⇧ Alt ↓`: copies the lines that the selection touches, or the cursor's line,
+/// above or below them. With `down`, the cursor and the selection go with the copy.
+fn duplicate_lines(ed: &mut Editor, down: bool) {
+    let (a, b) = sel_lines(ed);
+    let n = b - a + 1;
+    let text: String = (a..=b).map(|l| format!("{}\n", ed.buf().line(l))).collect();
+    vim::begin(ed);
+    let at = ed.buf().idx(Pos::new(a, 0));
+    ed.doc_mut().buf.insert_at(at, &text);
+    if down {
+        let view = &mut ed.doc_mut().view;
+        view.cursor.line += n;
+        if let Some(an) = view.anchor.as_mut() {
+            an.line += n;
+        }
+    }
+    vim::commit_here(ed);
+}
+
+/// The Emacs keys of the macOS text fields, with Control: `a` `e` line start and end, `b` `f`
+/// `p` `n` a char left, right, a line up, down, `h` `d` delete back and on, `k` cut to the
+/// line end. Zed keeps them on macOS too.
+fn emacs_key(ed: &mut Editor, k: KeyInput, out: &mut Vec<Action>) -> bool {
+    let Some(c) = letter(&k) else { return false };
+    let arrow_key = |code| KeyInput { code, ctrl: false, alt: false, shift: k.shift, cmd: false };
+    let code = match c {
+        'a' => KeyCode::Home,
+        'e' => KeyCode::End,
+        'b' => KeyCode::Left,
+        'f' => KeyCode::Right,
+        'p' => KeyCode::Up,
+        'n' => KeyCode::Down,
+        'h' => KeyCode::Backspace,
+        'd' => KeyCode::Delete,
+        'k' => {
+            stop_typing(ed);
+            let cur = ed.cursor();
+            let len = ed.buf().line_len(cur.line);
+            let to = if cur.col < len {
+                Pos::new(cur.line, len)
+            } else if cur.line < ed.buf().last_line() {
+                Pos::new(cur.line + 1, 0)
+            } else {
+                cur
+            };
+            if to != cur {
+                let text = ed.buf().slice(ed.buf().idx(cur), ed.buf().idx(to));
+                vim::store(ed, None, text, false, false, out);
+                vim::begin(ed);
+                ed.doc_mut().view.anchor = None;
+                remove_to(ed, to);
+                vim::commit_here(ed);
+            }
+            return true;
+        }
+        _ => return false,
+    };
+    if code == KeyCode::Home {
+        // `Ctrl A` goes to the line start, not the first non-blank.
+        stop_typing(ed);
+        let cur = ed.cursor();
+        let view = &mut ed.doc_mut().view;
+        if k.shift {
+            view.anchor.get_or_insert(cur);
+        } else {
+            view.anchor = None;
+        }
+        view.cursor = Pos::new(cur.line, 0);
+        view.want_col = 0;
+        return true;
+    }
+    run(ed, arrow_key(code), out);
+    true
 }
 
 fn arrow(ed: &mut Editor, k: KeyInput, word: bool) {

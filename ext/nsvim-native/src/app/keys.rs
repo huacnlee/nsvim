@@ -6,6 +6,12 @@ use editor::editor::{Action, KeyCode, KeyInput, Keymap, Mode};
 
 use super::{App, Overlay, Screen};
 
+/// Whether `k` is a `⌘` shortcut on macOS. The Neovim keymap takes these as the classic one
+/// does, as in Zed's Vim mode. Off macOS Control is the shortcut key, and Vim keeps it.
+pub fn mac_shortcut(k: &KeyInput) -> bool {
+    cfg!(target_os = "macos") && k.cmd && !k.ctrl
+}
+
 /// The classic keymap's window shortcuts. They work with no file open. Settings keeps them out.
 pub fn classic_window_key(k: &KeyInput) -> Option<Action> {
     if !k.cmd {
@@ -20,6 +26,7 @@ pub fn classic_window_key(k: &KeyInput) -> Option<Action> {
         KeyCode::Char('p') if k.shift => Action::Palette,
         KeyCode::Char('e') if k.shift => Action::FocusTree,
         KeyCode::Char('p') => Action::FindFile,
+        KeyCode::Char('n') if !k.shift => Action::NewBuffer,
         KeyCode::Char('o') => Action::OpenProject,
         KeyCode::Char('f') if k.shift => Action::GrepProject,
         KeyCode::Char('b') => Action::ToggleTree,
@@ -95,9 +102,10 @@ impl App {
         if self.find.is_some() && self.ed.has_doc() && self.find_key(k, tx) {
             return;
         }
-        // Classic `⌘ F` and `⌘ ⌥ F` open the find bar in a window. The terminal keeps the
-        // search line and `:%s/`.
-        if self.ed.keymap == Keymap::Classic
+        // `⌘ F` and `⌘ ⌥ F` open the find bar in a window: classic `Ctrl F` everywhere, and the
+        // Neovim keymap's `⌘ F` on macOS. The terminal keeps the search line and `:%s/`.
+        let shortcuts = self.ed.keymap == Keymap::Classic || mac_shortcut(&k);
+        if shortcuts
             && k.cmd
             && !k.shift
             && !crate::terminal()
@@ -139,14 +147,13 @@ impl App {
             self.start_rename();
             return;
         }
-        if k.cmd && k.code == KeyCode::Char('.') && self.ed.keymap == Keymap::Classic {
+        if k.cmd && k.code == KeyCode::Char('.') && shortcuts {
             self.run_actions(vec![Action::CodeActions], tx);
             return;
         }
         // The Go menu: Back and Forward in every keymap, Go to Line and Go to Symbol in File in
         // the classic one. The Neovim keymap has `:N`, `Ctrl-o` and `SPC l s`.
-        let go = super::goto::jump_key(&k)
-            .or_else(|| super::goto::classic_go_key(&k, cfg!(target_os = "macos")).filter(|_| self.ed.keymap == Keymap::Classic));
+        let go = super::goto::jump_key(&k).or_else(|| super::goto::classic_go_key(&k, cfg!(target_os = "macos")).filter(|_| shortcuts));
         if let Some(id) = go {
             self.run_command(id, tx);
             return;
@@ -188,6 +195,7 @@ impl App {
             return;
         }
         let actions = match (self.ed.keymap, k.code) {
+            (Keymap::Vim, _) if mac_shortcut(&k) => classic_window_key(&k).into_iter().collect(),
             (Keymap::Vim, KeyCode::Char(c)) if c == self.ed.vim.leader && !k.ctrl => vec![Action::LeaderMenu],
             (Keymap::Vim, KeyCode::Char(':')) => {
                 editor::vim::open_cmdline(&mut self.ed, ':', "");

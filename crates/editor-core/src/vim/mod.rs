@@ -17,6 +17,7 @@ pub(crate) mod regex;
 mod replace;
 pub(crate) mod search;
 mod sentence;
+mod system;
 mod tags;
 mod textobj;
 mod visual;
@@ -27,6 +28,8 @@ mod audit_tests;
 mod ex_tests;
 #[cfg(test)]
 mod more_tests;
+#[cfg(test)]
+mod system_tests;
 #[cfg(test)]
 pub(crate) mod tests;
 #[cfg(test)]
@@ -43,7 +46,7 @@ pub use ex::run_ex;
 pub use ops::{comment_token, move_lines, toggle_comment};
 pub use search::search_matches;
 
-pub(crate) use insert::{backspace, delete_fwd, insert_text, newline, type_char};
+pub(crate) use insert::{backspace, delete_fwd, insert_text, newline, open_line, type_char};
 pub(crate) use motion::char_cls;
 pub(crate) use ops::shift_lines;
 
@@ -243,6 +246,16 @@ pub fn type_text(ed: &mut Editor, text: &str) {
 pub(crate) fn dispatch(ed: &mut Editor, key: KeyInput, out: &mut Vec<Action>) {
     if ed.vim.confirm.is_some() && ed.has_doc() {
         confirm::key(ed, key, out);
+        settle(ed);
+        return;
+    }
+    // macOS `⌘` shortcuts work in every mode, as in Zed's Vim mode. Vim has no `⌘` keys.
+    // Elsewhere Control is the shortcut key, and Vim keeps it.
+    if cfg!(target_os = "macos") && key.cmd && !key.ctrl && ed.mode != Mode::Command && ed.has_doc() && system::shortcut(ed, key, out) {
+        settle(ed);
+        return;
+    }
+    if ed.mode != Mode::Command && ed.has_doc() && system::line_key(ed, key) {
         settle(ed);
         return;
     }

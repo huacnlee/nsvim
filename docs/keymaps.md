@@ -258,6 +258,42 @@ puts the `}` on its own line. In Python files, `Enter` after `:` adds one level 
 
 The completion list shows while you type. See [Completion list](#completion-list).
 
+These editing keys work in Insert mode as in a system text field, Zed and VS Code:
+
+| Keys | Does |
+| --- | --- |
+| `⌘ Backspace` | On macOS: delete to the first non-blank, then to the line start. At the line start, join the line above |
+| `⌘ Delete` | On macOS: delete to the line end. At the line end, join the next line |
+| `⌥ Backspace` `⌥ Delete` | On macOS: delete the word before, after the cursor. `Ctrl Backspace` and `Ctrl Delete` elsewhere |
+| `⌥ ←` `⌥ →` | On macOS: go a word left, right. `Ctrl ←` and `Ctrl →` elsewhere |
+| `⌘ ←` `⌘ →` | On macOS: go to the first non-blank, then the line start, and to the line end |
+| `⌘ ↑` `⌘ ↓`, `Ctrl Home` `Ctrl End` | Go to the start, the end of the file |
+
+### System shortcuts
+
+On macOS, the `⌘` shortcuts of a desktop editor work in Normal, Visual and Insert mode, as in
+Zed's Vim mode. Vim has no `⌘` keys, so none of these takes a Vim key. On Linux and Windows,
+Control is the shortcut key and Vim keeps its Control keys, so only `Alt` and the Insert mode
+editing keys above work there.
+
+| Keys | Does |
+| --- | --- |
+| `⌘ S` | Save |
+| `⌘ Z`, `⇧ ⌘ Z` | Undo, redo. In Insert mode, the insert goes on after the undo |
+| `⌘ C` `⌘ X` | Copy, cut the selection. With no selection, the line. Insert mode copies the line and stays |
+| `⌘ V` | Paste before the cursor. In Visual mode, over the selection |
+| `⌘ A` | Select every line, in Visual line mode |
+| `⌘ /` | Toggle comments on the line, or the lines of the selection |
+| `⌘ ]` `⌘ [` | Indent, outdent |
+| `⇧ ⌘ K` | Delete the line, or the lines of the selection |
+| `⌘ Enter`, `⇧ ⌘ Enter` | Open a line below, above, and type there |
+| `⌘ F`, `⌘ ⌥ F` | Open the find bar, with its replace field |
+| `⌘ L`, `⇧ ⌘ O` | Go to a line, to a symbol in this file |
+| `⌘ P`, `⇧ ⌘ F`, `⌘ O`, `⌘ N` | Find a file, search the project, open a project, new file |
+| `⌘ B`, `⇧ ⌘ E`, `⌘ \`, `⌘ ,`, `⌘ .` | File tree, focus the tree, split right, Settings, code actions |
+| `⌥ ↑` `⌥ ↓` | Move the line, or the lines of the selection, up, down. `Alt ↑` `Alt ↓` on Linux and Windows |
+| `⇧ ⌥ ↑` `⇧ ⌥ ↓` | Copy the line, or the lines of the selection, above, below. `⇧ Alt ↑` `⇧ Alt ↓` elsewhere |
+
 ### Replace mode
 
 `R` starts Replace mode. The status line says `REPLACE`.
@@ -586,6 +622,8 @@ classic keymap.
 | `Ctrl A` | Select all |
 | `Ctrl ⇧ K` | Delete the line, or every line of the selection |
 | `Alt ↑` `Alt ↓` | Move the line, or the lines of the selection, up, down |
+| `⇧ Alt ↑` `⇧ Alt ↓` | Copy the line, or the lines of the selection, above, below. The cursor goes with the copy below |
+| `Ctrl Enter`, `Ctrl ⇧ Enter` | Open a line below, above, with the indent |
 | `Ctrl /` | Toggle comments |
 | `Ctrl ]` `Ctrl [` | Indent, outdent |
 | `Tab` | Indent a selection of several lines. Else type one indent level |
@@ -623,6 +661,11 @@ Brackets, quotes, `Enter` and `Backspace` work as in the Neovim keymap's Insert 
 | `Ctrl ←` `Ctrl →` | Go a word left, right. On macOS, `Alt ←` and `Alt →` |
 | `Ctrl Backspace` `Ctrl Delete` | Delete the word before, after the cursor. On macOS, `Alt Backspace` and `Alt Delete` |
 | `⌘ ←` `⌘ →`, `⌘ ↑` `⌘ ↓` | On macOS only: line start and end, file start and end |
+| `⌘ Backspace` `⌘ Delete` | On macOS only: delete to the first non-blank, then the line start, and to the line end |
+| `⌃ A` `⌃ E` | On macOS only: go to the line start, the line end |
+| `⌃ B` `⌃ F` `⌃ P` `⌃ N` | On macOS only: go a char left, right, a line up, down |
+| `⌃ H` `⌃ D` | On macOS only: delete the char before, after the cursor |
+| `⌃ K` | On macOS only: cut to the line end. At the line end, cut the line break |
 | `⇧` and any move above | Select from the cursor to where the move goes |
 
 ### Find and replace
