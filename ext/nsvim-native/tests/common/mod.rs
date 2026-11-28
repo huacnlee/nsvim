@@ -53,6 +53,15 @@ fn bundle() -> nsh_engine::Bundle {
     .clone()
 }
 
+/// Whether [`engine`] starts the app on macOS, not on Linux. A test binary sets it once, with
+/// [`use_macos`], before it starts the app.
+static MACOS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Makes every app this test binary starts run on macOS: `⌘` is the shortcut key.
+pub fn use_macos() {
+    MACOS.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
 /// The app (`App.tsx`) on a Linux desktop, opening `pending`. The editor is a desktop app, and
 /// Headless shows a window only on a desktop OS.
 pub fn engine(mut pending: nsvim_native::Pending) -> Headless {
@@ -79,7 +88,7 @@ pub fn engine(mut pending: nsvim_native::Pending) -> Headless {
     let _one = STARTING.lock().unwrap_or_else(|e| e.into_inner());
     nsvim_native::launch_next(pending);
     let mut config = EngineConfig { viewport: Size::new(Points(1200.0), Points(800.0)), ui_sets: ui_sets(), ..EngineConfig::new(app) };
-    config.environment.os = Os::Linux;
+    config.environment.os = if MACOS.load(std::sync::atomic::Ordering::SeqCst) { Os::MacOs } else { Os::Linux };
     // The terminal editor (`nsvim` in a terminal): a terminal of 110 x 24 cells of 8 x 16 points.
     if nsvim_native::terminal() {
         config.environment.idiom = nsh_core::platform::Idiom::Terminal;

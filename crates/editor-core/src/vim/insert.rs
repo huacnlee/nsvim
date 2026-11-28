@@ -70,15 +70,15 @@ pub(crate) fn act(ed: &mut Editor, k: KeyInput) {
     if ed.vim.replace.is_some() && super::replace::act(ed, k) {
         return;
     }
+    // The editing keys of a desktop editor: `⌘ Backspace`, `⌥ ←` and the rest.
+    if super::system::edit(ed, k, cfg!(target_os = "macos")) {
+        return;
+    }
     let cur = ed.cursor();
     if let Some(c) = ctrl_ch(&k) {
         match c {
             'w' => delete_word_back(ed),
-            'u' => {
-                let fnb = ed.buf().first_non_blank(cur.line);
-                let to = if cur.col > fnb { fnb } else { 0 };
-                remove_back(ed, cur.col - to);
-            }
+            'u' => delete_to_line_start(ed),
             'h' => backspace(ed),
             'j' | 'm' => newline(ed),
             'r' => ed.vim.pending.push(k),
@@ -294,7 +294,15 @@ pub(crate) fn newline(ed: &mut Editor) {
     put(ed, Pos::new(cur.line + 1, indent.chars().count() + extra.chars().count()));
 }
 
-fn remove_back(ed: &mut Editor, n: usize) {
+/// `Ctrl u`: deletes to the first non-blank, then to the line start.
+pub(crate) fn delete_to_line_start(ed: &mut Editor) {
+    let cur = ed.cursor();
+    let fnb = ed.buf().first_non_blank(cur.line);
+    let to = if cur.col > fnb { fnb } else { 0 };
+    remove_back(ed, cur.col - to);
+}
+
+pub(crate) fn remove_back(ed: &mut Editor, n: usize) {
     if n == 0 {
         return;
     }

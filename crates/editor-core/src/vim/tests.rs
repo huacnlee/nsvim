@@ -16,12 +16,21 @@ pub(crate) fn ed(text: &str) -> Editor {
     e
 }
 
-fn parse_key(name: &str) -> KeyInput {
-    let (mut ctrl, mut shift, mut alt) = (false, false, false);
+/// `c-` is the shortcut key: Control that also sets `cmd`, as off macOS. `d-` is `⌘` alone
+/// and `ctrl-` is Control alone, as on macOS.
+pub(crate) fn parse_key(name: &str) -> KeyInput {
+    let (mut ctrl, mut shift, mut alt, mut cmd) = (false, false, false, false);
     let mut rest = name;
     loop {
         if let Some(r) = rest.strip_prefix("c-") {
             ctrl = true;
+            cmd = true;
+            rest = r;
+        } else if let Some(r) = rest.strip_prefix("ctrl-") {
+            ctrl = true;
+            rest = r;
+        } else if let Some(r) = rest.strip_prefix("d-") {
+            cmd = true;
             rest = r;
         } else if let Some(r) = rest.strip_prefix("s-") {
             shift = true;
@@ -52,7 +61,7 @@ fn parse_key(name: &str) -> KeyInput {
         "f12" => KeyCode::F(12),
         s => KeyCode::Char(s.chars().next().unwrap()),
     };
-    KeyInput { code, ctrl, alt, shift, cmd: ctrl }
+    KeyInput { code, ctrl, alt, shift, cmd }
 }
 
 /// Keys in Vim notation: plain chars, and `<esc>`, `<cr>`, `<c-r>`, `<s-left>`, `<a-up>` ...
